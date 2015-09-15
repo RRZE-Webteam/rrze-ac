@@ -1,0 +1,329 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: RRZE-Access-Control\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2015-09-14 17:15+0100\n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: RRZE-Webteam <webmaster@rrze.fau.de>\n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-KeywordsList: __;_e;__ngettext:1,2;_n:1,2;__ngettext_noop:1,2;"
+"_n_noop:1,2;_c,_nc:4c,1,2;_x:1,2c;_nx:4c,1,2;_nx_noop:4c,1,2;_ex:1,2c;"
+"esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 1.6.5\n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Poedit-SearchPath-1: ..\n"
+
+#: ../includes/list-table.php:57 ../rrze-ac.php:1186
+msgid "Bearbeiten"
+msgstr ""
+
+#: ../includes/list-table.php:60 ../includes/list-table.php:101
+msgid "Deaktivieren"
+msgstr ""
+
+#: ../includes/list-table.php:62 ../includes/list-table.php:100
+#: ../rrze-ac.php:1953
+msgid "Aktivieren"
+msgstr ""
+
+#: ../includes/list-table.php:64 ../includes/list-table.php:102
+msgid "Löschen"
+msgstr ""
+
+#: ../includes/list-table.php:81 ../rrze-ac.php:449 ../rrze-ac.php:458
+#: ../rrze-ac.php:872 ../rrze-ac.php:1144
+msgid "Berechtigung"
+msgstr ""
+
+#: ../includes/list-table.php:82 ../rrze-ac.php:452 ../rrze-ac.php:461
+msgid "Kurzbeschreibung"
+msgstr ""
+
+#: ../includes/list-table.php:83 ../rrze-ac.php:453 ../rrze-ac.php:462
+msgid "Beschreibung"
+msgstr ""
+
+#: ../includes/list-table.php:84 ../rrze-ac.php:450 ../rrze-ac.php:459
+msgid "Angemeldet"
+msgstr ""
+
+#: ../includes/list-table.php:85 ../rrze-ac.php:451 ../rrze-ac.php:460
+msgid "IP-Adressbereiche"
+msgstr ""
+
+#: ../rrze-ac.php:181
+#, php-format
+msgid ""
+"Die PHP-Version %s ist veraltet. Bitte aktualisieren Sie mindestens auf die "
+"PHP-Version %s."
+msgstr ""
+"Your server is running PHP version %s. Please upgrade at least to PHP "
+"version %s."
+
+#: ../rrze-ac.php:186
+#, php-format
+msgid ""
+"Die Wordpress-Version %s ist veraltet. Bitte aktualisieren Sie mindestens "
+"auf die Wordpress-Version %s."
+msgstr ""
+"Your Wordpress version is %s. Please upgrade at least to Wordpress version "
+"%s."
+
+#: ../rrze-ac.php:191
+#, php-format
+msgid ""
+"Die Webserver-Software %s ist nicht kompatibel. Bitte nutzen Sie das "
+"Webserver-Software Apache."
+msgstr ""
+
+#: ../rrze-ac.php:196
+msgid ""
+"Die Webserver-Software ist nicht kompatibel. Bitte nutzen Sie das Webserver-"
+"Software Apache."
+msgstr ""
+
+#: ../rrze-ac.php:201
+msgid "Die Wordpress-Instanz ist keine Multisite."
+msgstr ""
+
+#: ../rrze-ac.php:206
+msgid "Die Webserver-Software unterstützt das Rewrite-Modul nicht."
+msgstr ""
+
+#: ../rrze-ac.php:211
+msgid "Die Konstant SECURE_AUTH_SALT ist nicht definiert."
+msgstr ""
+
+#: ../rrze-ac.php:216
+msgid "Die mcrypt-Funktionen sind nicht definiert."
+msgstr ""
+
+#: ../rrze-ac.php:248
+msgid ""
+"Das RRZE-Access-Control-Plugin wurde nicht richtig konfiguriert. Die Dateien/"
+"Dokumente können nicht geschützt werden."
+msgstr ""
+
+#: ../rrze-ac.php:251
+msgid ""
+"Die folgende Rewrite-Befehle müssen in der htaccess-Datei nach der WordPress-"
+"Befehl &#8222;RewriteRule ^index\\.php$ - [L]&#8220; hinzugefügt werden."
+msgstr ""
+
+#: ../rrze-ac.php:254
+msgid "Bitte wenden Sie sich an den Systemadministrator."
+msgstr ""
+
+#: ../rrze-ac.php:311 ../rrze-ac.php:312
+msgid "Alle angemeldeten Benutzer"
+msgstr ""
+
+#: ../rrze-ac.php:320 ../rrze-ac.php:321
+msgid "Alle"
+msgstr ""
+
+#: ../rrze-ac.php:348 ../rrze-ac.php:579
+msgid "Einstellungen"
+msgstr ""
+
+#: ../rrze-ac.php:419 ../rrze-ac.php:570
+msgid "Zugriffsschutz"
+msgstr ""
+
+#: ../rrze-ac.php:437
+msgid "Einträge pro Seite:"
+msgstr ""
+
+#: ../rrze-ac.php:467
+msgid "Standardberechtigung"
+msgstr ""
+
+#: ../rrze-ac.php:493
+msgid "Der Benutzer muss angemeldet sein."
+msgstr ""
+
+#: ../rrze-ac.php:571
+msgid "Neu hinzufügen"
+msgstr ""
+
+#: ../rrze-ac.php:578
+msgid "Berechtigungen"
+msgstr ""
+
+#: ../rrze-ac.php:677 ../rrze-ac.php:682
+msgid "Neue Berechtigung hinzufügen"
+msgstr ""
+
+#: ../rrze-ac.php:690 ../rrze-ac.php:1187
+msgid "Berechtigung bearbeiten"
+msgstr ""
+
+#: ../rrze-ac.php:695
+msgid "Berechtigung aktualisieren"
+msgstr ""
+
+#: ../rrze-ac.php:744
+msgid "Berechtigung erforderlich."
+msgstr ""
+
+#: ../rrze-ac.php:750
+msgid "Berechtigung existiert bereits."
+msgstr ""
+
+#: ../rrze-ac.php:754 ../rrze-ac.php:798
+msgid "Kurzbeschreibung erforderlich."
+msgstr ""
+
+#: ../rrze-ac.php:766 ../rrze-ac.php:821
+msgid "Die IP-Adresse ist nicht gültig."
+msgstr ""
+
+#: ../rrze-ac.php:865
+msgid "Zugriffs-beschränkung"
+msgstr ""
+
+#: ../rrze-ac.php:1118 ../rrze-ac.php:1642 ../rrze-ac.php:1680
+msgid "Zugriffsbeschränkung"
+msgstr ""
+
+#: ../rrze-ac.php:1139 ../rrze-ac.php:1737
+msgid "Berechtigung aktivieren"
+msgstr ""
+
+#: ../rrze-ac.php:1140 ../rrze-ac.php:1739
+msgid "Berechtigung entfernen"
+msgstr ""
+
+#: ../rrze-ac.php:1182
+msgid "Berechtigung:"
+msgstr ""
+
+#: ../rrze-ac.php:1198
+msgid "OK"
+msgstr ""
+
+#: ../rrze-ac.php:1199
+msgid "Abbrechen"
+msgstr ""
+
+#: ../rrze-ac.php:1336
+#, php-format
+msgid "Das Post %d is kein Medien-Post-Type."
+msgstr ""
+
+#: ../rrze-ac.php:1342
+#, php-format
+msgid ""
+"Der neu angegebenen Pfad %s ist absolut. Der neue Pfad muss ein Pfad relativ "
+"zum WP-Uploads-Verzeichnis sein."
+msgstr ""
+
+#: ../rrze-ac.php:1368
+#, php-format
+msgid "Ein Fehler ist aufgetreten bei der Erstellung des Verzeichnis %s"
+msgstr ""
+
+#: ../rrze-ac.php:1431
+#, php-format
+msgid "Die Datei kann nicht von %s nach %s verschoben werden."
+msgstr ""
+
+#: ../rrze-ac.php:1488 ../rrze-ac.php:1498
+msgid "Die angeforderte Datei wurde nicht gefunden."
+msgstr ""
+
+#: ../rrze-ac.php:1508
+msgid "Die Anfrage wurde mangels Berechtigung des Clients nicht durchgeführt."
+msgstr ""
+
+#: ../rrze-ac.php:1550 ../rrze-ac.php:1988
+msgid ""
+"Sie verfügen nicht über ausreichende Berechtigungen, um auf die Datei "
+"zugreifen zu können. Falls Sie glauben, Sie müssten Zugriff auf die Datei "
+"haben, bitte kontaktieren Sie den Ansprechpartner der Webseite."
+msgstr ""
+
+#: ../rrze-ac.php:1635
+msgid ""
+"Sie verfügen nicht über ausreichende Berechtigungen, um auf die Datei "
+"zugreifen zu können."
+msgstr ""
+
+#: ../rrze-ac.php:1660 ../rrze-ac.php:1698
+msgid "Berechtigung nicht vorhanden bzw. wurde entfernt"
+msgstr ""
+
+#: ../rrze-ac.php:1664 ../rrze-ac.php:1702
+msgid "Berechtigung wurde deaktiviert"
+msgstr ""
+
+#: ../rrze-ac.php:1674 ../rrze-ac.php:1712
+#, php-format
+msgid ""
+"Ein Fehler ist aufgetreten: %1$s und ist durch die Standardberechtigung "
+"&bdquo;%2$s&ldquo; ersetzt worden."
+msgstr ""
+
+#: ../rrze-ac.php:1764
+#, php-format
+msgid "Mediendatei ist nun geschützt."
+msgid_plural "%s Mediendateien sind nun geschützt."
+msgstr[0] ""
+msgstr[1] ""
+
+#: ../rrze-ac.php:1776
+#, php-format
+msgid "Dateischutz auf Mediendatei entfernt."
+msgid_plural "Dateischutz auf %s Mediendateien entfernt."
+msgstr[0] ""
+msgstr[1] ""
+
+#: ../rrze-ac.php:1827
+msgid ""
+"Sie sind nicht erlaubt, Mediendateien zu dem geschützten Verzeichnis "
+"hinzuzufügen."
+msgstr ""
+
+#: ../rrze-ac.php:1844
+msgid ""
+"Ein Fehler ist aufgetreten als Sie versucht haben, die Mediendateien in dem "
+"geschützten Verzeichnis zu verschieben."
+msgstr ""
+
+#: ../rrze-ac.php:1858
+msgid ""
+"Sie sind nicht erlaubt, Mediendateien von dem geschützten Verzeichnis zu "
+"entfernen."
+msgstr ""
+
+#: ../rrze-ac.php:1875
+msgid ""
+"Ein Fehler ist aufgetreten beim Verschieben der Mediendateien in dem "
+"geschützten Verzeichnis."
+msgstr ""
+
+#: ../rrze-ac.php:1945
+msgid "Zugiffsbeschränkung"
+msgstr ""
+
+#: ../rrze-ac.php:1971
+msgid "Neue Dateien sind geschützt"
+msgstr ""
+
+#: ../rrze-ac.php:1992
+msgid ""
+"Sie verfügen nicht über ausreichende Berechtigungen, um die Seite anzusehen. "
+"Falls Sie glauben, Sie müssten Zugriff auf die Seite haben, bitte "
+"kontaktieren Sie den Ansprechpartner der Webseite."
+msgstr ""
+
+#: ../rrze-ac.php:2085
+msgid "Ein Fehler ist aufgetreten: Verschlüsselung des Inhalts fehlgeschlagen."
+msgstr ""

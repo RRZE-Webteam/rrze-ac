@@ -1,0 +1,15 @@
+.default-permission .check-column {
+    background-color: #D3E4ED !important;
+}
+
+span.access-icon:before {
+	color: #0073AA;
+}
+
+span.access-all-icon:before {
+	color: #82878C;
+}
+
+span.access-error-icon:before {
+	color: #D64E07;
+}
