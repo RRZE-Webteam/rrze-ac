@@ -3,7 +3,7 @@
 /*
   Plugin Name: RRZE-Access-Control
   Plugin URI: https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-  Version: 1.0.0
+  Version: 1.1.0
   Description: Ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene Funktionen und IP-Adresse.
   Author: RRZE-Webteam
   Author URI: https://blogs.fau.de/webworking/
@@ -35,7 +35,7 @@ register_deactivation_hook(__FILE__, array('RRZE_AC', 'deactivation'));
 
 class RRZE_AC {
 
-    const version = '1.0.0';
+    const version = '1.1.0';
     
     const option_name = 'rrze_ac';
     const version_option_name = 'rrze_ac_version';
@@ -48,15 +48,22 @@ class RRZE_AC {
     const protected_dirname = '_protected';
     const access_permission_meta_key = '_access_permission';
     
-    public $plugin_file;
-    // WP_List_Table object
-	public $list_table_obj;
+    const user_isnt_logged_in = 0;
+    const user_ip_isnt_in_range = 1;
+    const user_hasnt_affiliation = 2;
+    const user_hasnt_entitlement = 4;
+    
+    public $permission_status = NULL;
+    
+    public $plugin_file = NULL;
+    
+	public $list_table_obj = NULL; // WP_List_Table object
 
     private $encrypts = array();
     
     protected static $options;
-    // Singleton instance
-    protected static $instance = NULL;
+    
+    protected static $instance = NULL; // Singleton instance
 
     public static function instance() {
         if (is_null(self::$instance)) {
@@ -188,12 +195,12 @@ class RRZE_AC {
 
         // Überprüft das Webserver-Software.
         elseif (!$is_apache) {
-            $error = __('Die Webserver-Software %s ist nicht kompatibel. Bitte nutzen Sie das Webserver-Software Apache.', 'rrze-ac');
+            $error = __('Der Web-Server-Software %s ist nicht kompatibel. Bitte verwenden Sie stattdessen den Apache-Web-Server-Software.', 'rrze-ac');
         }
 
         // Überprüft das Webserver-Software.
         elseif (!$is_apache) {
-            $error = __('Die Webserver-Software ist nicht kompatibel. Bitte nutzen Sie das Webserver-Software Apache.', 'rrze-ac');
+            $error = __('Der Web-Server-Software ist nicht kompatibel. Bitte verwenden Sie stattdessen den Apache-Web-Server-Software.', 'rrze-ac');
         }
         
         // Überprüft Multisite-Einstellung.
@@ -203,7 +210,7 @@ class RRZE_AC {
         
         // Überprüft Rewrite-Modul.
         elseif (!got_mod_rewrite() || !is_writable(get_home_path() . '.htaccess')) {
-            $error = __('Die Webserver-Software unterstützt das Rewrite-Modul nicht.', 'rrze-ac');
+            $error = __('Der Web-Server-Software unterstützt das Rewrite-Modul nicht.', 'rrze-ac');
         }
         
         // Überprüft SECURE_AUTH_SALT-Konstant (wp-config.php).
@@ -862,7 +869,7 @@ class RRZE_AC {
         ob_start();
         ?>
         <tr id="access_attachment_fields" class="access_attachment_fields">
-            <th><?php esc_html_e('Zugriffs-beschränkung', 'rrze-ac'); ?></th>
+            <th><?php esc_html_e('Zugriffsbeschränkung', 'rrze-ac'); ?></th>
             <td>
                 <label for="attachments[<?php echo $post->ID; ?>][access_protection_toggle]">
                     <input type="hidden" name="attachments[<?php echo $post->ID ?>][access_protection_toggle]" value="off">
@@ -1101,11 +1108,13 @@ class RRZE_AC {
                 
         // check if permission is set to be logged in
         if (!is_user_logged_in() && isset($permissions[$permission]['logged_in']) && $permissions[$permission]['logged_in']) {
+            $this->set_permission_status(self::user_isnt_logged_in);
             return FALSE;
         }
                 
         // check if permission is set to ip address
         elseif (!empty($permissions[$permission]['ip_address']) && !$this->check_ip_address_range($permissions[$permission]['ip_address'])) {
+            $this->set_permission_status(self::user_ip_isnt_in_range);
             return FALSE;
         }
         
@@ -1547,7 +1556,7 @@ class RRZE_AC {
 
             if (!$this->check_permission($attachment_id)) {
                 status_header(403);
-                wp_die(__('Sie verfügen nicht über ausreichende Berechtigungen, um auf die Datei zugreifen zu können. Falls Sie glauben, Sie müssten Zugriff auf die Datei haben, bitte kontaktieren Sie den Ansprechpartner der Webseite.', 'rrze-ac'));
+                wp_die($this->permission_forbidden_message($attachment_id));
             }
             
         } // Ende der Berechtigungsprüfungen
@@ -1983,14 +1992,9 @@ class RRZE_AC {
 
             foreach($wp_query->posts as $post) {
 
-                if(is_attachment() && !$this->check_permission($post->ID)) {
+                if(in_array($post->post_type, array('page', 'attachment')) && !$this->check_permission($post->ID)) {
                     status_header(403);
-                    wp_die(__('Sie verfügen nicht über ausreichende Berechtigungen, um auf die Datei zugreifen zu können. Falls Sie glauben, Sie müssten Zugriff auf die Datei haben, bitte kontaktieren Sie den Ansprechpartner der Webseite.', 'rrze-ac'));
-
-                } elseif(is_page() && !$this->check_permission($post->ID)) {
-                    status_header(403);
-                    wp_die(__('Sie verfügen nicht über ausreichende Berechtigungen, um die Seite anzusehen. Falls Sie glauben, Sie müssten Zugriff auf die Seite haben, bitte kontaktieren Sie den Ansprechpartner der Webseite.', 'rrze-ac'));
-
+                    wp_die($this->permission_forbidden_message($post->ID));
                 } elseif(is_search() && !$this->check_permission($post->ID)) {
                     $search_post_not_in[] = $post->ID;
                 }               
@@ -2016,6 +2020,28 @@ class RRZE_AC {
         return $menu_items;
     }
             
+    private function permission_forbidden_message($post_id = NULL) {
+        $message = '';
+        
+        $post_type = get_post_type($post_id);
+
+        if($this->get_permission_status(self::user_isnt_logged_in) && $post_type == 'page') {
+            $permalink = get_permalink($post_id);
+            $message = sprintf(__('Der Zugriff auf diese Seite ist nur für Mitglieder dieser Webseite möglich. <a href="%s">Bitte melden Sie sich mit Ihrer IdM-Kennung an</a>, um die Inhalte zu sehen.', 'rrze-ac'), wp_login_url($permalink));
+        } elseif($this->get_permission_status(self::user_isnt_logged_in) && $post_type == 'attachment') {
+            $permalink = get_permalink($post_id);
+            $message = sprintf(__('Der Zugriff auf dieser Datei ist nur für Mitglieder dieser Webseite möglich. <a href="%s">Bitte melden Sie sich mit Ihrer IdM-Kennung an</a>, um die Datei herunterzuladen.', 'rrze-ac'), wp_login_url($permalink));        
+        } elseif($this->get_permission_status(self::user_ip_isnt_in_range) && $post_type == 'page') {
+            $message = __('Sie verfügen nicht über ausreichende Berechtigungen, um die Seite anzusehen. Falls Sie glauben, Sie müssten Zugriff auf die Seite haben, bitte kontaktieren Sie den Ansprechpartner der Webseite.', 'rrze-ac');
+        } elseif($this->get_permission_status(self::user_ip_isnt_in_range) && $post_type == 'attachment') {
+            $message = __('Sie verfügen nicht über ausreichende Berechtigungen, um auf die Datei zugreifen zu können. Falls Sie glauben, Sie müssten Zugriff auf die Datei haben, bitte kontaktieren Sie den Ansprechpartner der Webseite.', 'rrze-ac');
+        } else {
+            $message = __('Sie verfügen nicht über ausreichende Berechtigungen, um diesen Bereich anzusehen. Falls Sie glauben, Sie müssten Zugriff auf diesen Bereich haben, bitte kontaktieren Sie den Ansprechpartner der Webseite.', 'rrze-ac');            
+        }
+        
+        return $message;        
+    }
+    
     /**
      * Builds a key from a post ID
      * @param string $post_id the post ID
@@ -2282,6 +2308,14 @@ class RRZE_AC {
 
         // Return derived key of correct length
         return substr($dk, 0, $kl);
+    }
+    
+    private function get_permission_status($bitmask) {
+        return ($this->permission_status & (1 << $bitmask)) != 0;
+    }
+    
+    private function set_permission_status($bitmask, $new = TRUE) {
+        $this->permission_status = ($this->permission_status & ~(1 << $bitmask)) | ($new << $bitmask);
     }
     
 }
