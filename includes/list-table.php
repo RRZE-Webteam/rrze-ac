@@ -37,11 +37,12 @@ class RRZE_AC_List_Table extends WP_List_Table {
             case 'select':
             case 'description':
                 $item[$column_name] = !empty($item[$column_name]) ? $item[$column_name] : '';
-                break;                
+                break;           
             case 'ip_address':
                 $item[$column_name] = !empty($item[$column_name]) ? implode('<br>', $item[$column_name]) : '';
-                break;                
+                break;
             case 'logged_in':
+            case 'sso_logged_in':
                 $item[$column_name] = !empty($item[$column_name]) ? '<span class="dashicons dashicons-yes"></span>' : '';
         }
         
@@ -82,7 +83,8 @@ class RRZE_AC_List_Table extends WP_List_Table {
             'select' => __('Kurzbeschreibung', 'rrze-ac'),
             'description' => __('Beschreibung', 'rrze-ac'),
             'logged_in' => __('Angemeldet', 'rrze-ac'),
-            'ip_address' => __('IP-Adressbereiche', 'rrze-ac')
+            'sso_logged_in' => __('SSO', 'rrze-ac'),
+            'ip_address' => __('IP-Adresse zulassen', 'rrze-ac')
         );
         return $columns;
     }
@@ -90,7 +92,9 @@ class RRZE_AC_List_Table extends WP_List_Table {
     public function get_sortable_columns() {
         $sortable_columns = array(
             'permission_key' => array('permission_key', FALSE),
-            'logged_in' => array('logged_in', FALSE)
+            'select' => array('select', FALSE),
+            'logged_in' => array('logged_in', FALSE),
+            'sso_logged_in' => array('sso_logged_in', FALSE)
         );
         return $sortable_columns;
     }

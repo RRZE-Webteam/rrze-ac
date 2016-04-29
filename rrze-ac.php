@@ -3,8 +3,8 @@
 /*
   Plugin Name: RRZE-Access-Control
   Plugin URI: https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-  Version: 1.1.1
-  Description: Ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene Funktionen und IP-Adresse.
+  Version: 1.2.0
+  Description: Es ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene Funktionen und IP-Adresse.
   Author: RRZE-Webteam
   Author URI: https://blogs.fau.de/webworking/
  */
@@ -35,23 +35,24 @@ register_deactivation_hook(__FILE__, array('RRZE_AC', 'deactivation'));
 
 class RRZE_AC {
 
-    const version = '1.1.1';
+    const version = '1.2.0';
     
     const option_name = 'rrze_ac';
     const version_option_name = 'rrze_ac_version';
     const enabled_option_name = 'rrze_ac_enabled';
     
     const php_version = '5.4'; // Minimal erforderliche PHP-Version
-    const wp_version = '4.3'; // Minimal erforderliche WordPress-Version
+    const wp_version = '4.4'; // Minimal erforderliche WordPress-Version
     
-    const access_edit_transient = '_access_edit_transient';
+    const access_edit_transient = '_rrze_ac_edit_transient';
     const protected_dirname = '_protected';
     const access_permission_meta_key = '_access_permission';
     
     const user_isnt_logged_in = 0;
     const user_ip_isnt_in_range = 1;
-    const user_hasnt_affiliation = 2;
-    const user_hasnt_entitlement = 4;
+    const user_isnt_sso_logged_in = 2;
+    const user_hasnt_affiliation = 4;
+    const user_hasnt_entitlement = 8;
     
     public $permission_status = NULL;
     
@@ -60,6 +61,14 @@ class RRZE_AC {
 	public $list_table_obj = NULL; // WP_List_Table object
 
     private $encrypts = array();
+    
+    private $websso_plugin = 'fau-websso/fau-websso.php';
+    
+    private $websso_option_name = '_fau_websso';
+    
+    private $person_affiliation = NULL;
+    
+    private $person_entitlement = NULL;
     
     protected static $options;
     
@@ -315,18 +324,24 @@ class RRZE_AC {
             'permissions' => array(
                 'logged-in' =>  array(
                     'permission_key' => 'logged-in',
-                    'description'    => __('Alle angemeldeten Benutzer', 'rrze-ac'),
-                    'select'         => __('Alle angemeldeten Benutzer', 'rrze-ac'),
+                    'description'    => __('Angemeldeten Benutzer', 'rrze-ac'),
+                    'select'         => __('Angemeldeten Benutzer', 'rrze-ac'),
                     'logged_in'      => 1,
+                    'sso_logged_in'  => 0,
+                    'affiliation'    => '',
+                    'entitlement'    => '',
                     'ip_address'     => '',
                     'core'           => 1,
                     'active'         => 1
                 ),
-                'all'       =>  array(
+                'all' =>  array(
                     'permission_key' => 'all',
                     'description'    => __('Alle', 'rrze-ac' ),
                     'select'         => __('Alle', 'rrze-ac' ),
                     'logged_in'      => 0,
+                    'sso_logged_in'  => 0,
+                    'affiliation'    => '',
+                    'entitlement'    => '',                    
                     'ip_address'     => '',
                     'core'           => 1,
                     'active'         => 1
@@ -339,17 +354,58 @@ class RRZE_AC {
     }
 
     /*
+     * Standard Berechtigung wird definiert.
+     * @return array
+     */    
+    private static function default_permission() {
+        $permission = array(
+            'permission_key' => '',
+            'description'    => '',
+            'select'         => '',
+            'logged_in'      => 0,
+            'sso_logged_in'  => 0,
+            'affiliation'    => '',
+            'entitlement'    => '',
+            'ip_address'     => '',
+            'core'           => 0,
+            'active'         => 0
+        );
+        
+        return $permission;
+    }
+    
+    /*
      * Gibt die Einstellungen zurück.
      * @return object
      */
     private static function get_options() {
         $defaults = self::default_options();
+        $default_permission = self::default_permission();
         $options = (array) get_option(self::option_name);
+
         $options = wp_parse_args($options, $defaults);
-        $options = array_intersect_key($options, $defaults);
+        $options['permissions'] = wp_parse_args($options['permissions'], $defaults['permissions']);
+        foreach($options['permissions'] as $key => $permission) {
+            $options['permissions'][$key] = self::combine_atts($default_permission, $permission);
+        }
+        
         return $options;
     }
+    
+    private static function combine_atts($default_atts, $atts) {
+        $atts = (array)$atts;
+        $combine_atts = array();
+        foreach ($default_atts as $key => $default) {
+            if (array_key_exists($key, $atts)) {
+                $combine_atts[$key] = $atts[$key];
+            } else {
+                $combine_atts[$key] = $default;
+            }
+        }
         
+        return $combine_atts;        
+    }
+    
     public function plugin_settings_link($links) {
 
         $settings_link = '<a href="options-general.php?page=access">' . esc_html__('Einstellungen', 'rrze-ac') . '</a>';
@@ -412,6 +468,7 @@ class RRZE_AC {
                     'description' => $value['description'],
                     'select' => $value['select'],
                     'logged_in' => $value['logged_in'],
+                    'sso_logged_in' => $value['sso_logged_in'],
                     'ip_address' => $value['ip_address'],
                     'core' => $value['core'],
                     'active' => $value['active']
@@ -455,7 +512,8 @@ class RRZE_AC {
         add_settings_section('permission_new_section', FALSE, '__return_false', 'permission_new');
         add_settings_field('permission_key', __('Berechtigung', 'rrze-ac'), array($this, 'permission_key_field'), 'permission_new', 'permission_new_section');        
         add_settings_field('logged_in', __('Angemeldet', 'rrze-ac'), array($this, 'permission_logged_in_field'), 'permission_new', 'permission_new_section');
-        add_settings_field('ip_address', __('IP-Adressbereiche', 'rrze-ac'), array($this, 'permission_ip_address_field'), 'permission_new', 'permission_new_section');
+        add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permission_sso_logged_in_field'), 'permission_new', 'permission_new_section');
+        add_settings_field('ip_address', __('IP-Adressen zulassen', 'rrze-ac'), array($this, 'permission_ip_address_field'), 'permission_new', 'permission_new_section');        
         add_settings_field('select', __('Kurzbeschreibung', 'rrze-ac'), array($this, 'permission_select_field'), 'permission_new', 'permission_new_section');        
         add_settings_field('description', __('Beschreibung', 'rrze-ac'), array($this, 'permission_description_field'), 'permission_new', 'permission_new_section');
                 
@@ -463,8 +521,9 @@ class RRZE_AC {
         
         add_settings_section('permission_edit_section', FALSE, '__return_false', 'permission_edit');    
         add_settings_field('permission_key', __('Berechtigung', 'rrze-ac'), array($this, 'permission_key_field'), 'permission_edit', 'permission_edit_section');        
-        add_settings_field('logged_in', __('Angemeldet', 'rrze-ac'), array($this, 'permission_logged_in_field'), 'permission_edit', 'permission_edit_section');                
-        add_settings_field('ip_address', __('IP-Adressbereiche', 'rrze-ac'), array($this, 'permission_ip_address_field'), 'permission_edit', 'permission_edit_section');
+        add_settings_field('logged_in', __('Angemeldet', 'rrze-ac'), array($this, 'permission_logged_in_field'), 'permission_edit', 'permission_edit_section');
+        add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permission_sso_logged_in_field'), 'permission_edit', 'permission_edit_section');
+        add_settings_field('ip_address', __('IP-Adressen zulassen', 'rrze-ac'), array($this, 'permission_ip_address_field'), 'permission_edit', 'permission_edit_section');        
         add_settings_field('select', __('Kurzbeschreibung', 'rrze-ac'), array($this, 'permission_select_field'), 'permission_edit', 'permission_edit_section');        
         add_settings_field('description', __('Beschreibung', 'rrze-ac'), array($this, 'permission_description_field'), 'permission_edit', 'permission_edit_section');
         
@@ -498,7 +557,18 @@ class RRZE_AC {
         ?>
         <label for="permission_logged_in">
             <input id="permission_logged_in" type="checkbox" <?php checked($checked); echo $disable; ?> name="<?php printf('%s[logged_in]', self::option_name); ?>" value="1"> <?php _e('Der Benutzer muss angemeldet sein.', 'rrze-ac'); ?>
-        </label><br>
+        </label>
+        <?php
+    }
+    
+    public function permission_sso_logged_in_field() {
+        $transient = get_transient(self::access_edit_transient);
+        $permission = self::get_permission(isset($_GET['permission']) ? $_GET['permission'] : '');
+        $checked = !empty($permission['sso_logged_in']) ? TRUE : FALSE;
+        ?>
+        <label for="permission_sso_logged_in">
+            <input id="permission_sso_logged_in" type="checkbox" <?php checked($checked); ?> name="<?php printf('%s[sso_logged_in]', self::option_name); ?>" value="1"> <?php _e('Der Benutzer muss SSO angemeldet sein.', 'rrze-ac'); ?>
+        </label>
         <?php
     }
         
@@ -524,7 +594,7 @@ class RRZE_AC {
         $default_permission = self::get_default_permission();
         $permissions = self::get_the_permissions();
         ?>
-        <select id="access_permission_select" name="<?php printf('%s[default_permission]', self::option_name); ?>">
+        <select id="access-permission-select" name="<?php printf('%s[default_permission]', self::option_name); ?>">
         <?php foreach ($permissions as $key => $data) : ?>
             <?php if (!$data['active']) continue; ?>
             <option value="<?php echo esc_attr($key); ?>" <?php selected($default_permission, $key); ?>>
@@ -569,7 +639,7 @@ class RRZE_AC {
         </script>        
         <?php
     }
-    
+        
     public function access_page() {
         ?>
         <div class="wrap">
@@ -761,25 +831,14 @@ class RRZE_AC {
             add_settings_error('permission_new', esc_attr('permission_select_required'), __('Kurzbeschreibung erforderlich.', 'rrze-ac'));
         }
         
-        $ip_address = !empty($input['ip_address']) ? array_filter($input['ip_address']) : '';
-
-        $ip_range = array();
-        if(!empty($ip_address)) {
-            foreach($ip_address as $value) {
-                $value = IPUtils::sanitizeIpRange($value);
-                if($value) {
-                    $ip_range[] = $value;
-                } else {
-                    add_settings_error('permission_new', esc_attr('permission_ip_address_is_not_valid'), __('Die IP-Adresse ist nicht gültig.', 'rrze-ac'));
-                }
-            }
-        }
-
-        $permission['ip_address'] = $ip_range;
-        
+        $ip_address = is_array($input['ip_address']) && !empty($input['ip_address']) ? array_filter($input['ip_address']) : '';
+        $ip_range = $this->get_ip_range($ip_address);
+        $permission['ip_address'] = !empty($ip_range) ? $ip_range : '';
+                
         $new_permission = array(
             'permission_key' => $permission_key,
             'logged_in' => isset($input['logged_in']) ? 1 : 0,
+            'sso_logged_in' => isset($input['sso_logged_in']) ? 1 : 0,
             'ip_address' => $ip_range,
             'select' => isset($input['select']) ? wp_trim_words(sanitize_text_field($input['select']), 3, '') : '',
             'description' => isset($input['description']) ? esc_textarea($input['description']) : '',
@@ -795,7 +854,7 @@ class RRZE_AC {
         
         return self::$options;
     }
-    
+        
     private function validate_edit($input) {
         if(!isset($input['permission_post']) || empty($input['permission_key']) || !isset(self::$options['permissions'][$input['permission_key']])) {
             return self::$options;
@@ -811,27 +870,16 @@ class RRZE_AC {
         if(!$permission['core']) {
             $permission['permission_key'] = isset($input['permission_key']) ? $input['permission_key'] : $permission['permission_key'];
             $permission['logged_in'] = isset($input['logged_in']) ? 1 : 0;
+            $permission['sso_logged_in'] = isset($input['sso_logged_in']) ? 1 : 0;
         }
         
         $permission['select'] = isset($input['select']) ? wp_trim_words(sanitize_text_field($input['select']), 3, '') : '';
         $permission['description'] = isset($input['description']) ? esc_textarea($input['description']) : '';
         
-        $ip_address = !empty($input['ip_address']) ? array_filter($input['ip_address']) : '';
-
-        $ip_range = array();
-        if(!empty($ip_address)) {
-            foreach($ip_address as $value) {
-                $value = IPUtils::sanitizeIpRange($value);
-                if($value) {
-                    $ip_range[] = $value;
-                } else {
-                    add_settings_error('permission_edit', esc_attr('permission_ip_address_is_not_valid'), __('Die IP-Adresse ist nicht gültig.', 'rrze-ac'));
-                }
-            }
-        }
-
-        $permission['ip_address'] = $ip_range;
-                
+        $ip_address = is_array($input['ip_address']) && !empty($input['ip_address']) ? array_filter($input['ip_address']) : '';
+        $ip_range = $this->get_ip_range($ip_address);
+        $permission['ip_address'] = !empty($ip_range) ? $ip_range : '';
+        
         if(get_settings_errors('permission_edit')) {
             set_transient(self::access_edit_transient, $permission, 30);
         } else {
@@ -839,6 +887,21 @@ class RRZE_AC {
         }
         
         return self::$options;
+    }
+    
+    private function get_ip_range($ip_address) {
+        $ip_range = array();
+        if(!empty($ip_address)) {
+            foreach($ip_address as $value) {
+                $value = IPUtils::sanitizeIpRange($value);
+                if($value) {
+                    $ip_range[] = $value;
+                } else {
+                    add_settings_error('permission_new', esc_attr('permission_ip_address_is_not_valid'), __('Die IP-Adresse ist nicht gültig.', 'rrze-ac'));
+                }
+            }
+        }
+        return $ip_range;
     }
     
     public function change_upload_directory($param) {
@@ -868,16 +931,16 @@ class RRZE_AC {
 
         ob_start();
         ?>
-        <tr id="access_attachment_fields" class="access_attachment_fields">
+        <tr id="access-attachment-fields" class="access-attachment-fields">
             <th><?php esc_html_e('Zugriffsbeschränkung', 'rrze-ac'); ?></th>
             <td>
                 <label for="attachments[<?php echo $post->ID; ?>][access_protection_toggle]">
                     <input type="hidden" name="attachments[<?php echo $post->ID ?>][access_protection_toggle]" value="off">
-                    <input class="access_protection_toggle" type="checkbox" id="attachments[<?php echo $post->ID; ?>][access_protection_toggle]" name="attachments[<?php echo $post->ID; ?>][access_protection_toggle]" <?php checked($this->is_attachment_protected($post->ID )); ?>>
+                    <input class="access-protection-toggle" type="checkbox" id="attachments[<?php echo $post->ID; ?>][access_protection_toggle]" name="attachments[<?php echo $post->ID; ?>][access_protection_toggle]" <?php checked($this->is_attachment_protected($post->ID )); ?>>
                 </label>
-                <p id="access_attachment_permissions_field">
+                <p id="access-attachment-permissions-field">
                     <label for="attachments[<?php echo $post->ID; ?>][access_permission_select]"><?php esc_html_e('Berechtigung', 'rrze-ac' ); ?></label>
-                    <select class="access_permission_select" id="attachments[<?php echo $post->ID; ?>][access_permission_select]" name="attachments[<?php echo $post->ID; ?>][access_permission_select]">
+                    <select class="access-permission-select" id="attachments[<?php echo $post->ID; ?>][access_permission_select]" name="attachments[<?php echo $post->ID; ?>][access_permission_select]">
                         <?php foreach ($permissions as $key => $data) : ?>
                         <option value="<?php echo esc_attr($key); ?>" <?php selected($permission, $key); ?>>
                             <?php echo sanitize_text_field($data['select']); ?>
@@ -887,7 +950,7 @@ class RRZE_AC {
                 </p>
                 <script>
                     jQuery(function ($) {
-                        $('#access_attachment_fields').trigger('accessLoaded', <?php echo $post->ID; ?>);
+                        $('#access-attachment-fields').trigger('accessLoaded', <?php echo $post->ID; ?>);
                     } (jQuery));
                 </script>
             <td>
@@ -1084,6 +1147,39 @@ class RRZE_AC {
         
         return FALSE;        
     }
+        
+    private function check_sso_logged_in() {
+        if (!is_plugin_active($this->websso_plugin)) {
+            return FALSE;
+        }
+        
+        if (is_multisite()) {
+            $options = get_site_option($this->websso_option_name);
+        } else {
+            $options = get_option($this->websso_option_name);
+        }
+        
+        if (!isset($options['simplesaml_include']) || !isset($options['simplesaml_auth_source'])) {
+            return FALSE;
+        }
+        
+        include_once(WP_CONTENT_DIR . $options['simplesaml_include']);
+        
+        if(!class_exists('SimpleSAML_Auth_Simple')) {
+            return FALSE;
+        }
+
+        $as = new SimpleSAML_Auth_Simple($options['simplesaml_auth_source']);
+        
+        if ($as->isAuthenticated()) {
+            $attributes = $as->getAttributes();
+            $this->person_affiliation = isset($_attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'][0]) ? $_attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'][0] : NULL;
+            $this->person_entitlement = isset($_attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'][0]) ? $_attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'][0] : NULL;                 
+            return TRUE;
+        }
+        
+        $as->requireAuth(); // redirect to IdP
+    }
     
     private function check_permission($post_id) {
         
@@ -1111,19 +1207,25 @@ class RRZE_AC {
             $this->set_permission_status(self::user_isnt_logged_in);
             return FALSE;
         }
-                
+             
+        // check if permission is set to be sso logged in
+        elseif (!empty($permissions[$permission]['sso_logged_in']) && !$this->check_sso_logged_in($permissions[$permission]['sso_logged_in'])) {
+            $this->set_permission_status(self::user_isnt_sso_logged_in);
+            return FALSE;
+        }
+        
         // check if permission is set to ip address
         elseif (!empty($permissions[$permission]['ip_address']) && !$this->check_ip_address_range($permissions[$permission]['ip_address'])) {
             $this->set_permission_status(self::user_ip_isnt_in_range);
             return FALSE;
         }
-        
+                
         return TRUE;
     }
-        
+    
     public function attachment_edit_meta_box() {
         add_meta_box(
-            'attachment_protection_metabox',
+            'attachment-protection-metabox',
             __('Zugriffsbeschränkung', 'rrze-ac' ),
             array($this, 'post_protection_metabox'),
             'attachment',
@@ -1143,16 +1245,16 @@ class RRZE_AC {
         }
         ?>
         <input type="hidden" name="access_protection_toggle" value="off">
-        <input type="checkbox" id="access_protection_toggle" name="access_protection_toggle" <?php checked($this->is_attachment_protected($post->ID)); ?>>
-        <label class="access-protection-toggle" for="access_protection_toggle">
+        <input type="checkbox" id="access-protection-toggle" name="access_protection_toggle" <?php checked($this->is_attachment_protected($post->ID)); ?>>
+        <label class="access-protection-toggle" for="access-protection-toggle">
             <span aria-role="hidden" class="access-on button button-primary" data-access-content="<?php esc_attr_e('Berechtigung aktivieren', 'rrze-ac'); ?>"></span>
             <span aria-role="hidden" class="access-off" data-access-content="<?php esc_attr_e('Berechtigung entfernen', 'rrze-ac'); ?>"></span>
         </label>
-        <p class="access-permission-select">
-            <label for="access_permission_select">
+        <div class="access-permission-select">
+            <label for="access-permission-select">
                 <span class="description"><?php esc_html_e('Berechtigung', 'rrze-ac'); ?></span>
             </label>
-            <select id="access_permission_select" name="access_permission_select">
+            <select id="access-permission-select" name="access_permission_select">
             <?php foreach ($permissions as $key => $data) : ?>
                 <?php if (!$data['active']) continue; ?>
                 <option value="<?php echo esc_attr($key); ?>" <?php selected($permission, $key); ?>>
@@ -1160,7 +1262,7 @@ class RRZE_AC {
                 </option>
             <?php endforeach; ?>
             </select>
-        </p>
+        </div>
         <?php
     }
     
@@ -1196,7 +1298,7 @@ class RRZE_AC {
                 <span class="screen-reader-text"><?php _e('Berechtigung bearbeiten', 'rrze-ac'); ?></span>
             </a>
             <div id="post-protection-field" class="hide-if-js">
-                <select id="access_permission_select" name="access_permission_select">
+                <select id="access-permission-select" name="access_permission_select">
                 <?php foreach ($permissions as $key => $data) : ?>
                     <?php if (!$data['active']) continue; ?>
                     <option value="<?php echo esc_attr($key); ?>" <?php selected($permission, $key); ?>>
@@ -2027,10 +2129,10 @@ class RRZE_AC {
 
         if($this->get_permission_status(self::user_isnt_logged_in) && $post_type == 'page') {
             $permalink = get_permalink($post_id);
-            $message = sprintf(__('Der Zugriff auf diese Seite ist nur für Mitglieder dieser Webseite möglich. <a href="%s">Bitte melden Sie sich mit Ihrer IdM-Kennung an</a>, um die Inhalte zu sehen.', 'rrze-ac'), wp_login_url($permalink));
+            $message = sprintf(__('Der Zugriff auf diese Seite ist nur für Mitglieder dieser Webseite möglich. <a href="%s">Bitte melden Sie sich mit Ihrer IdM-Kennung an</a>, um den Inhalt der Seite zu sehen.', 'rrze-ac'), wp_login_url($permalink));
         } elseif($this->get_permission_status(self::user_isnt_logged_in) && $post_type == 'attachment') {
             $permalink = get_permalink($post_id);
-            $message = sprintf(__('Der Zugriff auf dieser Datei ist nur für Mitglieder dieser Webseite möglich. <a href="%s">Bitte melden Sie sich mit Ihrer IdM-Kennung an</a>, um die Datei herunterzuladen.', 'rrze-ac'), wp_login_url($permalink));        
+            $message = sprintf(__('Der Zugriff auf diese Datei ist nur für Mitglieder dieser Webseite möglich. <a href="%s">Bitte melden Sie sich mit Ihrer IdM-Kennung an</a>, um die Datei herunterzuladen.', 'rrze-ac'), wp_login_url($permalink));        
         } elseif($this->get_permission_status(self::user_ip_isnt_in_range) && $post_type == 'page') {
             $message = __('Sie verfügen nicht über ausreichende Berechtigungen, um die Seite anzusehen. Falls Sie glauben, Sie müssten Zugriff auf die Seite haben, bitte kontaktieren Sie den Ansprechpartner der Webseite.', 'rrze-ac');
         } elseif($this->get_permission_status(self::user_ip_isnt_in_range) && $post_type == 'attachment') {

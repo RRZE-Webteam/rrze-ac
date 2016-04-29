@@ -1,4 +1,4 @@
-#access_protection_toggle {
+#access-protection-toggle {
     border: 0;
     clip: rect(0 0 0 0);
     height: 1px;
@@ -9,11 +9,11 @@
     width: 1px;
 }
 
-#access_protection_metabox .inside {
+#attachment-protection-metabox .inside {
     position: static;
 }
 
-#access_protection_metabox p.access-permission-select {
+#attachment-protection-metabox div.access-permission-select {
     margin: 0 0 3.5em!important;
     max-height: 0;
     opacity: 0;
@@ -46,8 +46,8 @@
     speak: none;
 }
 
-#access_protection_toggle:checked~p.access-permission-select,
-p.access-permission-select.access-active {
+#access-protection-toggle:checked~div.access-permission-select,
+div.access-permission-select.access-active {
     margin-bottom: 4.2em!important;
     max-height: 100px;
     opacity: 1;
@@ -55,16 +55,16 @@ p.access-permission-select.access-active {
     transition: .3s .1s opacity, .5s max-height ease-out;
 }
 
-#access_protection_toggle:checked+.access-protection-toggle {
+#access-protection-toggle:checked+.access-protection-toggle {
     border-top: 1px solid #dfdfdf;
     -webkit-box-shadow: inset 0 1px #fff;
     box-shadow: inset 0 1px #fff;
 }
 
-#access_protection_toggle:checked+.access-protection-toggle .access-on {
+#access-protection-toggle:checked+.access-protection-toggle .access-on {
     display: none;
 }
 
-#access_protection_toggle:checked+.access-protection-toggle .access-off {
+#access-protection-toggle:checked+.access-protection-toggle .access-off {
     display: block;
 }

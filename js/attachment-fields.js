@@ -5,12 +5,12 @@
 
   $('body')
 
-    .on('accessLoaded', '#access_attachment_fields', function (event, id) {
-      postId           = id;
-      permissionsField = $('#access_attachment_permissions_field');
+    .on('accessLoaded', '#access-attachment-fields', function (event, id) {
+      postId = id;
+      permissionsField = $('#access-attachment-permissions-field');
 
       if (vals.hasOwnProperty(postId)) {
-        $(this).find('.access_protection_toggle, .access_permission_select').each(function () {
+        $(this).find('.access-protection-toggle, .access-permission-select').each(function () {
           if (!vals[postId].hasOwnProperty(this.name))
             return;
 
@@ -21,10 +21,10 @@
         });
       }
 
-      $(this).find('.access_protection_toggle').trigger('change', 'accessJustLoaded');
+      $(this).find('.access-protection-toggle').trigger('change', 'accessJustLoaded');
     })
 
-    .on('change', '.access_protection_toggle', function (event, justLoaded) {
+    .on('change', '.access-protection-toggle', function (event, justLoaded) {
       duration = 'accessJustLoaded' !== justLoaded ? 400 : 0;
 
       if (this.checked)
@@ -33,7 +33,7 @@
         permissionsField.slideUp(duration);
     })
 
-    .on('change', '.access_protection_toggle, .access_permission_select', function (event, justLoaded) {
+    .on('change', '.access-protection-toggle, .access-permission-select', function (event, justLoaded) {
       if ('accessJustLoaded' === justLoaded)
         return;
 

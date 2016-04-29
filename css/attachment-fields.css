@@ -1,14 +1,14 @@
-.compat-attachment-fields .access_attachment_fields label.button {
+.compat-attachment-fields .access-attachment-fields label.button {
     width: 100%;
     white-space: normal;
 }
 
-.compat-attachment-fields .access_permission_select {
+.compat-attachment-fields .access-permission-select {
     max-width: 90%;
 }
 
 @media only screen and (min-width:901px) {
-    .compat-attachment-fields .access_attachment_fields th {
+    .compat-attachment-fields .access-attachment-fields th {
         padding-top: 0;
         width: 35%;
         text-align: right;
@@ -16,15 +16,15 @@
         font-weight: 400;
     }
 
-    .compat-attachment-fields .access_attachment_fields p {
+    .compat-attachment-fields .access-attachment-fields p {
         padding-left: 0;
     };
 }
 
 @media only screen and (max-width:900px) {
-    .compat-attachment-fields .access_attachment_fields select,
-    .compat-attachment-fields .access_attachment_fields td,
-    .compat-attachment-fields .access_attachment_fields th {
+    .compat-attachment-fields .access-attachment-fields select,
+    .compat-attachment-fields .access-attachment-fields td,
+    .compat-attachment-fields .access-attachment-fields th {
         display: block;
         width: 100%;
     };
