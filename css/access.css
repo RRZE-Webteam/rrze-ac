@@ -13,3 +13,8 @@ span.access-all-icon:before {
 span.access-error-icon:before {
 	color: #D64E07;
 }
+
+/* Columns */
+.fixed .column-access_info {
+    width: 2.5em;
+}
