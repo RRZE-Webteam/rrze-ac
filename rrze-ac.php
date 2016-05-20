@@ -3,7 +3,7 @@
 /*
   Plugin Name: RRZE-Access-Control
   Plugin URI: https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-  Version: 1.2.1
+  Version: 1.2.2
   Description: Es ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene Funktionen und IP-Adresse.
   Author: RRZE-Webteam
   Author URI: https://blogs.fau.de/webworking/
@@ -35,14 +35,14 @@ register_deactivation_hook(__FILE__, array('RRZE_AC', 'deactivation'));
 
 class RRZE_AC {
 
-    const version = '1.2.1';
+    const version = '1.2.2';
     
     const option_name = 'rrze_ac';
     const version_option_name = 'rrze_ac_version';
     const enabled_option_name = 'rrze_ac_enabled';
     
     const php_version = '5.4'; // Minimal erforderliche PHP-Version
-    const wp_version = '4.4'; // Minimal erforderliche WordPress-Version
+    const wp_version = '4.5'; // Minimal erforderliche WordPress-Version
     
     const access_edit_transient = '_rrze_ac_edit_transient';
     const protected_dirname = '_protected';
@@ -931,13 +931,16 @@ class RRZE_AC {
 
         ob_start();
         ?>
-        <tr id="access-attachment-fields" class="access-attachment-fields">
-            <th><?php esc_html_e('Zugriffsbeschränkung', 'rrze-ac'); ?></th>
-            <td>
-                <label for="attachments[<?php echo $post->ID; ?>][access_protection_toggle]">
-                    <input type="hidden" name="attachments[<?php echo $post->ID ?>][access_protection_toggle]" value="off">
-                    <input class="access-protection-toggle" type="checkbox" id="attachments[<?php echo $post->ID; ?>][access_protection_toggle]" name="attachments[<?php echo $post->ID; ?>][access_protection_toggle]" <?php checked($this->is_attachment_protected($post->ID )); ?>>
+        <tr id="access-attachment-fields">
+            <th class="label" scope="row">
+                <label for="attachments-1054405-attachment_tag">
+                    <span class="alignleft"><?php esc_html_e('Zugriffsbeschränkung', 'rrze-ac'); ?></span>
+                    <br class="clear">
                 </label>
+            </th>
+            <td class="field">
+                <input type="hidden" name="attachments[<?php echo $post->ID ?>][access_protection_toggle]" value="off">
+                <input class="radio access-protection-toggle" type="checkbox" id="attachments[<?php echo $post->ID; ?>][access_protection_toggle]" name="attachments[<?php echo $post->ID; ?>][access_protection_toggle]" <?php checked($this->is_attachment_protected($post->ID )); ?>>
                 <p id="access-attachment-permissions-field">
                     <label for="attachments[<?php echo $post->ID; ?>][access_permission_select]"><?php esc_html_e('Berechtigung', 'rrze-ac' ); ?></label>
                     <select class="access-permission-select" id="attachments[<?php echo $post->ID; ?>][access_permission_select]" name="attachments[<?php echo $post->ID; ?>][access_permission_select]">
