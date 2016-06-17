@@ -17,14 +17,14 @@ class RRZE_AC_List_Table extends WP_List_Table {
         }
         
         parent::__construct(array(
-            'singular' => 'plugin',
-            'plural' => 'plugins',
+            'singular' => 'rrzeac',
+            'plural' => 'rrzeacs',
             'ajax' => FALSE
         ));
     }
 
 	public function single_row($item) {
-        $class = $item['active'] ? 'active ' : '';
+        $class = $item['active'] ? 'active ' : 'inactive';
         $class .= $item['default'] ? 'default-permission' : '';
 		echo $class ? '<tr class="' . trim($class) . '">' : '<tr>';
 		$this->single_row_columns($item);
