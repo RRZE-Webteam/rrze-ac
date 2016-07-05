@@ -3,7 +3,7 @@
 /*
   Plugin Name: RRZE-Access-Control
   Plugin URI: https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-  Version: 1.2.3
+  Version: 1.2.4
   Description: Es ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene Funktionen und IP-Adresse.
   Author: RRZE-Webteam
   Author URI: https://blogs.fau.de/webworking/
@@ -35,7 +35,7 @@ register_deactivation_hook(__FILE__, array('RRZE_AC', 'deactivation'));
 
 class RRZE_AC {
 
-    const version = '1.2.3';
+    const version = '1.2.4';
     
     const option_name = 'rrze_ac';
     const version_option_name = 'rrze_ac_version';
@@ -1176,8 +1176,8 @@ class RRZE_AC {
         
         if ($as->isAuthenticated()) {
             $attributes = $as->getAttributes();
-            $this->person_affiliation = isset($_attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'][0]) ? $_attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'][0] : NULL;
-            $this->person_entitlement = isset($_attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'][0]) ? $_attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'][0] : NULL;                 
+            $this->person_affiliation = isset($attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'][0]) ? $attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'][0] : NULL;
+            $this->person_entitlement = isset($attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'][0]) ? $attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'][0] : NULL;                 
             return TRUE;
         }
         
