@@ -3,7 +3,7 @@
 /*
   Plugin Name: RRZE-Access-Control
   Plugin URI: https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-  Version: 1.2.4
+  Version: 1.3.0
   Description: Es ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene Funktionen und IP-Adresse.
   Author: RRZE-Webteam
   Author URI: https://blogs.fau.de/webworking/
@@ -35,7 +35,7 @@ register_deactivation_hook(__FILE__, array('RRZE_AC', 'deactivation'));
 
 class RRZE_AC {
 
-    const version = '1.2.4';
+    const version = '1.3.0';
     
     const option_name = 'rrze_ac';
     const version_option_name = 'rrze_ac_version';
@@ -44,7 +44,12 @@ class RRZE_AC {
     const php_version = '5.4'; // Minimal erforderliche PHP-Version
     const wp_version = '4.5'; // Minimal erforderliche WordPress-Version
     
-    const access_edit_transient = '_rrze_ac_edit_transient';
+    const settings_error_transient = 'rrze-ac-settings-error-';
+    const settings_error_transient_expiration = 30;
+    
+    const notice_transient = 'rrze-ac-notice-';
+    const notice_transient_expiration = 30;
+    
     const protected_dirname = '_protected';
     const access_permission_meta_key = '_access_permission';
     
@@ -58,7 +63,7 @@ class RRZE_AC {
     
     public $plugin_file = NULL;
     
-	public $list_table_obj = NULL; // WP_List_Table object
+    public $list_table_obj = NULL; // WP_List_Table object
 
     private $encrypts = array();
     
@@ -71,6 +76,8 @@ class RRZE_AC {
     private $person_entitlement = NULL;
     
     protected static $options;
+    
+    public $messages;
     
     protected static $instance = NULL; // Singleton instance
 
@@ -89,8 +96,15 @@ class RRZE_AC {
         // Enthaltene Optionen.
         self::$options = self::get_options();
                 
-        self::update_version();
+        $this->messages = [
+            'nonce-failed' => __('Schummeln, was?', 'rrze-ac'),
+            'invalid-permissions' => __('Sie haben nicht die erforderlichen Rechte, um diese Aktion durchzuführen.', 'rrze-ac'),
+            'permission-does-not-exist' => __('Berechtigung existiert nicht.', 'rrze-ac'),
+            'error-ocurred' => __('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.', 'rrze-ac')
+        ];
         
+        self::update_version();
+                
         add_action('init', array($this, 'request_file'), 0);
         
         add_action('init', array($this, 'check_rewrite'));
@@ -119,9 +133,13 @@ class RRZE_AC {
             if (is_admin()) {
                 add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
 
-                add_action('admin_init', array($this, 'list_table_actions'));                
+                add_action('admin_menu', array($this, 'access_menu'));
+                
+                //add_action('admin_menu', array($this, 'admin_menu'));
+                //add_action('admin_init', array($this, 'list_table_actions'));
+                
+                add_action('admin_init', array($this, 'admin_actions'));
                 add_action('admin_init', array($this, 'admin_settings'));
-                add_action('admin_menu', array($this, 'admin_menu'));
 
                 add_action('load-post-new.php', array($this, 'post_enqueue_scripts'));
                 add_action('load-post.php', array($this, 'post_enqueue_scripts'));
@@ -144,8 +162,15 @@ class RRZE_AC {
                 add_action('load-media-new.php', array($this, 'load_media_new'));
                 add_action('load-upload.php', array($this, 'load_upload'));
 
-                add_filter('plugin_action_links_' . plugin_basename(__FILE__), array($this, 'plugin_settings_link'));
-
+                //add_filter('plugin_action_links_' . plugin_basename(__FILE__), array($this, 'plugin_settings_link'));
+                add_filter('plugin_action_links_' . plugin_basename(__FILE__), function($links) {
+                    $settings_link = '<a href="' . $this->options_url(array('page' => 'rrze-ac-settings')) . '">' . esc_html(__('Einstellungen', 'rrze-ac')) . '</a>';
+                    array_unshift($links, $settings_link);
+                    return $links;
+                });                
+                
+                add_action('admin_notices', array($this, 'admin_notices'));
+                
             // Bezieht sich nur auf den Frontend-Bereich
             } else {
                 // Menüelemente die geschützte Objekte verlinken sind abgeschlossen
@@ -156,7 +181,7 @@ class RRZE_AC {
             add_action('admin_notices', array($this, 'admin_error_notice'));
             add_action('network_admin_notices', array($this, 'admin_error_notice'));            
         }
-        
+                
     }
         
     /*
@@ -251,7 +276,7 @@ class RRZE_AC {
             if ($this->check_rewrite_rules()) {
                 add_site_option(self::enabled_option_name, 1);
                 wp_redirect(admin_url($pagenow ? $pagenow : ''));
-                exit;
+                exit();
             }
         }
     }
@@ -455,7 +480,7 @@ class RRZE_AC {
         wp_enqueue_style('access-att-edit', plugins_url( 'css/attachment-edit.css', __FILE__ ), 'all', NULL);
     }
         
-    private static function get_permission($permission_key) {
+    private function get_permission($permission_key) {
         if(empty($permission_key)) {
             return array();
         }
@@ -479,92 +504,267 @@ class RRZE_AC {
         return $permission;
     }
     
-    public function admin_menu() {
-        $option_page = add_options_page(__('Zugriffsschutz', 'rrze-ac'), __('Zugriffsschutz', 'rrze-ac'), 'manage_options', 'access', array($this, 'access_page'), 'dashicons-cloud');
-        add_action( "load-{$option_page}", array($this, 'load_option_page'));
-        add_action( "load-{$option_page}", array($this, 'add_screen_options'));
+    public function access_menu() {
+        $access_page = add_menu_page(__('Zugriffsschutz', 'rrze-ac'), __('Zugriffsschutz', 'rrze-ac'), 'manage_options', 'rrze-ac', array($this, 'access_permissions_page'), 'dashicons-shield');
+        add_submenu_page('rrze-ac', __('Berechtigungen', 'rrze-ac'), __('Berechtigungen', 'rrze-ac'), 'manage_options', 'rrze-ac', array($this, 'access_permissions_page'));
+        add_action( "load-{$access_page}", array($this, 'load_access_page'));
+        add_action( "load-{$access_page}", array($this, 'access_screen_options'));
+                
+        add_submenu_page('rrze-ac', __('Einstellungen', 'rrze-ac'), __('Einstellungen', 'rrze-ac'), 'manage_options', 'rrze-ac-settings', array($this, 'access_settings_page'));
     }
     
-    public function load_option_page() {
-        $updated = isset($_GET['settings-updated']) ? $_GET['settings-updated'] : '';
-        $action = isset($_GET['action']) ? $_GET['action'] : '';
+    public function load_access_page() {
+
+    }
+    
+    public function access_screen_options() {
+        new RRZE_AC_List_Table();
         
-        if(empty(get_settings_errors('permission_new')) && $action == 'new' && $updated) {
-            wp_redirect(admin_url('options-general.php?page=access'));
-            exit;
-        }
-    }
-    
-    public function add_screen_options() {
         $option = 'per_page';
         $args = array(
             'label' => __('Einträge pro Seite:', 'rrze-ac'),
             'default' => 20,
-            'option' => 'access_per_page'
+            'option' => 'rrzeacs_per_page'
         );
+        
         add_screen_option($option, $args);
-        $this->list_table_obj = new RRZE_AC_List_Table;
     }
     
+    public function access_permissions_page() {
+        $action = $this->request_var('action');
+        $option_page = $this->request_var('option_page');
+        ?>
+        <div class="wrap">
+            <h2>
+                <?php echo esc_html(__('Zugriffsschutz &rsaquo; Berechtigungen', 'rrze-ac')); ?>
+                <?php if (empty($action)): ?>
+                <a href="<?php echo $this->options_url(array('action' => 'new')); ?>" class="add-new-h2"><?php _e('Neue Berechtigung hinzufügen', 'rrze-ac'); ?></a>
+                <?php endif; ?>
+            </h2>
+            <?php
+            if ($action == 'new' || $option_page == 'rrze-ac-new') {
+                $this->ac_new();
+            } elseif ($action == 'edit' || $option_page == 'rrze-ac-edit') {
+                $this->ac_edit();
+            } else {
+                $this->ac_page();
+            }
+            ?>
+        </div>
+        <?php
+        $this->delete_settings_errors();
+    }
+    
+    private function ac_new() {
+        $option_page = $this->request_var('option_page');
+        $input = (array) $this->request_var(self::option_name);
+        $nonce = $this->request_var('_wpnonce');        
+        
+        if (!empty($input) && $option_page == 'rrze-ac-new') {           
+            if (!wp_verify_nonce($nonce, 'rrze-ac-new-options')) {
+                wp_die($this->messages['nonce-failed']);
+            }
+            
+            $permission_key = $this->validate_new($input);
+            if ($this->settings_errors()) {
+                foreach ($this->settings_errors() as $error) {
+                    if ($error['message']) {
+                        $this->add_admin_notice($error['message'], 'error');
+                    }
+                }
+                wp_redirect(self::options_url(array('action' => 'new')));
+                exit();
+            }
+            
+            $this->add_admin_notice(__('Die Berechtigung wurde hinzugefügt.', 'rrze-ac'));
+            wp_redirect(self::options_url(array('action' => 'edit', 'permission' => $permission_key)));
+            exit();
+        }
+        ?>
+        <h2><?php echo esc_html(__('Neue Berechtigung hinzufügen', 'rrze-ac')); ?></h2>
+        <form action="<?php echo self::options_url(array('action' => 'new')); ?>" method="post">
+        <?php
+        settings_fields('rrze-ac-new');
+        do_settings_sections('rrze-ac-new');
+        submit_button(__('Neue Berechtigung hinzufügen', 'rrze-ac'));
+        ?>
+        </form>
+        <?php        
+    }
+    
+    private function ac_edit() {
+        $option_page = $this->request_var('option_page');
+        $permission_key = $this->request_var('permission');
+        $input = (array) $this->request_var(self::option_name);
+
+        if (isset($input['permission_key'])) {
+            $permission_key = $input['permission_key'];
+        }
+        
+        $permission = $this->get_permission($permission_key);
+        if (!$permission) {
+            wp_die($this->messages['permission-does-not-exist']);
+        }               
+        
+        if (isset($input['permission_key']) && $option_page == 'rrze-ac-edit') {
+            $nonce = $this->request_var('_wpnonce');
+            if (!wp_verify_nonce($nonce, 'rrze-ac-edit-options')) {
+                wp_die($this->messages['nonce-failed']);
+            }
+                                               
+            $validation = $this->validate_edit($permission, $input);
+            
+            if ($this->settings_errors()) {
+                foreach ($this->settings_errors() as $error) {
+                    if ($error['message']) {
+                        $this->add_admin_notice($error['message'], 'error');
+                    }
+                }
+                wp_redirect(self::options_url(array('action' => 'edit', 'permission' => $permission_key)));
+                exit();
+            }
+            
+            if ($validation) {
+                $this->add_admin_notice(__('Die Berechtigung wurde aktualisiert.', 'rrze-ac'));
+            }
+            wp_redirect(self::options_url(array('action' => 'edit', 'permission' => $permission_key)));
+            exit();
+        }        
+        ?>
+        <h2><?php echo esc_html(__('Berechtigung bearbeiten', 'rrze-ac')); ?></h2>
+        <form action="<?php echo self::options_url(array('action' => 'edit')) ?>" method="post">
+        <?php
+        settings_fields('rrze-ac-edit');
+        do_settings_sections('rrze-ac-edit');
+        submit_button(__('Änderungen übernehmen', 'rrze-ac'));
+        ?>
+        </form>
+        <?php
+    }
+    
+    private function ac_page() {        
+        $list_table = new RRZE_AC_List_Table();
+        $list_table->prepare_items();
+        ?>
+        <form method="get">
+        <input type="hidden" name="page" value="rrze-ac">
+        <?php
+        $list_table->search_box(__('Suche', 'rrze-ac'), 'search_id');
+        ?>
+        </form>
+        <form method="post">
+        <?php
+        $list_table->views();
+        $list_table->display();
+        ?>
+        </form>
+        <?php        
+        
+    }
+    
+    public function access_settings_page() {
+        ?>
+        <div class="wrap">
+            <h2>
+                <?php echo esc_html(__('Zugriffsschutz &rsaquo; Einstellungen', 'rrze-ac')); ?>
+            </h2>
+            <?php $this->settings_page(); ?>
+        </div>
+        <?php
+        $this->delete_settings_errors();
+    }
+    
+    public function settings_page() {
+        $option_page = $this->request_var('option_page');
+        $input = (array) $this->request_var(self::option_name);
+        $nonce = $this->request_var('_wpnonce');
+        
+        if ($input && $option_page == 'rrze-ac-settings') {           
+            if (!wp_verify_nonce($nonce, 'rrze-ac-settings-options')) {
+                wp_die($this->messages['nonce-failed']);
+            }
+
+            $validation = $this->validate_settings($input);
+            
+            if ($this->settings_errors()) {
+                foreach ($this->settings_errors() as $error) {
+                    if ($error['message']) {
+                        $this->add_admin_notice($error['message'], 'error');
+                    }
+                }
+                wp_redirect($this->options_url(array('page' => 'rrze-ac-settings')));
+                exit();
+            }
+            
+            if ($validation) {
+                $this->add_admin_notice(__('Die Einstellungen wurden aktualisiert.', 'rrze-ac'));
+            }
+            wp_redirect($this->options_url(array('page' => 'rrze-ac-settings')));
+            exit();
+        }        
+        ?>
+        <form method="post">
+        <?php
+        settings_fields('rrze-ac-settings');
+        do_settings_sections('rrze-ac-settings');
+        submit_button();
+        ?>
+        </form>
+        <?php        
+    }
+        
     public function admin_settings() {        
-        register_setting('permission_new', self::option_name, array($this, 'validate_options'));
-        
-        add_settings_section('permission_new_section', FALSE, '__return_false', 'permission_new');
-        add_settings_field('permission_key', __('Berechtigung', 'rrze-ac'), array($this, 'permission_key_field'), 'permission_new', 'permission_new_section');        
-        add_settings_field('logged_in', __('Angemeldet', 'rrze-ac'), array($this, 'permission_logged_in_field'), 'permission_new', 'permission_new_section');
-        add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permission_sso_logged_in_field'), 'permission_new', 'permission_new_section');
-        add_settings_field('ip_address', __('IP-Adressen zulassen', 'rrze-ac'), array($this, 'permission_ip_address_field'), 'permission_new', 'permission_new_section');        
-        add_settings_field('select', __('Kurzbeschreibung', 'rrze-ac'), array($this, 'permission_select_field'), 'permission_new', 'permission_new_section');        
-        add_settings_field('description', __('Beschreibung', 'rrze-ac'), array($this, 'permission_description_field'), 'permission_new', 'permission_new_section');
+        add_settings_section('rrze-ac-new-section', FALSE, '__return_false', 'rrze-ac-new');
+        add_settings_field('permission_key', __('Berechtigung', 'rrze-ac'), array($this, 'permission_key_field'), 'rrze-ac-new', 'rrze-ac-new-section');        
+        add_settings_field('logged_in', __('Angemeldet', 'rrze-ac'), array($this, 'permission_logged_in_field'), 'rrze-ac-new', 'rrze-ac-new-section');
+        add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permission_sso_logged_in_field'), 'rrze-ac-new', 'rrze-ac-new-section');
+        add_settings_field('ip_address', __('IP-Adressen zulassen', 'rrze-ac'), array($this, 'permission_ip_address_field'), 'rrze-ac-new', 'rrze-ac-new-section');        
+        add_settings_field('select', __('Kurzbeschreibung', 'rrze-ac'), array($this, 'permission_select_field'), 'rrze-ac-new', 'rrze-ac-new-section');        
+        add_settings_field('description', __('Beschreibung', 'rrze-ac'), array($this, 'permission_description_field'), 'rrze-ac-new', 'rrze-ac-new-section');
+                        
+        add_settings_section('rrze-ac-edit-section', FALSE, '__return_false', 'rrze-ac-edit');    
+        add_settings_field('permission_key', __('Berechtigung', 'rrze-ac'), array($this, 'permission_key_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');        
+        add_settings_field('logged_in', __('Angemeldet', 'rrze-ac'), array($this, 'permission_logged_in_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
+        add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permission_sso_logged_in_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
+        add_settings_field('ip_address', __('IP-Adressen zulassen', 'rrze-ac'), array($this, 'permission_ip_address_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');        
+        add_settings_field('select', __('Kurzbeschreibung', 'rrze-ac'), array($this, 'permission_select_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');        
+        add_settings_field('description', __('Beschreibung', 'rrze-ac'), array($this, 'permission_description_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
                 
-        register_setting('permission_edit', self::option_name, array($this, 'validate_options'));
-        
-        add_settings_section('permission_edit_section', FALSE, '__return_false', 'permission_edit');    
-        add_settings_field('permission_key', __('Berechtigung', 'rrze-ac'), array($this, 'permission_key_field'), 'permission_edit', 'permission_edit_section');        
-        add_settings_field('logged_in', __('Angemeldet', 'rrze-ac'), array($this, 'permission_logged_in_field'), 'permission_edit', 'permission_edit_section');
-        add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permission_sso_logged_in_field'), 'permission_edit', 'permission_edit_section');
-        add_settings_field('ip_address', __('IP-Adressen zulassen', 'rrze-ac'), array($this, 'permission_ip_address_field'), 'permission_edit', 'permission_edit_section');        
-        add_settings_field('select', __('Kurzbeschreibung', 'rrze-ac'), array($this, 'permission_select_field'), 'permission_edit', 'permission_edit_section');        
-        add_settings_field('description', __('Beschreibung', 'rrze-ac'), array($this, 'permission_description_field'), 'permission_edit', 'permission_edit_section');
-        
-        register_setting('access_settings', self::option_name, array($this, 'validate_options'));
-        
-        add_settings_section('access_settings_section', FALSE, '__return_false', 'access_settings');        
-        add_settings_field('default_permission', __('Standardberechtigung', 'rrze-ac'), array($this, 'default_permission_field'), 'access_settings', 'access_settings_section');        
+        add_settings_section('rrze-ac-settings-section', FALSE, '__return_false', 'rrze-ac-settings');        
+        add_settings_field('default_permission', __('Standardberechtigung', 'rrze-ac'), array($this, 'default_permission_field'), 'rrze-ac-settings', 'rrze-ac-settings-section');        
     }
     
     public function permission_key_field() {
-        $transient = get_transient(self::access_edit_transient);
-        $permission = self::get_permission(isset($_GET['permission']) ? $_GET['permission'] : '');
-        $permission_key = '';
-        $readonly = '';
-        if(isset($permission['permission_key'])) {
-            $permission_key = $permission['permission_key'];
-            $readonly = 'readonly="readonly" ';
-        }
+        $settings_errors = $this->settings_errors();
+        $permission_key = $this->request_var('permission');
+        $permission = $this->get_permission($permission_key);
+        $readonly = $permission_key ? ' readonly="readonly"' : '';
+        $permission_key = isset($settings_errors['permission_key']['value']) && !$readonly ? $settings_errors['permission_key']['value'] : $permission_key;
+        $field_invalid = !empty($settings_errors['permission_key']['error']) ? 'field-invalid' : '';        
         ?>
-        <input type="hidden" value="1" name="<?php printf('%s[permission_post]', self::option_name); ?>">
         <input type="hidden" value="<?php echo !empty($permission['active']) ? 1 : 0; ?>" name="<?php printf('%s[active]', self::option_name); ?>">
-        <input <?php echo $readonly; ?>type="text" value="<?php echo (isset($transient['permission_key'])) ? $transient['permission_key'] : $permission_key; ?>" name="<?php printf('%s[permission_key]', self::option_name); ?>">
+        <input class="regular-text <?php echo $field_invalid; ?>" type="text" value="<?php echo $permission_key; ?>" name="<?php printf('%s[permission_key]', self::option_name); ?>"<?php echo $readonly; ?>>
         <?php
     }
 
     public function permission_logged_in_field() {
-        $transient = get_transient(self::access_edit_transient);
-        $permission = self::get_permission(isset($_GET['permission']) ? $_GET['permission'] : '');
-        $disable = !empty($permission['core']) ? ' disabled="disabled"' : '';
+        $settings_errors = $this->settings_errors();
+        $permission_key = $this->request_var('permission');
+        $permission = $this->get_permission($permission_key);
         $checked = !empty($permission['logged_in']) ? TRUE : FALSE;
+        $checked = isset($settings_errors['logged_in']['value']) && !$disable ? TRUE : $checked;
         ?>
         <label for="permission_logged_in">
-            <input id="permission_logged_in" type="checkbox" <?php checked($checked); echo $disable; ?> name="<?php printf('%s[logged_in]', self::option_name); ?>" value="1"> <?php _e('Der Benutzer muss angemeldet sein.', 'rrze-ac'); ?>
+            <input id="permission_logged_in" type="checkbox" <?php checked($checked); ?> name="<?php printf('%s[logged_in]', self::option_name); ?>" value="1"> <?php _e('Der Benutzer muss angemeldet sein.', 'rrze-ac'); ?>
         </label>
         <?php
     }
     
     public function permission_sso_logged_in_field() {
-        $transient = get_transient(self::access_edit_transient);
-        $permission = self::get_permission(isset($_GET['permission']) ? $_GET['permission'] : '');
+        $settings_errors = $this->settings_errors();
+        $permission = $this->get_permission(isset($_GET['permission']) ? $_GET['permission'] : '');
         $checked = !empty($permission['sso_logged_in']) ? TRUE : FALSE;
+        $checked = isset($settings_errors['sso_logged_in']['value']) ? TRUE : $checked;
         ?>
         <label for="permission_sso_logged_in">
             <input id="permission_sso_logged_in" type="checkbox" <?php checked($checked); ?> name="<?php printf('%s[sso_logged_in]', self::option_name); ?>" value="1"> <?php _e('Der Benutzer muss SSO angemeldet sein.', 'rrze-ac'); ?>
@@ -573,26 +773,31 @@ class RRZE_AC {
     }
         
     public function permission_select_field() {
-        $transient = get_transient(self::access_edit_transient);
-        $permission = self::get_permission(isset($_GET['permission']) ? $_GET['permission'] : '');
-        $select = isset($permission['select']) ? $permission['select'] : '';
+        $settings_errors = $this->settings_errors();
+        $permission_key = $this->request_var('permission');
+        $permission = $this->get_permission($permission_key);
+        $select = isset($permission['select']) ? sanitize_text_field($permission['select']) : '';
+        $select = isset($settings_errors['select']['value']) ? sanitize_text_field($settings_errors['select']['value']) : $select;
+        $field_invalid = !empty($settings_errors['select']['error']) ? 'field-invalid' : '';
         ?>
-        <input class="regular-text" type="text" value="<?php echo (isset($transient['select'])) ? sanitize_text_field($transient['select']) : sanitize_text_field($select); ?>" name="<?php printf('%s[select]', self::option_name); ?>">
+        <input class="regular-text <?php echo $field_invalid; ?>" type="text" value="<?php echo $select; ?>" name="<?php printf('%s[select]', self::option_name); ?>">
         <?php
     }
     
     public function permission_description_field() {
-        $transient = get_transient(self::access_edit_transient);
-        $permission = self::get_permission(isset($_GET['permission']) ? $_GET['permission'] : '');
-        $description = isset($permission['description']) ? $permission['description'] : '';        
+        $settings_errors = $this->settings_errors();
+        $permission_key = $this->request_var('permission');
+        $permission = $this->get_permission($permission_key);
+        $description = isset($permission['description']) ? esc_textarea($permission['description']) : '';
+        $description = isset($settings_errors['description']['value']) ? esc_textarea($settings_errors['description']['value']) : $description;
         ?>
-        <textarea id="description" cols="50" rows="5" name="<?php printf('%s[description]', self::option_name); ?>"><?php echo (isset($transient['description'])) ? esc_textarea($transient['description']) : esc_textarea($description); ?></textarea>
+        <textarea id="description" cols="50" rows="5" name="<?php printf('%s[description]', self::option_name); ?>"><?php echo $description; ?></textarea>
         <?php
     }
     
     public function default_permission_field() {
-        $default_permission = self::get_default_permission();
-        $permissions = self::get_the_permissions();
+        $default_permission = $this->get_default_permission();
+        $permissions = $this->get_the_permissions();
         ?>
         <select id="access-permission-select" name="<?php printf('%s[default_permission]', self::option_name); ?>">
         <?php foreach ($permissions as $key => $data) : ?>
@@ -606,21 +811,24 @@ class RRZE_AC {
     }
     
     public function permission_ip_address_field() {
-        $transient = get_transient(self::access_edit_transient);
-        $permission = self::get_permission(isset($_GET['permission']) ? $_GET['permission'] : '');
-        $ip_address = !empty($permission['ip_address']) ? $permission['ip_address'] : array('');
+        $settings_errors = $this->settings_errors();
+        $permission_key = $this->request_var('permission');
+        $permission = $this->get_permission($permission_key);
+        $ip_address = !empty($permission['ip_address']) ? (array) $permission['ip_address'] : array('');
+        $ip_address = isset($settings_errors['ip_address']['value']) ? (array) $settings_errors['ip_address']['value'] : $ip_address;
         foreach($ip_address as $key => $value) {
+            $field_invalid = isset($settings_errors['ip_address-' . $key]) ? 'field-invalid' : '';
         ?>
         <div id="ipAddressDiv">
             <?php if($key == 0) : ?>
-            <p><input type="text" id="ipAddressInput" class="regular-text" name="<?php printf('%s[ip_address][%d]', self::option_name, $key); ?>" value="<?php echo (isset($transient['ip_address'][$key])) ? $transient['ip_address'][$key] : $value; ?>"> <span id="addInput" class="dashicons dashicons-plus"> </span></p>
+            <p><input type="text" id="ipAddressInput" class="regular-text <?php echo $field_invalid; ?>" name="<?php printf('%s[ip_address][%d]', self::option_name, $key); ?>" value="<?php echo (isset($ip_address[$key])) ? $ip_address[$key] : $value; ?>"> <span id="addInput" class="dashicons dashicons-plus"> </span></p>
             <?php else : ?>
-            <p><input type="text" id="ipAddressInput-<?php echo $key; ?>" class="regular-text" name="<?php printf('%s[ip_address][%d]', self::option_name, $key); ?>" value="<?php echo (isset($transient['ip_address'][$key])) ? $transient['ip_address'][$key] : $value; ?>"> <span id="removeInput" class="remove-input dashicons dashicons-no" onclick="removeMe(<?php echo $key; ?>)"> </span></p>
+            <p><input type="text" id="ipAddressInput-<?php echo $key; ?>" class="regular-text <?php echo $field_invalid; ?>" name="<?php printf('%s[ip_address][%d]', self::option_name, $key); ?>" value="<?php echo (isset($ip_address[$key])) ? $ip_address[$key] : $value; ?>"> <span id="removeInput" class="remove-input dashicons dashicons-no" onclick="removeMe(<?php echo $key; ?>)"> </span></p>
             <?php endif; ?>
         </div>
         <?php } ?>
         <script>
-            jQuery(function ($) {
+            jQuery(document).ready(function($) {
                 var i = $('#ipAddressDiv p').size();
                 $('#addInput').click(function() {
                     $('<p><input type="text" id="ipAddressInput-' + i +'" class="regular-text" name="<?php echo self::option_name; ?>[ip_address][' + i +']" value=""> <span id="removeInput" class="remove-input dashicons dashicons-no" onclick="removeMe('+ i +')"> </span></p>').appendTo(ipAddressDiv);
@@ -628,109 +836,72 @@ class RRZE_AC {
                     $('.remove-input').css('cursor', 'pointer');
                     return false;
                 });
-                removeMe = function(id){
+                removeMe = function(id) {
                     if( i > 1 ) {
                        $('#ipAddressInput-'+id).parents('p').remove();
                         i--;
                     }
                     return false;
                 }
-            } (jQuery));
+            });
         </script>        
         <?php
     }
-        
-    public function access_page() {
-        ?>
-        <div class="wrap">
-            <h2>
-                <?php echo esc_html(__('Zugriffsschutz', 'rrze-ac')); ?>
-                <a href="?page=access&action=new" class="add-new-h2"><?php _e('Neu hinzufügen', 'rrze-ac'); ?></a>
-            </h2>
-            <?php
-            $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'permissions';
-            $action = isset($_GET['action']) ? $_GET['action'] : '';
-            ?>
-            <h2 class="nav-tab-wrapper">
-                <a href="?page=access&tab=permissions" class="nav-tab <?php echo ($active_tab == 'permissions') && !in_array($action, array('new', 'edit')) ? 'nav-tab-active' : ''; ?>"><?php _e('Berechtigungen', 'rrze-ac'); ?></a>
-                <a href="?page=access&tab=access-settings" class="nav-tab <?php echo $active_tab == 'access-settings' ? 'nav-tab-active' : ''; ?>"><?php _e('Einstellungen', 'rrze-ac'); ?></a>
-            </h2>
-            <?php
-            if($active_tab == 'access-settings') {
-                $this->settings_form();
-            } elseif($action == 'new') {
-                $this->permission_new_form();
-            } elseif($action == 'edit') {
-                $this->permission_edit_form();
-            } else {
-                $this->list_table_form();
-            }
-            ?>
-        </div>
-        <?php
-        delete_transient(self::access_edit_transient);
-    }
     
-    public function list_table_actions() {
-        $wp_nonce = isset($_REQUEST['_wpnonce']) ? esc_attr($_REQUEST['_wpnonce']) : '';
+    public function admin_actions() {
+        $page = $this->request_var('page');
+        $action = $this->request_var('action');
+        $permission_key = $this->request_var('permission');
+        $nonce = $this->request_var('nonce');
         
-        if(wp_verify_nonce($wp_nonce, 'access_action')) {
-            $action = isset($_GET['action']) ? $_GET['action'] : ''; 
-            $permission = self::get_permission(isset($_GET['permission']) ? $_GET['permission'] : '');
+        $permission = $this->get_permission($permission_key);
+        
+        if($page == 'rrze-ac' && !empty($permission)) {
             switch ($action) {
-                case 'delete':
-                    self::action_delete($permission);
-                    break;
                 case 'activate':
-                    self::action_activate($permission);
+                    if (!wp_verify_nonce($nonce, 'activate')) {
+                        wp_die($this->messages['nonce-failed']);
+                    }                   
+                    $this->action_activate($permission);
                     break;
                 case 'deactivate':
-                    self::action_activate($permission, 0);
+                    if (!wp_verify_nonce($nonce, 'deactivate')) {
+                        wp_die($this->messages['nonce-failed']);
+                    }                    
+                    $this->action_activate($permission, 0);
+                    break;
+                case 'delete':
+                    if (!wp_verify_nonce($nonce, 'delete')) {
+                        wp_die($this->messages['nonce-failed']);
+                    }                    
+                    $this->action_delete($permission);
+                    break;
+                default:
                     break;
             }
-            wp_redirect(admin_url('options-general.php?page=access'));
-            exit;                           
-        } elseif(wp_verify_nonce($wp_nonce, 'bulk-plugins')) {
-            $action = isset($_POST['action']) && !is_numeric($_POST['action']) ? $_POST['action'] : '';
-            $action = !$action && isset($_POST['action2']) && !is_numeric($_POST['action2']) ? $_POST['action2'] : $action;
-            $permission_ids = !empty($_POST['access_bulk_action']) ? esc_sql($_POST['access_bulk_action']) : array();
-            switch ($action) {
-                case 'bulk-delete':                   
-                    foreach ($permission_ids as $permission_id) {
-                        $permission = self::get_permission($permission_id);
-                        self::action_delete($permission);
-                    }                   
-                    break;
-                case 'bulk-activate':
-                    foreach ($permission_ids as $permission_id) {
-                        $permission = self::get_permission($permission_id);
-                        self::action_activate($permission);
-                    }                                       
-                    break;
-                case 'bulk-deactivate':
-                    foreach ($permission_ids as $permission_id) {
-                        $permission = self::get_permission($permission_id, 0);
-                        self::action_activate($permission);
-                    }                                       
-                    break;
-            }
-            wp_redirect(admin_url('options-general.php?page=access'));
-            exit;                    
         }
-        
+    }
+                
+    public function process_bulk_activate($permission_keys = array(), $activate = 1) {
+        foreach ($permission_keys as $value) {
+            $permission = $this->get_permission($value);
+            $this->action_activate($permission, $activate);
+        }
+        wp_redirect($this->options_url());
+        exit();
     }
     
-    private static function action_delete($permission) {
-        if(!isset($permission['permission_key']) || $permission['core'] || $permission['permission_key'] == self::get_default_permission()) {
-            return;
+    public function process_bulk_delete($permission_keys = array()) {
+        foreach ($permission_keys as $value) {
+            $permission = $this->get_permission($value);
+            $this->action_delete($permission);
         }
-        $permission_key = $permission['permission_key'];
-        unset(self::$options['permissions'][$permission_key]);
-        update_option(self::option_name, self::$options);        
+        wp_redirect($this->options_url());
+        exit();
     }
-        
-    private static function action_activate($permission, $activate = 1) {
-        if(!isset($permission['permission_key']) || !$activate && $permission['permission_key'] == self::get_default_permission()) {
+    
+    private function action_activate($permission, $activate = 1) {
+        if(!isset($permission['permission_key']) || !$activate && $permission['permission_key'] == $this->get_default_permission()) {
             return;
         }                
         $permission_key = $permission['permission_key'];
@@ -738,166 +909,256 @@ class RRZE_AC {
         update_option(self::option_name, self::$options);   
     }
     
-    private function list_table_form() {
-        ?>
-        <form method="post">
-        <?php
-        $this->list_table_obj->prepare_items();
-        $this->list_table_obj->display();
-        ?>
-        </form>
-        <?php        
-    }
-    
-    private function permission_new_form() {
-        ?>
-        <h2><?php echo esc_html(__('Neue Berechtigung hinzufügen', 'rrze-ac')); ?></h2>
-        <form action="options.php?action=new" method="post">
-        <?php
-        settings_fields('permission_new');
-        do_settings_sections('permission_new');
-        submit_button(__('Neue Berechtigung hinzufügen', 'rrze-ac'));
-        ?>
-        </form>
-        <?php
-    }
-        
-    private function permission_edit_form() {
-        ?>
-        <h2><?php echo esc_html(__('Berechtigung bearbeiten', 'rrze-ac')); ?></h2>
-        <form action="options.php?action=edit" method="post">
-        <?php
-        settings_fields('permission_edit');
-        do_settings_sections('permission_edit');
-        submit_button(__('Berechtigung aktualisieren', 'rrze-ac'));
-        ?>
-        </form>
-        <?php
+    private function action_delete($permission) {
+        if(!isset($permission['permission_key']) 
+                || $permission['core'] 
+                || $permission['permission_key'] == $this->get_default_permission()
+                || !empty($this->count_meta_keys($permission['permission_key']))) {
+            return;
+        }
+        $permission_key = $permission['permission_key'];
+        unset(self::$options['permissions'][$permission_key]);
+        update_option(self::option_name, self::$options);
     }
             
-    public function settings_form() {
-        ?>
-        <form action="options.php?action=settings" method="post">
-        <?php
-        settings_fields('access_settings');
-        do_settings_sections('access_settings');
-        submit_button();
-        ?>
-        </form>
-        <?php
-    }
-    
-    public function validate_options($input) {
-        
-        $action = isset($_GET['action']) ? $_GET['action'] : '';
-        
-        if($action == 'settings') {
-            self::$options = $this->validate_settings($input);
-        } elseif($action == 'new') {
-            self::$options = $this->validate_new($input);
-        } elseif($action == 'edit') {
-            self::$options = $this->validate_edit($input);
-        }
-
-        return self::$options;
-    }
-    
-    private function validate_settings($input) {        
-        if (!isset($input['default_permission']) || !isset(self::$options['permissions'][$input['default_permission']]) || !self::$options['permissions'][$input['default_permission']]['active']) {
-            return self::$options;
+    private function validate_settings($input) {
+        if (!isset($input['default_permission']) 
+                || !isset(self::$options['permissions'][$input['default_permission']]) 
+                || !self::$options['permissions'][$input['default_permission']]['active']) {
+            return FALSE;
         }
         
         self::$options['default_permission'] = $input['default_permission'];
         
-        return self::$options;
+        return update_option(self::option_name, self::$options);
     }
     
     private function validate_new($input) {
-        if(!isset($input['permission_post'])) {
-            return self::$options;
-        }
+        $input = (array) $input;
         
-        if(empty($input['permission_key'])) {
-            add_settings_error('permission_new', esc_attr('permission_key_required'), __('Berechtigung erforderlich.', 'rrze-ac'));
-        }
+        $permission_key = !empty($input['permission_key']) ? sanitize_title($input['permission_key']) : '';
         
-        $permission_key = isset($input['permission_key']) ? sanitize_title($input['permission_key']) : '';
-        
-        if (isset(self::$options['permissions'][$permission_key])) {
-            add_settings_error('permission_new', esc_attr('permission_key_exist'), __('Berechtigung existiert bereits.', 'rrze-ac'));
+        if(!$permission_key) {
+            $this->add_settings_error('permission_key', '', __('Berechtigung erforderlich.', 'rrze-ac'));
+        } elseif (isset(self::$options['permissions'][$permission_key])) {
+            $this->add_settings_error('permission_key', $permission_key, __('Berechtigung existiert bereits.', 'rrze-ac'));
+        } else {
+            $this->add_settings_error('permission_key', $permission_key, '', FALSE);
         }
            
-        if(empty($input['select'])) {
-            add_settings_error('permission_new', esc_attr('permission_select_required'), __('Kurzbeschreibung erforderlich.', 'rrze-ac'));
+        $select = !empty($input['select']) ? wp_trim_words(sanitize_text_field($input['select']), 3, '') : '';
+        
+        if(!$select) {
+            $this->add_settings_error('select', '', __('Kurzbeschreibung erforderlich.', 'rrze-ac'));
+        } else {
+            $this->add_settings_error('select', $select, '', FALSE);
         }
         
-        $ip_address = is_array($input['ip_address']) && !empty($input['ip_address']) ? array_filter($input['ip_address']) : '';
+        $description = !empty($input['description']) ? $input['description'] : '';
+        
+        $ip_address = !empty($input['ip_address']) && is_array($input['ip_address']) ? array_filter($input['ip_address']) : '';
         $ip_range = $this->get_ip_range($ip_address);
-        $permission['ip_address'] = !empty($ip_range) ? $ip_range : '';
+        $ip_address = !empty($ip_range) ? $ip_range : '';
                 
+        if ($this->settings_errors()) {
+            $this->add_settings_error('description', $description, '', FALSE);
+            $this->add_settings_error('ip_address', $ip_address, '', FALSE);
+            return FALSE;
+        }        
+        
         $new_permission = array(
             'permission_key' => $permission_key,
             'logged_in' => isset($input['logged_in']) ? 1 : 0,
             'sso_logged_in' => isset($input['sso_logged_in']) ? 1 : 0,
-            'ip_address' => $ip_range,
-            'select' => isset($input['select']) ? wp_trim_words(sanitize_text_field($input['select']), 3, '') : '',
-            'description' => isset($input['description']) ? esc_textarea($input['description']) : '',
+            'ip_address' => $ip_address,
+            'select' => $select,
+            'description' => $description,
             'core' => 0,
             'active' => 1,            
         );
         
-        if(get_settings_errors('permission_new')) {
-            set_transient(self::access_edit_transient, $new_permission, 30);
-        } else {
-            self::$options['permissions'] = array_merge(self::$options['permissions'], array($permission_key => $new_permission));
+        self::$options['permissions'] = array_merge(self::$options['permissions'], array($permission_key => $new_permission));
+        
+        if (update_option(self::option_name, self::$options)) {
+            return $permission_key;
         }
         
-        return self::$options;
+        return FALSE;
     }
         
-    private function validate_edit($input) {
-        if(!isset($input['permission_post']) || empty($input['permission_key']) || !isset(self::$options['permissions'][$input['permission_key']])) {
-            return self::$options;
-        }
-
-        if(empty($input['select'])) {
-            add_settings_error('permission_edit', esc_attr('permission_select_required'), __('Kurzbeschreibung erforderlich.', 'rrze-ac'));
-        }
-        
-        $permission_key = $input['permission_key'];
-        $permission = self::get_permission($permission_key);
+    private function validate_edit($permission, $input) {
+        $permission_key = $permission['permission_key'];
         
         if(!$permission['core']) {
-            $permission['permission_key'] = isset($input['permission_key']) ? $input['permission_key'] : $permission['permission_key'];
             $permission['logged_in'] = isset($input['logged_in']) ? 1 : 0;
             $permission['sso_logged_in'] = isset($input['sso_logged_in']) ? 1 : 0;
         }
         
-        $permission['select'] = isset($input['select']) ? wp_trim_words(sanitize_text_field($input['select']), 3, '') : '';
-        $permission['description'] = isset($input['description']) ? esc_textarea($input['description']) : '';
-        
-        $ip_address = is_array($input['ip_address']) && !empty($input['ip_address']) ? array_filter($input['ip_address']) : '';
-        $ip_range = $this->get_ip_range($ip_address);
-        $permission['ip_address'] = !empty($ip_range) ? $ip_range : '';
-        
-        if(get_settings_errors('permission_edit')) {
-            set_transient(self::access_edit_transient, $permission, 30);
+        $select = isset($input['select']) ? wp_trim_words(sanitize_text_field($input['select']), 3, '') : '';       
+        if(!$select) {
+            $this->add_settings_error('select', '', __('Kurzbeschreibung erforderlich.', 'rrze-ac'));
         } else {
-            self::$options['permissions'][$permission_key] = $permission;
+            $this->add_settings_error('select', $select, '', FALSE);
+        }
+      
+        $permission['select'] = $select;
+        
+        $description = isset($input['description']) ? $input['description'] : '';
+        $permission['description'] = $description;
+        
+        $ip_address = !empty($input['ip_address']) && is_array($input['ip_address']) ? array_filter($input['ip_address']) : '';
+        $ip_range = $this->get_ip_range($ip_address);
+        $ip_address = !empty($ip_range) ? $ip_range : '';
+        $permission['ip_address'] = $ip_address;
+        
+        if ($this->settings_errors()) {
+            $this->add_settings_error('description', $description, '', FALSE);
+            $this->add_settings_error('ip_address', $ip_address, '', FALSE);
+            return FALSE;
+        }        
+        
+        self::$options['permissions'][$permission_key] = $permission;
+        
+        return update_option(self::option_name, self::$options);
+    }
+    
+    private function meta_values() {
+        global $wpdb;
+        
+        $metas = array();
+        
+        $result = $wpdb->get_results ("
+            SELECT pm.post_id, pm.meta_value FROM {$wpdb->postmeta} pm
+            LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+            WHERE pm.meta_key = '" . self::access_permission_meta_key . "'
+            AND ((p.post_type = 'attachment' AND p.post_status = 'inherit') OR (p.post_type = 'page' AND p.post_status = 'publish'))");
+            
+        foreach ($result as $r) {
+            $metas[$r->post_id] = $r->meta_value;
         }
         
-        return self::$options;
+        return $metas;
+    }
+    
+    public function count_meta_keys($permission_key) {
+        $metas = $this->meta_values();
+        return array_keys($metas, $permission_key, TRUE);
+    }
+    
+    public function options_url($atts = array()) {
+        $atts = array_merge(
+            array(
+                'page' => 'rrze-ac'
+            ), $atts
+        );
+
+        if (isset($atts['action'])) {
+            switch ($atts['action']) {
+                case 'activate':
+                    $atts['nonce'] = wp_create_nonce('activate');
+                    break;
+                case 'deactivate':
+                    $atts['nonce'] = wp_create_nonce('deactivate');
+                    break;
+                case 'delete':
+                    $atts['nonce'] = wp_create_nonce('delete');
+                    break;                
+                default:
+                    break;
+            }
+        }
+        
+        return add_query_arg($atts, get_admin_url(NULL, 'admin.php'));
+    }
+
+    public function request_var($param, $default = '') {
+        if (isset($_POST[$param])) {
+            return $_POST[$param];
+        }
+        
+        if (isset($_GET[$param])) {
+            return $_GET[$param];
+        }
+        
+        return $default;
+    }
+    
+    public function admin_notices() {        
+        $this->display_admin_notices();
+    }
+    
+    public function add_admin_notice($message, $class = 'updated') {
+        $allowed_classes = array('error', 'updated');
+        if (!in_array($class, $allowed_classes)) {
+            $class = 'updated';
+        }
+
+        $transient = self::notice_transient . get_current_user_id();
+        $transient_value = get_transient($transient);
+        $notices = maybe_unserialize($transient_value ? $transient_value : array());
+        $notices[$class][] = $message;
+
+        set_transient($transient, $notices, self::notice_transient_expiration);
+    }
+
+    public function display_admin_notices() {
+        $transient = self::notice_transient . get_current_user_id();
+        $transient_value = get_transient($transient);
+        $notices = maybe_unserialize($transient_value ? $transient_value : '');
+        
+        if (is_array($notices)) {
+            foreach ($notices as $class => $messages) {
+                foreach ($messages as $message) :
+                    ?>
+                    <div class="<?php echo $class; ?>">
+                        <p><?php echo $message; ?></p>
+                    </div>
+                    <?php
+                endforeach;
+            }
+        }
+        
+        delete_transient($transient);
+
+    }
+    
+    public function add_settings_error($field, $value = '', $message = '', $error = TRUE) {
+        $transient = self::settings_error_transient . get_current_user_id();
+        $transient_value = get_transient($transient);
+        $errors = maybe_unserialize($transient_value ? $transient_value : array());
+        $errors[$field] = array('value' => $value, 'message' => $message, 'error' => $error);
+
+        set_transient($transient, $errors, self::settings_error_transient_expiration);
+    }
+    
+    public function settings_errors() {
+        $transient = self::settings_error_transient . get_current_user_id();
+        $transient_value = get_transient($transient);
+        $errors = (array) maybe_unserialize($transient_value ? $transient_value : '');
+        
+        foreach ($errors as $error) {
+            if (!empty($error['error'])) {
+                return $errors;
+            }
+        }
+        
+        return FALSE;
+    }
+    
+    public function delete_settings_errors() {     
+        delete_transient(self::settings_error_transient . get_current_user_id());
     }
     
     private function get_ip_range($ip_address) {
         $ip_range = array();
         if(!empty($ip_address)) {
-            foreach($ip_address as $value) {
-                $value = IPUtils::sanitizeIpRange($value);
-                if($value) {
-                    $ip_range[] = $value;
+            foreach($ip_address as $key => $value) {
+                $sanitized_value = IPUtils::sanitizeIpRange($value);
+                if(!is_null($sanitized_value)) {
+                    $ip_range[] = $sanitized_value;
                 } else {
-                    add_settings_error('permission_new', esc_attr('permission_ip_address_is_not_valid'), __('Die IP-Adresse ist nicht gültig.', 'rrze-ac'));
+                    $ip_range[] = $value;
+                    $this->add_settings_error('ip_address-' . $key, $ip_address, sprintf(__('Die IP-Adresse %s ist nicht gültig.', 'rrze-ac'), $value));
                 }
             }
         }
@@ -923,10 +1184,10 @@ class RRZE_AC {
 
         $permission = get_post_meta( $post->ID, self::access_permission_meta_key, TRUE );
 
-        $permissions = self::get_the_permissions();
+        $permissions = $this->get_the_permissions();
 
         if (empty($permission) || !isset($permissions[$permission])) {
-            $permission = self::get_default_permission();
+            $permission = $this->get_default_permission();
         }
 
         ob_start();
@@ -952,9 +1213,9 @@ class RRZE_AC {
                     </select>
                 </p>
                 <script>
-                    jQuery(function ($) {
+                    jQuery(document).ready(function($) {
                         $('#access-attachment-fields').trigger('accessLoaded', <?php echo $post->ID; ?>);
-                    } (jQuery));
+                    });
                 </script>
             <td>
         </tr>
@@ -1004,7 +1265,7 @@ class RRZE_AC {
                     return $post;
                 }
 
-                $permissions = self::get_the_permissions();
+                $permissions = $this->get_the_permissions();
 
                 if (!isset($permissions[$_POST['access_permission_select']])) {
                     delete_post_meta($attachment_id, self::access_permission_meta_key);
@@ -1019,13 +1280,13 @@ class RRZE_AC {
         }
     }
        
-    public static function get_default_permission() {
-        $permissions = self::get_the_permissions();
+    public function get_default_permission() {
+        $permissions = $this->get_the_permissions();
         $default_permission = isset($permissions[self::$options['default_permission']]) && $permissions[self::$options['default_permission']]['active'] ? self::$options['default_permission'] : 'logged-in';       
         return $default_permission;
     }
     
-    public static function get_the_permissions() {
+    public function get_the_permissions() {
         $access_permissions = self::$options['permissions'];
         return apply_filters('access_edit_permissions', $access_permissions);
     }
@@ -1070,7 +1331,7 @@ class RRZE_AC {
 
         // CMS-Workflow stuff
         include_once(ABSPATH . 'wp-admin/includes/plugin.php');
-        if(is_plugin_active('cms-workflow/cms-workflow.php')) {
+        if($this->is_plugin_active('cms-workflow/cms-workflow.php')) {
             $authors = $this->workflow_authors($post_id);
         }
         
@@ -1117,7 +1378,7 @@ class RRZE_AC {
                 
         $permission = get_post_meta($attachment_id, self::access_permission_meta_key, TRUE);
 
-        return empty($permission) ? self::get_default_permission() : $permission;        
+        return empty($permission) ? $this->get_default_permission() : $permission;        
     }
     
     private function is_attachment_protected($attachment_id) {
@@ -1132,12 +1393,12 @@ class RRZE_AC {
     }
     
     private function check_ip_address_range($ip_address) {
-        if(!is_array($ip_address)) {
+        if(empty($ip_address) || !is_array($ip_address)) {
             return TRUE;
         }
         
         $remote_addr = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'];
-        
+
         if($remote_addr === FALSE) {
             return FALSE;
         }
@@ -1152,7 +1413,7 @@ class RRZE_AC {
     }
         
     private function check_sso_logged_in() {
-        if (!is_plugin_active($this->websso_plugin)) {
+        if (!$this->is_plugin_active($this->websso_plugin)) {
             return FALSE;
         }
         
@@ -1198,11 +1459,11 @@ class RRZE_AC {
             return TRUE;
         }
         
-        $permissions = self::get_the_permissions();
+        $permissions = $this->get_the_permissions();
         
         // set permission to default permission if not exist or not active
         if (!isset($permissions[$permission]) || !$permissions[$permission]['active']) {
-            $permission = self::get_default_permission();
+            $permission = $this->get_default_permission();
         }
                 
         // check if permission is set to be logged in
@@ -1241,10 +1502,10 @@ class RRZE_AC {
 
         $permission = get_post_meta($post->ID, self::access_permission_meta_key, TRUE);
 
-        $permissions = self::get_the_permissions();
+        $permissions = $this->get_the_permissions();
 
         if (empty($permission) || !isset($permissions[$permission]) || !$permissions[$permission]['active']) {
-            $permission = self::get_default_permission();
+            $permission = $this->get_default_permission();
         }
         ?>
         <input type="hidden" name="access_protection_toggle" value="off">
@@ -1281,7 +1542,7 @@ class RRZE_AC {
 
         $permission = get_post_meta($post->ID, self::access_permission_meta_key, TRUE);
 
-        $permissions = self::get_the_permissions();
+        $permissions = $this->get_the_permissions();
 
         if (empty($permission) || !isset($permissions[$permission])) {
             $permission = 'all';
@@ -1338,7 +1599,7 @@ class RRZE_AC {
             return;
         }
         
-        $permissions = self::get_the_permissions();
+        $permissions = $this->get_the_permissions();
 
         if (isset($permissions[$_POST['access_permission_select']]) && 'all' == $_POST['access_permission_select']) {
             delete_post_meta($post_id, self::access_permission_meta_key);
@@ -1398,7 +1659,7 @@ class RRZE_AC {
                     return;
                 }
 
-                $permissions = self::get_the_permissions();
+                $permissions = $this->get_the_permissions();
 
                 if (!isset($permissions[$_POST['access_permission_select']])) {
                     delete_post_meta($attachment_id, self::access_permission_meta_key);
@@ -1588,7 +1849,7 @@ class RRZE_AC {
             }
             
             $this->get_file($_GET['protected_file']);
-            exit;
+            exit();
         }
     }
     
@@ -1691,7 +1952,7 @@ class RRZE_AC {
 
         if (($client_last_modified && $client_etag) ? (($client_modified_timestamp >= $modified_timestamp) && ($client_etag == $etag)) : (($client_modified_timestamp >= $modified_timestamp) || ($client_etag == $etag))) {
             status_header(304);  // Not Modified
-            exit;
+            exit();
         }
 
         if (ob_get_length()) {
@@ -1701,7 +1962,7 @@ class RRZE_AC {
         flush();
 
         readfile($file);
-        exit;
+        exit();
     }
 
     private static function protected_upload_dir($path = '', $in_url = FALSE) {
@@ -1767,16 +2028,16 @@ class RRZE_AC {
         }
 
         $error = '';
-        $permissions = self::get_the_permissions();
+        $permissions = $this->get_the_permissions();
 
         if (!isset($permissions[$permission])) {
-            $permission = self::get_default_permission();
+            $permission = $this->get_default_permission();
             $error = __('Berechtigung nicht vorhanden bzw. wurde entfernt', 'rrze-ac');
         }
 
         if (!$permissions[$permission]['active']) {
             $error = __('Berechtigung wurde deaktiviert', 'rrze-ac');
-            $permission = self::get_default_permission();
+            $permission = $this->get_default_permission();
         }
         
         $class = $permission == 'all' ? 'access-all-icon' : 'access-icon';
@@ -1805,16 +2066,16 @@ class RRZE_AC {
         }
 
         $error = '';
-        $permissions = self::get_the_permissions();
+        $permissions = $this->get_the_permissions();
 
         if (!isset($permissions[$permission])) {
-            $permission = self::get_default_permission();
+            $permission = $this->get_default_permission();
             $error = __('Berechtigung nicht vorhanden bzw. wurde entfernt', 'rrze-ac');
         }
 
         if (!$permissions[$permission]['active']) {
             $error = __('Berechtigung wurde deaktiviert', 'rrze-ac');
-            $permission = self::get_default_permission();
+            $permission = $this->get_default_permission();
         }
         
         $class = $permission == 'all' ? 'access-all-icon' : 'access-icon';
@@ -1847,13 +2108,15 @@ class RRZE_AC {
         }
 
         $bulk_actions = array();
-        if (!isset($_GET['access-show-protected']))
+        if (!isset($_GET['access-show-protected'])) {
             $bulk_actions['access-protect'] = esc_html__('Berechtigung aktivieren', 'rrze-ac');
-        if (!isset($_GET['access-show-unprotected']))
+        }
+        if (!isset($_GET['access-show-unprotected'])) {
             $bulk_actions['access-unprotect'] = esc_html__('Berechtigung entfernen', 'rrze-ac');
+        }
         ?>
         <script type="text/javascript">
-            jQuery(function ($) {
+            jQuery(document).ready(function($) {
                 $.each(<?php echo json_encode($bulk_actions); ?>, function (index, value) {
                     $('<option>')
                         .val(index)
@@ -1862,7 +2125,7 @@ class RRZE_AC {
                         .clone()
                         .appendTo('select[name="action2"]');
                 });
-            }(jQuery));
+            });
         </script>
         <?php
     }
@@ -2020,7 +2283,7 @@ class RRZE_AC {
     public function media_new_js() {
         ?>
         <script type="text/javascript">
-            (function ($) {
+            jQuery(document).ready(function($) {
                 'use strict';
                 var input = $('input[name="access_protected"]'),
                     ctrl = document.getElementById('access_protected'),
@@ -2041,7 +2304,7 @@ class RRZE_AC {
                 setTimeout(function () {
                     input.change();
                 }, 200);
-            }(jQuery));
+            });
         </script>
         <?php
     }
@@ -2290,7 +2553,7 @@ class RRZE_AC {
             return $post_has_changed;
         }
         
-        $post_has_changed = false;
+        $post_has_changed = FALSE;
         
         foreach (array_keys( _wp_post_revision_fields()) as $field ) {
             if ($field == 'post_content' && $this->encrypted_post($post->ID) && !empty($post->$field)) {
@@ -2302,7 +2565,7 @@ class RRZE_AC {
             }
 
             if (normalize_whitespace($post->$field) != normalize_whitespace($last_revision->$field)) {
-                $post_has_changed = true;
+                $post_has_changed = TRUE;
                 break;
             }
         }
@@ -2423,4 +2686,21 @@ class RRZE_AC {
         $this->permission_status = ($this->permission_status & ~(1 << $bitmask)) | ($new << $bitmask);
     }
     
+    private function is_plugin_active($plugin) {
+        return in_array($plugin, (array) get_option('active_plugins', array())) || $this->is_plugin_active_for_network($plugin);
+    }
+ 
+    private function is_plugin_active_for_network($plugin) {
+        if (!is_multisite()) {
+            return FALSE;
+        }
+
+        $plugins = get_site_option('active_sitewide_plugins');
+        if (isset($plugins[$plugin])) {
+                return TRUE;
+        }
+
+        return FALSE;
+    }
+   
 }

@@ -14,6 +14,12 @@ span.access-error-icon:before {
 	color: #D64E07;
 }
 
+/* Fields */
+input.field-invalid, input.field-invalid:focus, select.field-invalid, select.field-invalid:focus {
+    border-color: #dc3232 !important;
+    box-shadow: 0 0 2px rgba(204, 0, 0, 0.8);
+}
+
 /* Columns */
 .fixed .column-access_info {
     width: 2.5em;

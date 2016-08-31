@@ -1,43 +1,49 @@
 <?php
 
+if (!defined('ABSPATH') || !class_exists('RRZE_AC')) {
+    exit();
+}
+
 if (!class_exists('WP_List_Table')) {
-	require_once(ABSPATH . 'wp-admin/includes/class-wp-list-table.php');
+    require_once(ABSPATH . 'wp-admin/includes/class-wp-list-table.php');
 }
 
 class RRZE_AC_List_Table extends WP_List_Table {
 
+    protected $rrze_ac;
     public $list_data = array();
 
     public function __construct() {
-        if (class_exists('RRZE_AC')) {
-            $this->list_data = RRZE_AC::get_the_permissions();
-            foreach ($this->list_data as $key => $data) {
-                $this->list_data[$key]['default'] = ($data['permission_key'] == RRZE_AC::get_default_permission()) ? 1 : 0;
-            }
+        $this->rrze_ac = RRZE_AC::instance();
+        $this->list_data = $this->rrze_ac->get_the_permissions();
+        foreach ($this->list_data as $key => $data) {
+            $this->list_data[$key]['default'] = ($data['permission_key'] == $this->rrze_ac->get_default_permission()) ? 1 : 0;
         }
-        
+
         parent::__construct(array(
             'singular' => 'rrzeac',
             'plural' => 'rrzeacs',
             'ajax' => FALSE
-        ));
+        ));                
     }
 
-	public function single_row($item) {
+    public function single_row($item) {
         $class = $item['active'] ? 'active ' : 'inactive';
         $class .= $item['default'] ? 'default-permission' : '';
-		echo $class ? '<tr class="' . trim($class) . '">' : '<tr>';
-		$this->single_row_columns($item);
-		echo '</tr>';
-	}
-    
+        echo $class ? '<tr class="' . trim($class) . '">' : '<tr>';
+        $this->single_row_columns($item);
+        echo '</tr>';
+    }
+
     public function column_default($item, $column_name) {
         switch ($column_name) {
             case 'permission_key':
             case 'select':
-            case 'description':
                 $item[$column_name] = !empty($item[$column_name]) ? $item[$column_name] : '';
-                break;           
+                break;
+            case 'description':
+                $item[$column_name] = !empty($item[$column_name]) ? esc_html(wp_trim_words($item[$column_name], 10)) : '';
+                break;
             case 'ip_address':
                 $item[$column_name] = !empty($item[$column_name]) ? implode('<br>', $item[$column_name]) : '';
                 break;
@@ -45,40 +51,36 @@ class RRZE_AC_List_Table extends WP_List_Table {
             case 'sso_logged_in':
                 $item[$column_name] = !empty($item[$column_name]) ? '<span class="dashicons dashicons-yes"></span>' : '';
         }
-        
+
         return $item[$column_name];
     }
 
     public function column_permission_key($item) {
-        $page = isset($_REQUEST['page']) ? esc_attr($_REQUEST['page']) : '';
-        $id = $item['permission_key'];
-        // Create a nonce
-        $wp_nonce = wp_create_nonce('access_action');
         // Build row actions
-        $actions['edit'] = sprintf('<a href="?page=%1$s&action=%2$s&permission=%3$s">%4$s</a>', $page, 'edit', $item['permission_key'], __('Bearbeiten', 'rrze-ac'));                
-        
-        if($item['active'] && !$item['core'] && !$item['default']) {
-            $actions['deactivate'] = sprintf('<a href="?page=%1$s&action=%2$s&permission=%3$s&_wpnonce=%4$s">%5$s</a>', $page, 'deactivate', $item['permission_key'], $wp_nonce, __('Deaktivieren', 'rrze-ac'));
-        } elseif(!$item['active'] && !$item['core'] && !$item['default']) {
-            $actions['activate'] = sprintf('<a href="?page=%1$s&action=%2$s&permission=%3$s&_wpnonce=%4$s">%5$s</a>', $page, 'activate', $item['permission_key'],$wp_nonce,  __('Aktivieren', 'rrze-ac'));
-            if(count($this->list_data) > 1) {
-                $actions['delete'] = sprintf('<a href="?page=%1$s&action=%2$s&permission=%3$s&_wpnonce=%4$s">%5$s</a>', $page, 'delete', $item['permission_key'], $wp_nonce, __('Löschen', 'rrze-ac'));
+        $actions = array();
+        if (!$item['core']) {
+            $actions['edit'] = '<a href="' . esc_url($this->rrze_ac->options_url(array('action' => 'edit', 'permission' => $item['permission_key']))) . '">' . esc_html(__('Bearbeiten', 'rrze-ac')) . '</a>';
+        }
+        if (!$item['core'] && !$item['default']) {
+            if ($item['active']) {
+                $actions['deactivate'] = '<a href="' . esc_url($this->rrze_ac->options_url(array('action' => 'deactivate', 'permission' => $item['permission_key']))) . '">' . esc_html(__('Deaktivieren', 'rrze-ac')) . '</a>';
+            } else {
+                $actions['activate'] = '<a href="' . esc_url($this->rrze_ac->options_url(array('action' => 'activate', 'permission' => $item['permission_key']))) . '">' . esc_html(__('Aktivieren', 'rrze-ac')) . '</a>';
+                if (empty($this->rrze_ac->count_meta_keys($item['permission_key']))) {
+                    $actions['delete'] = '<a href="' . esc_url($this->rrze_ac->options_url(array('action' => 'delete', 'permission' => $item['permission_key']))) . '">' . esc_html(__('Löschen', 'rrze-ac')) . '</a>';
+                }            
             }
         }
-        // Return the title contents
-        return sprintf('%1$s %2$s',
-                /* $1%s */ $item['permission_key'],
-                /* $2%s */ $this->row_actions($actions)
-        );
+        return sprintf('%1$s %2$s', $item['permission_key'], $this->row_actions($actions));
     }
 
     public function column_cb($item) {
-        return sprintf('<input type="checkbox" name="access_bulk_action[]" value="%s" />', $item['permission_key']);
+        return sprintf('<input type="checkbox" name="%1$s[]" value="%2$s">', $this->_args['singular'], $item['permission_key']);
     }
 
     public function get_columns() {
         $columns = array(
-            'cb' => '<input type="checkbox" />', // Render a checkbox instead of text
+            'cb' => '<input type="checkbox">', // Render a checkbox instead of text
             'permission_key' => __('Berechtigung', 'rrze-ac'),
             'select' => __('Kurzbeschreibung', 'rrze-ac'),
             'description' => __('Beschreibung', 'rrze-ac'),
@@ -98,33 +100,72 @@ class RRZE_AC_List_Table extends WP_List_Table {
         );
         return $sortable_columns;
     }
-  
+
     public function get_bulk_actions() {
         $actions = array(
-            'bulk-activate' => __('Aktivieren', 'rrze-ac'),
-            'bulk-deactivate' => __('Deaktivieren', 'rrze-ac'),
-            'bulk-delete' => __('Löschen', 'rrze-ac')
+            'activate' => __('Aktivieren', 'rrze-ac'),
+            'deactivate' => __('Deaktivieren', 'rrze-ac'),
+            'delete' => __('Löschen', 'rrze-ac')
         );
         return $actions;
     }
 
-    public function usort_reorder($a, $b) {
-        // If no sort, default to user_creation_time
-        $orderby = (!empty($_REQUEST['orderby'])) ? $_REQUEST['orderby'] : 'logged_in';
-        // If no order, default to asc
-        $order = (!empty($_GET['order'])) ? $_GET['order'] : 'asc';
-        // Determine sort order
-        $result = strcmp( $a[$orderby], $b[$orderby] );
-        // Send final sort direction to usort
-        return ( $order === 'asc' ) ? $result : -$result;
+    public function process_bulk_action() {
+        $permission_keys = $this->rrze_ac->request_var($this->_args['singular']);
+
+        if(!empty($permission_keys) && is_array($permission_keys)) {
+            switch ($this->current_action()) {               
+                case 'activate':
+                    $this->process_bulk_activate($permission_keys);
+                    break;
+                case 'deactivate':
+                    $this->process_bulk_activate($permission_keys, 0);
+                    break;
+                case 'delete':
+                    $this->process_bulk_delete($permission_keys);
+                    break;                
+            }
+        }
     }
 
-    public function prepare_items() {
+    private function process_bulk_delete($permission_keys) {
+        $this->rrze_ac->process_bulk_delete($permission_keys);
+    }
+    
+    private function process_bulk_activate($permission_keys, $activate = 1) {
+        $this->rrze_ac->process_bulk_activate($permission_keys, $activate);
+    }
+    
+    public function prepare_items() {                
         $this->_column_headers = $this->get_column_info();
-
-        usort($this->list_data, array(&$this, 'usort_reorder'));
+        
+        usort($this->list_data, array(&$this, 'sort_data'));
+        
+        if (isset($_GET['s']) && mb_strlen(trim($_GET['s'])) > 0) {
+            $search = trim($_GET['s']);
+            foreach ($this->list_data as $key => $data) {
+                $permission_key = mb_stripos($data['permission_key'], $search) === FALSE ? TRUE : FALSE;
+                $select = mb_stripos($data['select'], $search) === FALSE ? TRUE : FALSE;
+                $description = mb_stripos($data['description'], $search) === FALSE ? TRUE : FALSE;
                 
-        $per_page = $this->get_items_per_page('access_per_page', 5);
+                $ip_address = !empty($data['ip_address']) ? $data['ip_address'] : array();
+                $ip = TRUE;
+                foreach ($ip_address as $value) {
+                    if (isset($value) && mb_stripos($value, $search) !== FALSE) {
+                        $ip = FALSE;
+                        break;
+                    }
+                }
+                
+                if ($permission_key && $select && $description && $ip) {
+                    unset($this->list_data[$key]);
+                }
+            }
+        }        
+
+        $this->process_bulk_action();
+
+        $per_page = $this->get_items_per_page('rrzeacs_per_page', 20);
         $current_page = $this->get_pagenum();
         $total_items = count($this->list_data);
 
@@ -133,8 +174,15 @@ class RRZE_AC_List_Table extends WP_List_Table {
         $this->set_pagination_args(array(
             'total_items' => $total_items, // Total number of items
             'per_page' => $per_page, // How many items to show on a page
-            'total_pages' => ceil($total_items / $per_page) // Total number of pages
+            'total_pages' => ceil($total_items / $per_page)   // Total number of pages
         ));
     }
-
+    
+    public function sort_data($a, $b) {
+        $orderby = (!empty($_REQUEST['orderby'])) ? $_REQUEST['orderby'] : 'select';
+        $order = (!empty($_GET['order'])) ? $_GET['order'] : 'asc';
+        $result = strnatcmp($a[$orderby], $b[$orderby]);
+        return ($order === 'asc') ? $result : -$result;
+    }
+        
 }
