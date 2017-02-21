@@ -3,7 +3,7 @@
 /*
   Plugin Name: RRZE-Access-Control
   Plugin URI: https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-  Version: 1.3.1
+  Version: 1.3.2
   Description: Es ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene Funktionen und IP-Adresse.
   Author: RRZE-Webteam
   Author URI: https://blogs.fau.de/webworking/
@@ -35,14 +35,14 @@ register_deactivation_hook(__FILE__, array('RRZE_AC', 'deactivation'));
 
 class RRZE_AC {
 
-    const version = '1.3.1';
+    const version = '1.3.2';
     
     const option_name = 'rrze_ac';
     const version_option_name = 'rrze_ac_version';
     const enabled_option_name = 'rrze_ac_enabled';
     
-    const php_version = '5.4'; // Minimal erforderliche PHP-Version
-    const wp_version = '4.5'; // Minimal erforderliche WordPress-Version
+    const php_version = '5.5'; // Minimal erforderliche PHP-Version
+    const wp_version = '4.7'; // Minimal erforderliche WordPress-Version
     
     const settings_error_transient = 'rrze-ac-settings-error-';
     const settings_error_transient_expiration = 30;
@@ -1473,10 +1473,17 @@ class RRZE_AC {
         }
              
         // check if permission is set to be sso logged in
+        /*
         elseif (!empty($permissions[$permission]['sso_logged_in']) && !$this->check_sso_logged_in()) {
             $this->set_permission_status(self::user_isnt_sso_logged_in);
             return FALSE;
         }
+         * 
+         */
+        if (!is_user_logged_in() && isset($permissions[$permission]['sso_logged_in']) && $permissions[$permission]['sso_logged_in']) {
+            $this->set_permission_status(self::user_isnt_logged_in);
+            return FALSE;
+        }        
         
         // check if permission is set to ip address
         elseif (!empty($permissions[$permission]['ip_address']) && !$this->check_ip_address_range($permissions[$permission]['ip_address'])) {
