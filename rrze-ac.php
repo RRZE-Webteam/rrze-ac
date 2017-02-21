@@ -3,7 +3,7 @@
 /*
   Plugin Name: RRZE-Access-Control
   Plugin URI: https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-  Version: 1.3.2
+  Version: 1.3.3
   Description: Es ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene Funktionen und IP-Adresse.
   Author: RRZE-Webteam
   Author URI: https://blogs.fau.de/webworking/
@@ -35,7 +35,7 @@ register_deactivation_hook(__FILE__, array('RRZE_AC', 'deactivation'));
 
 class RRZE_AC {
 
-    const version = '1.3.2';
+    const version = '1.3.3';
     
     const option_name = 'rrze_ac';
     const version_option_name = 'rrze_ac_version';
@@ -122,7 +122,7 @@ class RRZE_AC {
 
             add_filter('image_downsize', array($this, 'image_downsize_placeholder'), 999, 3);
 
-            add_action('template_redirect', array($this, 'template_redirect'), 999);
+            add_action('template_redirect', array($this, 'template_redirect'), 0);
 
             add_filter('content_save_pre', array($this, 'pre_save_filter'), 999);
             
@@ -1443,6 +1443,7 @@ class RRZE_AC {
         }
         
         $as->requireAuth(); // redirect to IdP
+        exit();
     }
     
     private function check_permission($post_id) {
@@ -1473,17 +1474,10 @@ class RRZE_AC {
         }
              
         // check if permission is set to be sso logged in
-        /*
         elseif (!empty($permissions[$permission]['sso_logged_in']) && !$this->check_sso_logged_in()) {
             $this->set_permission_status(self::user_isnt_sso_logged_in);
             return FALSE;
-        }
-         * 
-         */
-        if (!is_user_logged_in() && isset($permissions[$permission]['sso_logged_in']) && $permissions[$permission]['sso_logged_in']) {
-            $this->set_permission_status(self::user_isnt_logged_in);
-            return FALSE;
-        }        
+        }      
         
         // check if permission is set to ip address
         elseif (!empty($permissions[$permission]['ip_address']) && !$this->check_ip_address_range($permissions[$permission]['ip_address'])) {
