@@ -3,7 +3,7 @@
 /*
   Plugin Name: RRZE-Access-Control
   Plugin URI: https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-  Version: 1.3.4
+  Version: 1.3.5
   Description: Es ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene Funktionen und IP-Adresse.
   Author: RRZE-Webteam
   Author URI: https://blogs.fau.de/webworking/
@@ -35,7 +35,7 @@ register_deactivation_hook(__FILE__, array('RRZE_AC', 'deactivation'));
 
 class RRZE_AC {
 
-    const version = '1.3.4';
+    const version = '1.3.5';
     
     const option_name = 'rrze_ac';
     const version_option_name = 'rrze_ac_version';
@@ -175,6 +175,9 @@ class RRZE_AC {
             } else {
                 // Menüelemente die geschützte Objekte verlinken sind abgeschlossen
                 add_filter('wp_nav_menu_objects', array($this, 'nav_menu_objects'), 10, 1);
+                
+                // Anpassung des Abfrageobjekts
+                add_filter('pre_get_posts', array($this, 'pre_get_posts'));
             }
             
         } else {
@@ -2353,32 +2356,52 @@ class RRZE_AC {
     }
         
     public function template_redirect() {
-        global $wp_query, $wp_the_query;
+        global $wp_query;
         
-        $search_post_not_in = array();
-        
-        if(!is_404() && !empty($wp_query->posts)) {
-
+        if(is_singular() && !empty($wp_query->posts)) {
             foreach($wp_query->posts as $post) {
-
-                if(!is_search() && in_array($post->post_type, array('page', 'attachment')) && !$this->check_permission($post->ID)) {
+                if(in_array($post->post_type, array('page', 'attachment')) && !$this->check_permission($post->ID)) {
                     status_header(403);
                     wp_die($this->permission_forbidden_message($post->ID));
-                } elseif(is_search() && !$this->check_permission($post->ID)) {
-                    $search_post_not_in[] = $post->ID;
-                }               
-
+                }
             }
-            
-        }
-        
-        if(!empty($search_post_not_in)) {
-            $wp_query = new WP_Query(array('post__not_in' => array($post->ID), 's' => $wp_query->query['s']));
-        } else {
-            $wp_query = $wp_the_query;
         }
     }
-            
+
+    public function pre_get_posts($query) {
+        if (is_admin() || !$query->is_main_query() || $query->is_singular) {
+            return $query;
+        }
+
+        $post_not_in = array();
+        $permissions = $this->get_the_permissions();
+        $permission_metas = $this->get_permission_metas();
+
+        foreach ($permission_metas as $pm) {
+            if (isset($permissions[$pm->meta_value]) && $permissions[$pm->meta_value]['active'] && !$this->check_author_permission($pm->post_id)) {
+                $post_not_in[] = $pm->post_id;
+            }
+        }
+
+        if (!empty($post_not_in)) {
+            $query->set('post__not_in', $post_not_in);
+        }
+
+        return $query;
+    }
+
+    private function get_permission_metas() {
+        global $wpdb;
+
+        $query = "SELECT pm.post_id, pm.meta_value FROM {$wpdb->postmeta} pm
+            LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+            WHERE pm.meta_key = '%s' 
+            AND p.post_status = 'publish'
+            AND (p.post_type = 'page' OR p.post_type = 'attachment')";
+
+        return $wpdb->get_results($wpdb->prepare($query, self::access_permission_meta_key));
+    }    
+    
     public function nav_menu_objects($menu_items) {
         foreach ($menu_items as $key => $menu_item) {
             if($menu_item->object == 'page' && !$this->check_permission($menu_item->object_id)) {
