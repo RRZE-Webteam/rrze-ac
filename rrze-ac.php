@@ -3,7 +3,7 @@
 /*
   Plugin Name: RRZE-Access-Control
   Plugin URI: https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-  Version: 1.3.5
+  Version: 1.4.0
   Description: Es ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene Funktionen und IP-Adresse.
   Author: RRZE-Webteam
   Author URI: https://blogs.fau.de/webworking/
@@ -35,7 +35,7 @@ register_deactivation_hook(__FILE__, array('RRZE_AC', 'deactivation'));
 
 class RRZE_AC {
 
-    const version = '1.3.5';
+    const version = '1.4.0';
     
     const option_name = 'rrze_ac';
     const version_option_name = 'rrze_ac_version';
@@ -64,8 +64,6 @@ class RRZE_AC {
     public $plugin_file = NULL;
     
     public $list_table_obj = NULL; // WP_List_Table object
-
-    private $encrypts = array();
     
     private $websso_plugin = 'fau-websso/fau-websso.php';
     
@@ -123,20 +121,12 @@ class RRZE_AC {
             add_filter('image_downsize', array($this, 'image_downsize_placeholder'), 999, 3);
 
             add_action('template_redirect', array($this, 'template_redirect'), 0);
-
-            //add_filter('content_save_pre', array($this, 'pre_save_filter'), 999);
-            
-            add_filter('content_edit_pre', array($this, 'pre_content_edit_filter'), 1);
-            add_filter('the_content', array($this, 'content_filter'), 1);
             
             // Bezieht sich nur auf den Backend-Bereich
             if (is_admin()) {
                 add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
 
                 add_action('admin_menu', array($this, 'access_menu'));
-                
-                //add_action('admin_menu', array($this, 'admin_menu'));
-                //add_action('admin_init', array($this, 'list_table_actions'));
                 
                 add_action('admin_init', array($this, 'admin_actions'));
                 add_action('admin_init', array($this, 'admin_settings'));
@@ -146,8 +136,6 @@ class RRZE_AC {
                 add_action('post_submitbox_misc_actions', array($this, 'post_protection_submitbox'));
 
                 add_action('save_post', array($this, 'save_post_data'));
-                add_action('_wp_put_post_revision', array($this, 'update_post_revision'));
-                add_filter('wp_save_post_revision_post_has_changed', array($this, 'post_has_changed'), 10, 3);
                 
                 add_action("manage_edit-page_columns", array($this, 'manage_pages_column'));
                 add_filter("manage_page_posts_custom_column", array($this, 'manage_pages_custom_column'), 10, 2);
@@ -162,7 +150,6 @@ class RRZE_AC {
                 add_action('load-media-new.php', array($this, 'load_media_new'));
                 add_action('load-upload.php', array($this, 'load_upload'));
 
-                //add_filter('plugin_action_links_' . plugin_basename(__FILE__), array($this, 'plugin_settings_link'));
                 add_filter('plugin_action_links_' . plugin_basename(__FILE__), function($links) {
                     $settings_link = '<a href="' . $this->options_url(array('page' => 'rrze-ac-settings')) . '">' . esc_html(__('Einstellungen', 'rrze-ac')) . '</a>';
                     array_unshift($links, $settings_link);
@@ -248,16 +235,6 @@ class RRZE_AC {
         // Überprüft Rewrite-Modul.
         elseif (!got_mod_rewrite() || !is_writable(get_home_path() . '.htaccess')) {
             $error = __('Der Web-Server-Software unterstützt das Rewrite-Modul nicht.', 'rrze-ac');
-        }
-        
-        // Überprüft SECURE_AUTH_SALT-Konstant (wp-config.php).
-        elseif (!defined('SECURE_AUTH_SALT')) {
-            $error = __('Die Konstant SECURE_AUTH_SALT ist nicht definiert.', 'rrze-ac');
-        }
-        
-        // Überprüft mcrypt-Funktionen.
-        elseif (!function_exists('mcrypt_module_open')) {
-            $error = __('Die mcrypt-Funktionen sind nicht definiert.', 'rrze-ac');
         }
         
         // Wenn die Überprüfung fehlschlägt, dann wird das Plugin automatisch deaktiviert.
@@ -432,15 +409,6 @@ class RRZE_AC {
         }
         
         return $combine_atts;        
-    }
-    
-    public function plugin_settings_link($links) {
-
-        $settings_link = '<a href="options-general.php?page=access">' . esc_html__('Einstellungen', 'rrze-ac') . '</a>';
-
-        array_push($links, $settings_link);
-
-        return $links;
     }
 
     public function load_media_new() {
@@ -2432,274 +2400,6 @@ class RRZE_AC {
         }
         
         return $message;        
-    }
-    
-    /**
-     * Builds a key from a post ID
-     * @param string $post_id the post ID
-     * @return string return the key
-     */
-    private function get_key($post_id) {
-        return $this->pbkdf2($post_id, SECURE_AUTH_SALT, 1000, 32);
-    }
-    
-    /**
-     * Checks whether a given post is encrypted
-     * @param int $post_id the post to check
-     * @return bool TRUE if encrypted
-     */
-    private function encrypted_post($post_id = NULL) {
-        global $post;
-
-        if (!$post) {
-            return FALSE;
-        }
-        
-        if ($post_id == NULL) {
-            $post_id = $post->ID;
-        }
-
-        return get_post_meta($post_id, self::access_permission_meta_key, TRUE);
-    }
-    
-    /**
-     * Encrypts post content prior to save to database
-     * @param string $content the raw content
-     * @return string the encrypted content
-     */
-    public function pre_save_filter($content) {
-
-        global $post;
-
-        // New post
-        if (!$post) {
-            return $content;
-        }
-        
-        if (get_post_type($post->ID) != 'page') {
-            return $content;
-        }
-        
-        if ((defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || (defined('DOING_AJAX') && DOING_AJAX) || isset($_REQUEST['bulk_edit'])) {
-            return $content;
-        }
-
-        // This filter is actually fired twice. Only encrypt once per save.
-        if (in_array($post->ID, $this->encrypts)) {
-            return $content;
-        }
-        
-        if (isset($_POST['access_permission_select']) && 'all' == $_POST['access_permission_select']) {
-            return $content;
-        }
-                
-        if (!isset($_POST['access_permission_select']) && (!$this->encrypted_post($post->ID) || empty($content))) {
-            return $content;
-        }
-        
-        $content = $this->encrypt(wp_unslash($content), $this->get_key($post->ID));
-        
-        if (!$content) {
-            wp_die(__('Ein Fehler ist aufgetreten: Verschlüsselung des Inhalts fehlgeschlagen.', 'rrze-ac'));
-        }
-        
-        // Set flags
-        $this->encrypts[] = $post->ID;
-        
-        return $content;
-    }
-    
-    /**
-     * Decrypt post content prior to editing
-     * @param string $content maybe the encrypted content
-     * @return string the decrypted content
-     */
-    public function pre_content_edit_filter($content) {
-        global $post;        
-        
-        if (get_post_type($post->ID) != 'page') {
-            return $content;
-        }
-        
-        if (!$this->encrypted_post($post->ID) || empty($content)) {
-            return $content;
-        }
-        
-        if ($decrypted = $this->decrypt($content, $this->get_key($post->ID))) {
-            return $decrypted;
-        }
-        
-        return $content;
-    }
-
-    /**
-     * Front-End post content filter
-     * @param string $content maybe the encrypted content
-     * @return string the decrypted content
-     */
-    public function content_filter($content) {
-        global $post;
-        
-        if (get_post_type($post->ID) != 'page') {
-            return $content;
-        }
-        
-        if (!$this->encrypted_post($post->ID) || empty($content)) {
-            return $content;
-        }
-                
-        if ($decrypted = $this->decrypt($content, $this->get_key($post->ID))) {
-            return $decrypted;
-        }
-
-        return $content;
-    }
-    
-    public function update_post_revision($revision_id) {
-        $parent_id = wp_is_post_revision($revision_id);
-
-        $revision = get_post($revision_id);
-
-        if (!$revision || !$this->encrypted_post($parent_id) || empty($revision->post_content)) {
-            return;
-        }
-        
-        if ($decrypted = $this->decrypt($revision->post_content, $this->get_key($parent_id))) {
-            wp_update_post(array(
-                'ID' => $revision_id,
-                'post_content' => $decrypted
-            ));
-        }
-    }
-    
-    public function post_has_changed($post_has_changed, $last_revision, $post) {
-        if (!$post_has_changed) {
-            return $post_has_changed;
-        }
-        
-        $post_has_changed = FALSE;
-        
-        foreach (array_keys( _wp_post_revision_fields()) as $field ) {
-            if ($field == 'post_content' && $this->encrypted_post($post->ID) && !empty($post->$field)) {
-               
-                if ($decrypted = $this->decrypt($post->$field, $this->get_key($post->ID))) {
-                    $post->$field = $decrypted;
-                }
-                
-            }
-
-            if (normalize_whitespace($post->$field) != normalize_whitespace($last_revision->$field)) {
-                $post_has_changed = TRUE;
-                break;
-            }
-        }
-        
-        return $post_has_changed;
-    }
-    
-    /**
-     * Encrypt a string
-     * @param string $data the string to encrypt
-     * @param string $key the key
-     * @return string the encrypted string
-     */
-    private function encrypt($data, $key) {
-
-        if (!$td = mcrypt_module_open('rijndael-256', '', 'ctr', '')) {
-            return FALSE;
-        }
-
-        $data = serialize($data);
-        $iv = mcrypt_create_iv(32, MCRYPT_RAND);
-
-        if (mcrypt_generic_init($td, $key, $iv) !== 0) {
-            return FALSE;
-        }
-
-        $data = mcrypt_generic($td, $data);
-        $data = $iv . $data;
-        $mac = $this->pbkdf2($data, $key, 1000, 32);
-        $data .= $mac;
-
-        mcrypt_generic_deinit($td);
-        mcrypt_module_close($td);
-
-        $data = base64_encode($data);
-
-        return $data;
-    }
-
-    /**
-     * Decrypt a string
-     * @param string $data the encrypted string
-     * @param string $key the key
-     * @return string|bool unencrypted string or FALSE on failure
-     */
-    private function decrypt($data, $key) {
-        
-        $data = base64_decode($data);
-
-        if (!$td = mcrypt_module_open('rijndael-256', '', 'ctr', '')) {
-            return FALSE;
-        }
-
-        $iv = substr($data, 0, 32);
-        $mo = strlen($data) - 32;
-        $em = substr($data, $mo);
-        $data = substr($data, 32, strlen($data) - 64);
-        $mac = $this->pbkdf2($iv . $data, $key, 1000, 32);
-
-        if ($em !== $mac) {
-            return FALSE;
-        }
-
-        if (mcrypt_generic_init($td, $key, $iv) !== 0) {
-            return FALSE;
-        }
-        
-        $data = mdecrypt_generic($td, $data);
-        $data = unserialize($data);
-
-        mcrypt_generic_deinit($td);
-        mcrypt_module_close($td);
-
-        return $data;
-    }
-
-    /** 
-     *  Password-Based Key Derivation Function 2 (PBKDF2)
-     * 	@param string $p password
-     * 	@param string $s salt
-     * 	@param int $c iteration count (>= 1000)
-     * 	@param int $kl derived key length
-     * 	@param string $a hash algorithm
-     * 	@return string derived key
-     */
-    private function pbkdf2($p, $s, $c, $kl, $a = 'sha256') {
-        // Hash length
-        $hl = strlen(hash($a, NULL, TRUE));
-        // Key blocks to compute
-        $kb = ceil($kl / $hl);
-        // Derived key
-        $dk = '';
-        // Create key
-        for ($block = 1; $block <= $kb; $block ++) {
-
-            // Initial hash for this block
-            $ib = $b = hash_hmac($a, $s . pack('N', $block), $p, TRUE);
-
-            // Perform block iterations
-            for ($i = 1; $i < $c; $i ++) {
-                // XOR each iterate
-                $ib ^= ($b = hash_hmac($a, $b, $p, TRUE));
-            }
-            
-            // Append iterated block
-            $dk .= $ib;
-        }
-
-        // Return derived key of correct length
-        return substr($dk, 0, $kl);
     }
     
     private function get_permission_status($bitmask) {
