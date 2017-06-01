@@ -3,7 +3,7 @@
 /*
   Plugin Name: RRZE-Access-Control
   Plugin URI: https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-  Version: 1.4.0
+  Version: 1.4.1
   Description: Es ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene Funktionen und IP-Adresse.
   Author: RRZE-Webteam
   Author URI: https://blogs.fau.de/webworking/
@@ -35,7 +35,7 @@ register_deactivation_hook(__FILE__, array('RRZE_AC', 'deactivation'));
 
 class RRZE_AC {
 
-    const version = '1.4.0';
+    const version = '1.4.1';
     
     const option_name = 'rrze_ac';
     const version_option_name = 'rrze_ac_version';
@@ -476,6 +476,8 @@ class RRZE_AC {
     }
     
     public function access_menu() {
+        $this->validate_actions();
+        
         $access_page = add_menu_page(__('Zugriffsschutz', 'rrze-ac'), __('Zugriffsschutz', 'rrze-ac'), 'manage_options', 'rrze-ac', array($this, 'access_permissions_page'), 'dashicons-shield');
         add_submenu_page('rrze-ac', __('Berechtigungen', 'rrze-ac'), __('Berechtigungen', 'rrze-ac'), 'manage_options', 'rrze-ac', array($this, 'access_permissions_page'));
         add_action( "load-{$access_page}", array($this, 'load_access_page'));
@@ -514,11 +516,11 @@ class RRZE_AC {
             </h2>
             <?php
             if ($action == 'new' || $option_page == 'rrze-ac-new') {
-                $this->ac_new();
+                $this->set_new_page();
             } elseif ($action == 'edit' || $option_page == 'rrze-ac-edit') {
-                $this->ac_edit();
+                $this->set_edit_page();
             } else {
-                $this->ac_page();
+                $this->set_default_page();
             }
             ?>
         </div>
@@ -526,7 +528,19 @@ class RRZE_AC {
         $this->delete_settings_errors();
     }
     
-    private function ac_new() {
+    private function validate_actions() {
+        $action = $this->request_var('action');
+        $option_page = $this->request_var('option_page');
+        
+        if ($action == 'new' || $option_page == 'rrze-ac-new') {
+            $this->validate_new_action();
+        } elseif ($action == 'edit' || $option_page == 'rrze-ac-edit') {
+            $this->validate_edit_action();
+        }
+        
+    }
+    
+    private function validate_new_action() {
         $option_page = $this->request_var('option_page');
         $input = (array) $this->request_var(self::option_name);
         $nonce = $this->request_var('_wpnonce');        
@@ -550,20 +564,10 @@ class RRZE_AC {
             $this->add_admin_notice(__('Die Berechtigung wurde hinzugefügt.', 'rrze-ac'));
             wp_redirect(self::options_url(array('action' => 'edit', 'permission' => $permission_key)));
             exit();
-        }
-        ?>
-        <h2><?php echo esc_html(__('Neue Berechtigung hinzufügen', 'rrze-ac')); ?></h2>
-        <form action="<?php echo self::options_url(array('action' => 'new')); ?>" method="post">
-        <?php
-        settings_fields('rrze-ac-new');
-        do_settings_sections('rrze-ac-new');
-        submit_button(__('Neue Berechtigung hinzufügen', 'rrze-ac'));
-        ?>
-        </form>
-        <?php        
+        }        
     }
     
-    private function ac_edit() {
+    private function validate_edit_action() {
         $option_page = $this->request_var('option_page');
         $permission_key = $this->request_var('permission');
         $input = (array) $this->request_var(self::option_name);
@@ -601,6 +605,22 @@ class RRZE_AC {
             wp_redirect(self::options_url(array('action' => 'edit', 'permission' => $permission_key)));
             exit();
         }        
+    }
+    
+    private function set_new_page() {
+        ?>
+        <h2><?php echo esc_html(__('Neue Berechtigung hinzufügen', 'rrze-ac')); ?></h2>
+        <form action="<?php echo self::options_url(array('action' => 'new')); ?>" method="post">
+        <?php
+        settings_fields('rrze-ac-new');
+        do_settings_sections('rrze-ac-new');
+        submit_button(__('Neue Berechtigung hinzufügen', 'rrze-ac'));
+        ?>
+        </form>
+        <?php        
+    }
+    
+    private function set_edit_page() {        
         ?>
         <h2><?php echo esc_html(__('Berechtigung bearbeiten', 'rrze-ac')); ?></h2>
         <form action="<?php echo self::options_url(array('action' => 'edit')) ?>" method="post">
@@ -613,7 +633,7 @@ class RRZE_AC {
         <?php
     }
     
-    private function ac_page() {        
+    private function set_default_page() {        
         $list_table = new RRZE_AC_List_Table();
         $list_table->prepare_items();
         ?>
@@ -1368,7 +1388,7 @@ class RRZE_AC {
             return TRUE;
         }
         
-        $remote_addr = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'];
+        $remote_addr = $this->get_remote_ip_address();
 
         if($remote_addr === FALSE) {
             return FALSE;
@@ -1381,6 +1401,26 @@ class RRZE_AC {
         }
         
         return FALSE;        
+    }
+    
+    private function get_remote_ip_address() {
+        if (isset($_SERVER['HTTP_CLIENT_IP'])) {
+            $ip_address = $_SERVER['HTTP_CLIENT_IP'];
+        } elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $ip_address = $_SERVER['HTTP_X_FORWARDED_FOR'];
+        } elseif (isset($_SERVER['HTTP_X_FORWARDED'])) {
+            $ip_address = $_SERVER['HTTP_X_FORWARDED'];
+        } elseif (isset($_SERVER['HTTP_FORWARDED_FOR'])) {
+            $ip_address = $_SERVER['HTTP_FORWARDED_FOR'];
+        } elseif (isset($_SERVER['HTTP_FORWARDED'])) {
+            $ip_address = $_SERVER['HTTP_FORWARDED'];
+        } elseif (isset($_SERVER['REMOTE_ADDR'])) {
+            $ip_address = $_SERVER['REMOTE_ADDR'];
+        } else {
+            $ip_address = FALSE;
+        }
+        
+        return $ipaddress;
     }
         
     private function check_sso_logged_in() {
