@@ -3,7 +3,7 @@
 /*
   Plugin Name: RRZE-Access-Control
   Plugin URI: https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-  Version: 1.4.1
+  Version: 1.4.2
   Description: Es ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene Funktionen und IP-Adresse.
   Author: RRZE-Webteam
   Author URI: https://blogs.fau.de/webworking/
@@ -35,7 +35,7 @@ register_deactivation_hook(__FILE__, array('RRZE_AC', 'deactivation'));
 
 class RRZE_AC {
 
-    const version = '1.4.1';
+    const version = '1.4.2';
     
     const option_name = 'rrze_ac';
     const version_option_name = 'rrze_ac_version';
@@ -75,8 +75,6 @@ class RRZE_AC {
     
     protected static $options;
     
-    public $messages;
-    
     protected static $instance = NULL; // Singleton instance
 
     public static function instance() {
@@ -93,13 +91,6 @@ class RRZE_AC {
 
         // Enthaltene Optionen.
         self::$options = self::get_options();
-                
-        $this->messages = [
-            'nonce-failed' => __('Schummeln, was?', 'rrze-ac'),
-            'invalid-permissions' => __('Sie haben nicht die erforderlichen Rechte, um diese Aktion durchzuführen.', 'rrze-ac'),
-            'permission-does-not-exist' => __('Berechtigung existiert nicht.', 'rrze-ac'),
-            'error-ocurred' => __('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.', 'rrze-ac')
-        ];
         
         self::update_version();
                 
@@ -532,79 +523,103 @@ class RRZE_AC {
         $action = $this->request_var('action');
         $option_page = $this->request_var('option_page');
         
-        if ($action == 'new' || $option_page == 'rrze-ac-new') {
+        if ($option_page == 'rrze-ac-new') {
             $this->validate_new_action();
-        } elseif ($action == 'edit' || $option_page == 'rrze-ac-edit') {
+        } elseif ($option_page == 'rrze-ac-edit') {
             $this->validate_edit_action();
+        } elseif ($option_page == 'rrze-ac-settings') {
+            $this->validate_settings_action();
         }
-        
     }
     
     private function validate_new_action() {
-        $option_page = $this->request_var('option_page');
         $input = (array) $this->request_var(self::option_name);
         $nonce = $this->request_var('_wpnonce');        
         
-        if (!empty($input) && $option_page == 'rrze-ac-new') {           
-            if (!wp_verify_nonce($nonce, 'rrze-ac-new-options')) {
-                wp_die($this->messages['nonce-failed']);
-            }
-            
-            $permission_key = $this->validate_new($input);
-            if ($this->settings_errors()) {
-                foreach ($this->settings_errors() as $error) {
-                    if ($error['message']) {
-                        $this->add_admin_notice($error['message'], 'error');
-                    }
+        if (!wp_verify_nonce($nonce, 'rrze-ac-new-options')) {
+            wp_die(__('Schummeln, was?', 'rrze-ac'));
+        }
+
+        $permission_key = $this->validate_new($input);
+        if ($this->settings_errors()) {
+            foreach ($this->settings_errors() as $error) {
+                if ($error['message']) {
+                    $this->add_admin_notice($error['message'], 'error');
                 }
-                wp_redirect(self::options_url(array('action' => 'new')));
-                exit();
             }
-            
-            $this->add_admin_notice(__('Die Berechtigung wurde hinzugefügt.', 'rrze-ac'));
-            wp_redirect(self::options_url(array('action' => 'edit', 'permission' => $permission_key)));
+            wp_redirect(self::options_url(array('action' => 'new')));
             exit();
-        }        
+        }
+
+        $this->add_admin_notice(__('Die Berechtigung wurde hinzugefügt.', 'rrze-ac'));
+        wp_redirect(self::options_url(array('action' => 'edit', 'permission' => $permission_key)));
+        exit();   
     }
     
     private function validate_edit_action() {
-        $option_page = $this->request_var('option_page');
-        $permission_key = $this->request_var('permission');
         $input = (array) $this->request_var(self::option_name);
-
-        if (isset($input['permission_key'])) {
-            $permission_key = $input['permission_key'];
+        $nonce = $this->request_var('_wpnonce');
+        
+        if (!wp_verify_nonce($nonce, 'rrze-ac-edit-options')) {
+            wp_die(__('Schummeln, was?', 'rrze-ac'));
         }
         
+        if (!isset($input['permission_key'])) {
+            wp_die(__('Berechtigung existiert nicht.', 'rrze-ac'));
+        }
+        
+        $permission_key = $input['permission_key'];
         $permission = $this->get_permission($permission_key);
         if (!$permission) {
-            wp_die($this->messages['permission-does-not-exist']);
+            wp_die(__('Berechtigung existiert nicht.', 'rrze-ac'));
         }               
         
-        if (isset($input['permission_key']) && $option_page == 'rrze-ac-edit') {
-            $nonce = $this->request_var('_wpnonce');
-            if (!wp_verify_nonce($nonce, 'rrze-ac-edit-options')) {
-                wp_die($this->messages['nonce-failed']);
-            }
-                                               
-            $validation = $this->validate_edit($permission, $input);
-            
-            if ($this->settings_errors()) {
-                foreach ($this->settings_errors() as $error) {
-                    if ($error['message']) {
-                        $this->add_admin_notice($error['message'], 'error');
-                    }
+        $validation = $this->validate_edit($permission, $input);
+
+        if ($this->settings_errors()) {
+            foreach ($this->settings_errors() as $error) {
+                if ($error['message']) {
+                    $this->add_admin_notice($error['message'], 'error');
                 }
-                wp_redirect(self::options_url(array('action' => 'edit', 'permission' => $permission_key)));
-                exit();
-            }
-            
-            if ($validation) {
-                $this->add_admin_notice(__('Die Berechtigung wurde aktualisiert.', 'rrze-ac'));
             }
             wp_redirect(self::options_url(array('action' => 'edit', 'permission' => $permission_key)));
             exit();
-        }        
+        }
+
+        if ($validation) {
+            $this->add_admin_notice(__('Die Berechtigung wurde aktualisiert.', 'rrze-ac'));
+        }
+        
+        wp_redirect(self::options_url(array('action' => 'edit', 'permission' => $permission_key)));
+        exit();     
+    }
+    
+    private function validate_settings_action() {
+        $input = (array) $this->request_var(self::option_name);
+        $nonce = $this->request_var('_wpnonce');
+                  
+        if (!wp_verify_nonce($nonce, 'rrze-ac-settings-options')) {
+            wp_die(__('Schummeln, was?', 'rrze-ac'));
+        }
+
+        $validation = $this->validate_settings($input);
+
+        if ($this->settings_errors()) {
+            foreach ($this->settings_errors() as $error) {
+                if ($error['message']) {
+                    $this->add_admin_notice($error['message'], 'error');
+                }
+            }
+            wp_redirect($this->options_url(array('page' => 'rrze-ac-settings')));
+            exit();
+        }
+
+        if ($validation) {
+            $this->add_admin_notice(__('Die Einstellungen wurden aktualisiert.', 'rrze-ac'));
+        }
+        
+        wp_redirect($this->options_url(array('page' => 'rrze-ac-settings')));
+        exit();
     }
     
     private function set_new_page() {
@@ -666,33 +681,6 @@ class RRZE_AC {
     }
     
     public function settings_page() {
-        $option_page = $this->request_var('option_page');
-        $input = (array) $this->request_var(self::option_name);
-        $nonce = $this->request_var('_wpnonce');
-        
-        if ($input && $option_page == 'rrze-ac-settings') {           
-            if (!wp_verify_nonce($nonce, 'rrze-ac-settings-options')) {
-                wp_die($this->messages['nonce-failed']);
-            }
-
-            $validation = $this->validate_settings($input);
-            
-            if ($this->settings_errors()) {
-                foreach ($this->settings_errors() as $error) {
-                    if ($error['message']) {
-                        $this->add_admin_notice($error['message'], 'error');
-                    }
-                }
-                wp_redirect($this->options_url(array('page' => 'rrze-ac-settings')));
-                exit();
-            }
-            
-            if ($validation) {
-                $this->add_admin_notice(__('Die Einstellungen wurden aktualisiert.', 'rrze-ac'));
-            }
-            wp_redirect($this->options_url(array('page' => 'rrze-ac-settings')));
-            exit();
-        }        
         ?>
         <form method="post">
         <?php
@@ -743,7 +731,7 @@ class RRZE_AC {
         $permission_key = $this->request_var('permission');
         $permission = $this->get_permission($permission_key);
         $checked = !empty($permission['logged_in']) ? TRUE : FALSE;
-        $checked = isset($settings_errors['logged_in']['value']) && !$disable ? TRUE : $checked;
+        $checked = !empty($settings_errors['logged_in']['value']) ? TRUE : $checked;
         ?>
         <label for="permission_logged_in">
             <input id="permission_logged_in" type="checkbox" <?php checked($checked); ?> name="<?php printf('%s[logged_in]', self::option_name); ?>" value="1"> <?php _e('Der Benutzer muss angemeldet sein.', 'rrze-ac'); ?>
@@ -753,9 +741,10 @@ class RRZE_AC {
     
     public function permission_sso_logged_in_field() {
         $settings_errors = $this->settings_errors();
-        $permission = $this->get_permission(isset($_GET['permission']) ? $_GET['permission'] : '');
+        $permission_key = $this->request_var('permission');
+        $permission = $this->get_permission($permission_key);
         $checked = !empty($permission['sso_logged_in']) ? TRUE : FALSE;
-        $checked = isset($settings_errors['sso_logged_in']['value']) ? TRUE : $checked;
+        $checked = !empty($settings_errors['sso_logged_in']['value']) ? TRUE : $checked;
         ?>
         <label for="permission_sso_logged_in">
             <input id="permission_sso_logged_in" type="checkbox" <?php checked($checked); ?> name="<?php printf('%s[sso_logged_in]', self::option_name); ?>" value="1"> <?php _e('Der Benutzer muss SSO angemeldet sein.', 'rrze-ac'); ?>
@@ -766,7 +755,7 @@ class RRZE_AC {
     public function permission_select_field() {
         $settings_errors = $this->settings_errors();
         $permission_key = $this->request_var('permission');
-        $permission = $this->get_permission($permission_key);
+        $permission = $this->get_permission($permission_key);      
         $select = isset($permission['select']) ? sanitize_text_field($permission['select']) : '';
         $select = isset($settings_errors['select']['value']) ? sanitize_text_field($settings_errors['select']['value']) : $select;
         $field_invalid = !empty($settings_errors['select']['error']) ? 'field-invalid' : '';
@@ -851,21 +840,33 @@ class RRZE_AC {
             switch ($action) {
                 case 'activate':
                     if (!wp_verify_nonce($nonce, 'activate')) {
-                        wp_die($this->messages['nonce-failed']);
+                        wp_die(__('Schummeln, was?', 'rrze-ac'));
                     }                   
-                    $this->action_activate($permission);
+                    if ($this->action_activate($permission)) {
+                        $this->add_admin_notice(__('Die Berechtigung wurde aktiviert.', 'rrze-ac'));
+                        wp_redirect($this->options_url());
+                        exit();                        
+                    }
                     break;
                 case 'deactivate':
                     if (!wp_verify_nonce($nonce, 'deactivate')) {
-                        wp_die($this->messages['nonce-failed']);
-                    }                    
-                    $this->action_activate($permission, 0);
+                        wp_die(__('Schummeln, was?', 'rrze-ac'));
+                    }
+                    if ($this->action_activate($permission, 0)) {
+                        $this->add_admin_notice(__('Die Berechtigung wurde deaktiviert.', 'rrze-ac'));
+                        wp_redirect($this->options_url());
+                        exit();                        
+                    }
                     break;
                 case 'delete':
                     if (!wp_verify_nonce($nonce, 'delete')) {
-                        wp_die($this->messages['nonce-failed']);
-                    }                    
-                    $this->action_delete($permission);
+                        wp_die(__('Schummeln, was?', 'rrze-ac'));
+                    }
+                    if ($this->action_delete($permission)) {
+                        $this->add_admin_notice(__('Die Berechtigung wurde gelöscht.', 'rrze-ac'));
+                        wp_redirect($this->options_url());
+                        exit();                        
+                    }
                     break;
                 default:
                     break;
@@ -893,11 +894,11 @@ class RRZE_AC {
     
     private function action_activate($permission, $activate = 1) {
         if(!isset($permission['permission_key']) || !$activate && $permission['permission_key'] == $this->get_default_permission()) {
-            return;
+            return FALSE;
         }                
         $permission_key = $permission['permission_key'];
         self::$options['permissions'][$permission_key]['active'] = $activate;
-        update_option(self::option_name, self::$options);   
+        return update_option(self::option_name, self::$options);   
     }
     
     private function action_delete($permission) {
@@ -905,11 +906,11 @@ class RRZE_AC {
                 || $permission['core'] 
                 || $permission['permission_key'] == $this->get_default_permission()
                 || !empty($this->count_meta_keys($permission['permission_key']))) {
-            return;
+            return FALSE;
         }
         $permission_key = $permission['permission_key'];
         unset(self::$options['permissions'][$permission_key]);
-        update_option(self::option_name, self::$options);
+        return update_option(self::option_name, self::$options);
     }
             
     private function validate_settings($input) {
@@ -917,10 +918,8 @@ class RRZE_AC {
                 || !isset(self::$options['permissions'][$input['default_permission']]) 
                 || !self::$options['permissions'][$input['default_permission']]['active']) {
             return FALSE;
-        }
-        
-        self::$options['default_permission'] = $input['default_permission'];
-        
+        }        
+        self::$options['default_permission'] = $input['default_permission'];       
         return update_option(self::option_name, self::$options);
     }
     
@@ -945,22 +944,27 @@ class RRZE_AC {
             $this->add_settings_error('select', $select, '', FALSE);
         }
         
-        $description = !empty($input['description']) ? $input['description'] : '';
-        
         $ip_address = !empty($input['ip_address']) && is_array($input['ip_address']) ? array_filter($input['ip_address']) : '';
         $ip_range = $this->get_ip_range($ip_address);
         $ip_address = !empty($ip_range) ? $ip_range : '';
+        
+        $description = !empty($input['description']) ? $input['description'] : '';
+        
+        $logged_in = !empty($input['logged_in']) ? 1 : 0;
+        $sso_logged_in = !empty($input['sso_logged_in']) ? 1 : 0;
                 
         if ($this->settings_errors()) {
-            $this->add_settings_error('description', $description, '', FALSE);
+            $this->add_settings_error('logged_in', $logged_in, '', FALSE);
+            $this->add_settings_error('sso_logged_in', $sso_logged_in, '', FALSE);
             $this->add_settings_error('ip_address', $ip_address, '', FALSE);
+            $this->add_settings_error('description', $description, '', FALSE);
             return FALSE;
         }        
         
         $new_permission = array(
             'permission_key' => $permission_key,
-            'logged_in' => isset($input['logged_in']) ? 1 : 0,
-            'sso_logged_in' => isset($input['sso_logged_in']) ? 1 : 0,
+            'logged_in' => $logged_in,
+            'sso_logged_in' => $sso_logged_in,
             'ip_address' => $ip_address,
             'select' => $select,
             'description' => $description,
@@ -980,11 +984,6 @@ class RRZE_AC {
     private function validate_edit($permission, $input) {
         $permission_key = $permission['permission_key'];
         
-        if(!$permission['core']) {
-            $permission['logged_in'] = isset($input['logged_in']) ? 1 : 0;
-            $permission['sso_logged_in'] = isset($input['sso_logged_in']) ? 1 : 0;
-        }
-        
         $select = isset($input['select']) ? wp_trim_words(sanitize_text_field($input['select']), 3, '') : '';       
         if(!$select) {
             $this->add_settings_error('select', '', __('Kurzbeschreibung erforderlich.', 'rrze-ac'));
@@ -1002,12 +1001,22 @@ class RRZE_AC {
         $ip_address = !empty($ip_range) ? $ip_range : '';
         $permission['ip_address'] = $ip_address;
         
+        $logged_in = !empty($input['logged_in']) ? 1 : 0;
+        $sso_logged_in = !empty($input['sso_logged_in']) ? 1 : 0;
+                
         if ($this->settings_errors()) {
-            $this->add_settings_error('description', $description, '', FALSE);
+            $this->add_settings_error('logged_in', $logged_in, '', FALSE);
+            $this->add_settings_error('sso_logged_in', $sso_logged_in, '', FALSE);
             $this->add_settings_error('ip_address', $ip_address, '', FALSE);
+            $this->add_settings_error('description', $description, '', FALSE);
             return FALSE;
-        }        
+        }    
         
+        if(!$permission['core']) {
+            $permission['logged_in'] = $logged_in;
+            $permission['sso_logged_in'] = $sso_logged_in;
+        }
+                
         self::$options['permissions'][$permission_key] = $permission;
         
         return update_option(self::option_name, self::$options);
