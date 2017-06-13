@@ -3,7 +3,7 @@
 /*
   Plugin Name: RRZE-Access-Control
   Plugin URI: https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-  Version: 1.4.2
+  Version: 1.4.3
   Description: Es ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene Funktionen und IP-Adresse.
   Author: RRZE-Webteam
   Author URI: https://blogs.fau.de/webworking/
@@ -35,7 +35,7 @@ register_deactivation_hook(__FILE__, array('RRZE_AC', 'deactivation'));
 
 class RRZE_AC {
 
-    const version = '1.4.2';
+    const version = '1.4.3';
     
     const option_name = 'rrze_ac';
     const version_option_name = 'rrze_ac_version';
@@ -1429,7 +1429,7 @@ class RRZE_AC {
             $ip_address = FALSE;
         }
         
-        return $ipaddress;
+        return $ip_address;
     }
         
     private function check_sso_logged_in() {
