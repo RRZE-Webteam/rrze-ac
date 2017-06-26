@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Access-Control\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-06-02 14:48+0200\n"
+"POT-Creation-Date: 2017-06-26 17:18+0200\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: RRZE-Webteam <webmaster@rrze.fau.de>\n"
@@ -20,7 +20,7 @@ msgstr ""
 "X-Poedit-SearchPath-0: .\n"
 "X-Poedit-SearchPath-1: ..\n"
 
-#: ../includes/list-table.php:62 ../rrze-ac.php:1582
+#: ../includes/list-table.php:62 ../rrze-ac.php:1587
 msgid "Bearbeiten"
 msgstr "Edit"
 
@@ -29,7 +29,7 @@ msgid "Deaktivieren"
 msgstr "Deactivate"
 
 #: ../includes/list-table.php:68 ../includes/list-table.php:106
-#: ../rrze-ac.php:2351
+#: ../rrze-ac.php:2356
 msgid "Aktivieren"
 msgstr "Activate"
 
@@ -37,24 +37,24 @@ msgstr "Activate"
 msgid "Löschen"
 msgstr "Delete"
 
-#: ../includes/list-table.php:84 ../rrze-ac.php:697 ../rrze-ac.php:705
-#: ../rrze-ac.php:1206 ../rrze-ac.php:1540
+#: ../includes/list-table.php:84 ../rrze-ac.php:699 ../rrze-ac.php:707
+#: ../rrze-ac.php:1208 ../rrze-ac.php:1545
 msgid "Berechtigung"
 msgstr "Permission"
 
-#: ../includes/list-table.php:85 ../rrze-ac.php:701 ../rrze-ac.php:709
+#: ../includes/list-table.php:85 ../rrze-ac.php:703 ../rrze-ac.php:711
 msgid "Kurzbeschreibung"
 msgstr "Short Description"
 
-#: ../includes/list-table.php:86 ../rrze-ac.php:702 ../rrze-ac.php:710
+#: ../includes/list-table.php:86 ../rrze-ac.php:704 ../rrze-ac.php:712
 msgid "Beschreibung"
 msgstr "Description"
 
-#: ../includes/list-table.php:87 ../rrze-ac.php:698 ../rrze-ac.php:706
+#: ../includes/list-table.php:87 ../rrze-ac.php:700 ../rrze-ac.php:708
 msgid "Angemeldet"
 msgstr "Logged-in"
 
-#: ../includes/list-table.php:88 ../rrze-ac.php:699 ../rrze-ac.php:707
+#: ../includes/list-table.php:88 ../rrze-ac.php:701 ../rrze-ac.php:709
 msgid "SSO"
 msgstr "SSO"
 
@@ -62,11 +62,11 @@ msgstr "SSO"
 msgid "IP-Adresse zulassen"
 msgstr "Allow IP address"
 
-#: ../rrze-ac.php:145 ../rrze-ac.php:477
+#: ../rrze-ac.php:147 ../rrze-ac.php:479
 msgid "Einstellungen"
 msgstr "Settings"
 
-#: ../rrze-ac.php:203
+#: ../rrze-ac.php:205
 #, php-format
 msgid ""
 "Die PHP-Version %s ist veraltet. Bitte aktualisieren Sie mindestens auf die "
@@ -75,7 +75,7 @@ msgstr ""
 "Your server is running PHP version %s. Please upgrade at least to PHP "
 "version %s."
 
-#: ../rrze-ac.php:208
+#: ../rrze-ac.php:210
 #, php-format
 msgid ""
 "Die Wordpress-Version %s ist veraltet. Bitte aktualisieren Sie mindestens "
@@ -84,7 +84,7 @@ msgstr ""
 "Your Wordpress version is %s. Please upgrade at least to Wordpress version "
 "%s."
 
-#: ../rrze-ac.php:213
+#: ../rrze-ac.php:215
 #, php-format
 msgid ""
 "Der Web-Server-Software %s ist nicht kompatibel. Bitte verwenden Sie "
@@ -93,7 +93,7 @@ msgstr ""
 "The Web server software %s is not compatible. Please use instead the Apache "
 "Web server software."
 
-#: ../rrze-ac.php:218
+#: ../rrze-ac.php:220
 msgid ""
 "Der Web-Server-Software ist nicht kompatibel. Bitte verwenden Sie "
 "stattdessen den Apache-Web-Server-Software."
@@ -101,15 +101,15 @@ msgstr ""
 "The Web server software is not compatible. Please use instead the Apache Web "
 "server software."
 
-#: ../rrze-ac.php:223
+#: ../rrze-ac.php:225
 msgid "Die Wordpress-Instanz ist keine Multisite."
 msgstr "The WordPress instance is not a MultiSite."
 
-#: ../rrze-ac.php:228
+#: ../rrze-ac.php:230
 msgid "Der Web-Server-Software unterstützt das Rewrite-Modul nicht."
 msgstr "The Web server software does not support the Rewrite module."
 
-#: ../rrze-ac.php:260
+#: ../rrze-ac.php:262
 msgid ""
 "Das RRZE-Access-Control-Plugin wurde nicht richtig konfiguriert. Die Dateien/"
 "Dokumente können nicht geschützt werden."
@@ -117,7 +117,7 @@ msgstr ""
 "The RRZE Access Control Plugin is not configured properly. The files and "
 "documents can not be protected."
 
-#: ../rrze-ac.php:263
+#: ../rrze-ac.php:265
 msgid ""
 "Die folgende Rewrite-Befehle müssen in der htaccess-Datei nach der WordPress-"
 "Befehl &#8222;RewriteRule ^index\\.php$ - [L]&#8220; hinzugefügt werden."
@@ -125,151 +125,151 @@ msgstr ""
 "The following rewrite commands must be added in the .htaccess file after the "
 "WordPress command &#8222;RewriteRule ^index\\.php$ - [L]&#8220;."
 
-#: ../rrze-ac.php:266
+#: ../rrze-ac.php:268
 msgid "Bitte wenden Sie sich an den Systemadministrator."
 msgstr "Please contact your system administrator."
 
-#: ../rrze-ac.php:323 ../rrze-ac.php:324
+#: ../rrze-ac.php:325 ../rrze-ac.php:326
 msgid "Angemeldeten Benutzer"
 msgstr "Logged-in user"
 
-#: ../rrze-ac.php:335 ../rrze-ac.php:336
+#: ../rrze-ac.php:337 ../rrze-ac.php:338
 msgid "Alle"
 msgstr "All"
 
-#: ../rrze-ac.php:472
+#: ../rrze-ac.php:474
 msgid "Zugriffsschutz"
 msgstr "Access Protection"
 
-#: ../rrze-ac.php:473
+#: ../rrze-ac.php:475
 msgid "Berechtigungen"
 msgstr "Permissions"
 
-#: ../rrze-ac.php:489
+#: ../rrze-ac.php:491
 msgid "Einträge pro Seite:"
 msgstr "Items per page:"
 
-#: ../rrze-ac.php:503
+#: ../rrze-ac.php:505
 msgid "Zugriffsschutz &rsaquo; Berechtigungen"
 msgstr "Permissions"
 
-#: ../rrze-ac.php:505 ../rrze-ac.php:627 ../rrze-ac.php:632
+#: ../rrze-ac.php:507 ../rrze-ac.php:629 ../rrze-ac.php:634
 msgid "Neue Berechtigung hinzufügen"
 msgstr "Add New Permission"
 
-#: ../rrze-ac.php:540 ../rrze-ac.php:564 ../rrze-ac.php:602 ../rrze-ac.php:843
-#: ../rrze-ac.php:853 ../rrze-ac.php:863
+#: ../rrze-ac.php:542 ../rrze-ac.php:566 ../rrze-ac.php:604 ../rrze-ac.php:845
+#: ../rrze-ac.php:855 ../rrze-ac.php:865
 msgid "Schummeln, was?"
 msgstr "Cheatin&#8217; uh?"
 
-#: ../rrze-ac.php:554
+#: ../rrze-ac.php:556
 msgid "Die Berechtigung wurde hinzugefügt."
 msgstr "The permission has been added."
 
-#: ../rrze-ac.php:568 ../rrze-ac.php:574
+#: ../rrze-ac.php:570 ../rrze-ac.php:576
 msgid "Berechtigung existiert nicht."
 msgstr "Permission does not exist."
 
-#: ../rrze-ac.php:590
+#: ../rrze-ac.php:592
 msgid "Die Berechtigung wurde aktualisiert."
 msgstr "The permission has been updated."
 
-#: ../rrze-ac.php:618
+#: ../rrze-ac.php:620
 msgid "Die Einstellungen wurden aktualisiert."
 msgstr "The settings have been updated."
 
-#: ../rrze-ac.php:640 ../rrze-ac.php:1583
+#: ../rrze-ac.php:642 ../rrze-ac.php:1588
 msgid "Berechtigung bearbeiten"
 msgstr "Edit permission"
 
-#: ../rrze-ac.php:645
+#: ../rrze-ac.php:647
 msgid "Änderungen übernehmen"
 msgstr "Save Changes"
 
-#: ../rrze-ac.php:658
+#: ../rrze-ac.php:660
 msgid "Suche"
 msgstr "Search"
 
-#: ../rrze-ac.php:675
+#: ../rrze-ac.php:677
 msgid "Zugriffsschutz &rsaquo; Einstellungen"
 msgstr "Settings"
 
-#: ../rrze-ac.php:700 ../rrze-ac.php:708
+#: ../rrze-ac.php:702 ../rrze-ac.php:710
 msgid "IP-Adressen zulassen"
 msgstr "Allow IP addresses"
 
-#: ../rrze-ac.php:713
+#: ../rrze-ac.php:715
 msgid "Standardberechtigung"
 msgstr "Standard Permission"
 
-#: ../rrze-ac.php:737
+#: ../rrze-ac.php:739
 msgid "Der Benutzer muss angemeldet sein."
 msgstr "The user must be logged in."
 
-#: ../rrze-ac.php:750
+#: ../rrze-ac.php:752
 msgid "Der Benutzer muss SSO angemeldet sein."
 msgstr "The user must be SSO logged-in."
 
-#: ../rrze-ac.php:846
+#: ../rrze-ac.php:848
 msgid "Die Berechtigung wurde aktiviert."
 msgstr "The permission has been enabled."
 
-#: ../rrze-ac.php:856
+#: ../rrze-ac.php:858
 msgid "Die Berechtigung wurde deaktiviert."
 msgstr "The permission has been disabled."
 
-#: ../rrze-ac.php:866
+#: ../rrze-ac.php:868
 msgid "Die Berechtigung wurde gelöscht."
 msgstr "The permission has been deleted."
 
-#: ../rrze-ac.php:932
+#: ../rrze-ac.php:934
 msgid "Berechtigung erforderlich."
 msgstr "Permission required."
 
-#: ../rrze-ac.php:934
+#: ../rrze-ac.php:936
 msgid "Berechtigung existiert bereits."
 msgstr "Permission already exists."
 
-#: ../rrze-ac.php:942 ../rrze-ac.php:989
+#: ../rrze-ac.php:944 ../rrze-ac.php:991
 msgid "Kurzbeschreibung erforderlich."
 msgstr "Short description required."
 
-#: ../rrze-ac.php:1161
+#: ../rrze-ac.php:1163
 #, php-format
 msgid "Die IP-Adresse %s ist nicht gültig."
 msgstr "The IP address %s is not valid."
 
-#: ../rrze-ac.php:1198 ../rrze-ac.php:1514 ../rrze-ac.php:2038
-#: ../rrze-ac.php:2076
+#: ../rrze-ac.php:1200 ../rrze-ac.php:1519 ../rrze-ac.php:2043
+#: ../rrze-ac.php:2081
 msgid "Zugriffsbeschränkung"
 msgstr "Access Restriction"
 
-#: ../rrze-ac.php:1535 ../rrze-ac.php:2133
+#: ../rrze-ac.php:1540 ../rrze-ac.php:2138
 msgid "Berechtigung aktivieren"
 msgstr "Enable permission"
 
-#: ../rrze-ac.php:1536 ../rrze-ac.php:2136
+#: ../rrze-ac.php:1541 ../rrze-ac.php:2141
 msgid "Berechtigung entfernen"
 msgstr "Remove permission"
 
-#: ../rrze-ac.php:1578
+#: ../rrze-ac.php:1583
 msgid "Berechtigung:"
 msgstr "Permission:"
 
-#: ../rrze-ac.php:1594
+#: ../rrze-ac.php:1599
 msgid "OK"
 msgstr "OK"
 
-#: ../rrze-ac.php:1595
+#: ../rrze-ac.php:1600
 msgid "Abbrechen"
 msgstr "Abort"
 
-#: ../rrze-ac.php:1732
+#: ../rrze-ac.php:1737
 #, php-format
 msgid "Das Post %d is kein Medien-Post-Type."
 msgstr "The post %d is not a Media Post-Type."
 
-#: ../rrze-ac.php:1738
+#: ../rrze-ac.php:1743
 #, php-format
 msgid ""
 "Der neu angegebenen Pfad %s ist absolut. Der neue Pfad muss ein Pfad relativ "
@@ -278,39 +278,39 @@ msgstr ""
 "The newly specified path %s is absolute. The new path must be a path "
 "relative to the WP uploads directory."
 
-#: ../rrze-ac.php:1764
+#: ../rrze-ac.php:1769
 #, php-format
 msgid "Ein Fehler ist aufgetreten bei der Erstellung des Verzeichnis %s"
 msgstr "An error has occurred while creating the directory %s"
 
-#: ../rrze-ac.php:1827
+#: ../rrze-ac.php:1832
 #, php-format
 msgid "Die Datei kann nicht von %s nach %s verschoben werden."
 msgstr "The file can not be moved from %s to %s."
 
-#: ../rrze-ac.php:1884 ../rrze-ac.php:1894
+#: ../rrze-ac.php:1889 ../rrze-ac.php:1899
 msgid "Die angeforderte Datei wurde nicht gefunden."
 msgstr "The requested file was not found."
 
-#: ../rrze-ac.php:1904
+#: ../rrze-ac.php:1909
 msgid "Die Anfrage wurde mangels Berechtigung des Clients nicht durchgeführt."
 msgstr "The request was due lack of client permission not performed."
 
-#: ../rrze-ac.php:2031
+#: ../rrze-ac.php:2036
 msgid ""
 "Sie verfügen nicht über ausreichende Berechtigungen, um auf die Datei "
 "zugreifen zu können."
 msgstr "You do not have sufficient permissions to access the file."
 
-#: ../rrze-ac.php:2056 ../rrze-ac.php:2094
+#: ../rrze-ac.php:2061 ../rrze-ac.php:2099
 msgid "Berechtigung nicht vorhanden bzw. wurde entfernt"
 msgstr "Permission does not exist or has been removed"
 
-#: ../rrze-ac.php:2060 ../rrze-ac.php:2098
+#: ../rrze-ac.php:2065 ../rrze-ac.php:2103
 msgid "Berechtigung wurde deaktiviert"
 msgstr "Permission has been disabled"
 
-#: ../rrze-ac.php:2070 ../rrze-ac.php:2108
+#: ../rrze-ac.php:2075 ../rrze-ac.php:2113
 #, php-format
 msgid ""
 "Ein Fehler ist aufgetreten: %1$s und ist durch die Standardberechtigung "
@@ -319,27 +319,27 @@ msgstr ""
 "An error has occurred: %1$s and has been replaced by the default permission "
 "%2$s."
 
-#: ../rrze-ac.php:2162
+#: ../rrze-ac.php:2167
 #, php-format
 msgid "Mediendatei ist nun geschützt."
 msgid_plural "%s Mediendateien sind nun geschützt."
 msgstr[0] "Media file is now protected."
 msgstr[1] "%s media files are now protected."
 
-#: ../rrze-ac.php:2174
+#: ../rrze-ac.php:2179
 #, php-format
 msgid "Dateischutz auf Mediendatei entfernt."
 msgid_plural "Dateischutz auf %s Mediendateien entfernt."
 msgstr[0] "Data protection on Media file has been removed."
 msgstr[1] "Data protection on %s Media files has been removed."
 
-#: ../rrze-ac.php:2225
+#: ../rrze-ac.php:2230
 msgid ""
 "Sie sind nicht erlaubt, Mediendateien zu dem geschützten Verzeichnis "
 "hinzuzufügen."
 msgstr "You are not allowed to add media files to the protected directory."
 
-#: ../rrze-ac.php:2242
+#: ../rrze-ac.php:2247
 msgid ""
 "Ein Fehler ist aufgetreten als Sie versucht haben, die Mediendateien in dem "
 "geschützten Verzeichnis zu verschieben."
@@ -347,14 +347,14 @@ msgstr ""
 "An error has occurred when you tried to move the media files in the "
 "protected directory."
 
-#: ../rrze-ac.php:2256
+#: ../rrze-ac.php:2261
 msgid ""
 "Sie sind nicht erlaubt, Mediendateien von dem geschützten Verzeichnis zu "
 "entfernen."
 msgstr ""
 "You are not permitted to remove media files from the protected directory."
 
-#: ../rrze-ac.php:2273
+#: ../rrze-ac.php:2278
 msgid ""
 "Ein Fehler ist aufgetreten beim Verschieben der Mediendateien in dem "
 "geschützten Verzeichnis."
@@ -362,28 +362,18 @@ msgstr ""
 "An error has occurred while moving the media files in the protected "
 "directory."
 
-#: ../rrze-ac.php:2343
+#: ../rrze-ac.php:2348
 msgid "Zugiffsbeschränkung"
 msgstr "Access Restriction"
 
-#: ../rrze-ac.php:2369
+#: ../rrze-ac.php:2374
 msgid "Neue Dateien sind geschützt"
 msgstr "New files are protected"
-
-#: ../rrze-ac.php:2439
-#, php-format
-msgid ""
-"Der Zugriff auf diese Seite ist nur für Mitglieder dieser Webseite möglich. "
-"<a href=\"%s\">Bitte melden Sie sich mit Ihrer IdM-Kennung an</a>, um den "
-"Inhalt der Seite zu sehen."
-msgstr ""
-"Access to this page is only available to members of this site. <a href=\"%s"
-"\">Please login with your IdM identifier</a> to see the contents of the page."
 
 #: ../rrze-ac.php:2442
 #, php-format
 msgid ""
-"Der Zugriff auf diese Datei ist nur für Mitglieder dieser Webseite möglich. "
+"Der Zugriff auf diese Datei ist nur für Mitglieder dieser Website möglich. "
 "<a href=\"%s\">Bitte melden Sie sich mit Ihrer IdM-Kennung an</a>, um die "
 "Datei herunterzuladen."
 msgstr ""
@@ -391,30 +381,71 @@ msgstr ""
 "\"%s\">Please login with your IdM identifier</a>, to download the file."
 
 #: ../rrze-ac.php:2444
+#, php-format
 msgid ""
-"Sie verfügen nicht über ausreichende Berechtigungen, um die Seite anzusehen. "
-"Falls Sie glauben, Sie müssten Zugriff auf die Seite haben, bitte "
-"kontaktieren Sie den Ansprechpartner der Webseite."
+"Der Zugriff auf diese Seite ist nur für Mitglieder dieser Website möglich. "
+"<a href=\"%s\">Bitte melden Sie sich mit Ihrer IdM-Kennung an</a>, um den "
+"Inhalt der Seite zu sehen."
 msgstr ""
-"You do not have sufficient permissions to view this page. If you believe you "
-"should have access to the page, please get in touch with the contact person "
-"of the website."
+"Access to this page is only available to members of this site. <a href=\"%s"
+"\">Please login with your IdM identifier</a> to see the contents of the page."
 
-#: ../rrze-ac.php:2446
+#: ../rrze-ac.php:2453
+msgid ""
+"Bitte melden Sie sich mit Ihrer IdM-Kennung an, um die Datei herunterzuladen."
+msgstr "Please log in with your IdM identifier to download the file."
+
+#: ../rrze-ac.php:2455
+msgid ""
+"Bitte melden Sie sich mit Ihrer IdM-Kennung an, um den Inhalt der Seite zu "
+"sehen."
+msgstr "Please login with your IdM identifier to see the contents of the page."
+
+#: ../rrze-ac.php:2457
+#, php-format
+msgid ""
+"<a href=\"%s\">Anmeldung über Single Sign-On (zentraler Anmeldedienst der "
+"Universität Erlangen-Nürnberg)</a>"
+msgstr ""
+"<a href=\"%s\">Login through Single Sign-On (central login service of the "
+"University Erlangen-Nürnberg)</a>"
+
+#: ../rrze-ac.php:2458
+msgid ""
+"Zur Nutzung ist eine Anmeldung mit Hilfe Ihrer uniweiten Benutzerkennung "
+"notwendig. Sollte die Anmeldung fehlschlagen, prüfen Sie Ihr Passwort über "
+"den <a href=\"https://www.idm.uni-erlangen.de/\">Identity Management (IdM) "
+"Self Service</a>."
+msgstr ""
+"To use the services from Uniportal a login with an ID is required. If the "
+"login fails, check your account at the <a href=„https://www.idm.uni-erlangen."
+"de/„>Identity Management (IdM) Self Service</a>."
+
+#: ../rrze-ac.php:2465
 msgid ""
 "Sie verfügen nicht über ausreichende Berechtigungen, um auf die Datei "
 "zugreifen zu können. Falls Sie glauben, Sie müssten Zugriff auf die Datei "
-"haben, bitte kontaktieren Sie den Ansprechpartner der Webseite."
+"haben, bitte kontaktieren Sie den Ansprechpartner der Website."
 msgstr ""
 "You do not have sufficient permissions to access the file. If you believe "
 "you should have access to the file, please get in touch with the contact "
 "person of the website."
 
-#: ../rrze-ac.php:2448
+#: ../rrze-ac.php:2467
+msgid ""
+"Sie verfügen nicht über ausreichende Berechtigungen, um die Seite anzusehen. "
+"Falls Sie glauben, Sie müssten Zugriff auf die Seite haben, bitte "
+"kontaktieren Sie den Ansprechpartner der Website."
+msgstr ""
+"You do not have sufficient permissions to view this page. If you believe you "
+"should have access to the page, please get in touch with the contact person "
+"of the website."
+
+#: ../rrze-ac.php:2473
 msgid ""
 "Sie verfügen nicht über ausreichende Berechtigungen, um diesen Bereich "
 "anzusehen. Falls Sie glauben, Sie müssten Zugriff auf diesen Bereich haben, "
-"bitte kontaktieren Sie den Ansprechpartner der Webseite."
+"bitte kontaktieren Sie den Ansprechpartner der Website."
 msgstr ""
 "You do not have sufficient permissions to view this resource. If you believe "
 "you should have access to this resource, please get in touch with the "
