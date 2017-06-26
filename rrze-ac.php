@@ -3,7 +3,7 @@
 /*
   Plugin Name: RRZE-Access-Control
   Plugin URI: https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-  Version: 1.4.4
+  Version: 1.4.5
   Description: Es ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene Funktionen und IP-Adresse.
   Author: RRZE-Webteam
   Author URI: https://blogs.fau.de/webworking/
@@ -35,7 +35,7 @@ register_deactivation_hook(__FILE__, array('RRZE_AC', 'deactivation'));
 
 class RRZE_AC {
 
-    const version = '1.4.4';
+    const version = '1.4.5';
     
     const option_name = 'rrze_ac';
     const version_option_name = 'rrze_ac_version';
@@ -2455,7 +2455,6 @@ class RRZE_AC {
                 $message = '<p>' . __('Bitte melden Sie sich mit Ihrer IdM-Kennung an, um den Inhalt der Seite zu sehen.', 'rrze-ac') . '</p>';                
             }
             $message .= '<p>' . sprintf(__('<a href="%s">Anmeldung über Single Sign-On (zentraler Anmeldedienst der Universität Erlangen-Nürnberg)</a>', 'rrze-ac'), $login). '</p>';
-            $message .= '<p>' . __('Zur Nutzung ist eine Anmeldung mit Hilfe Ihrer uniweiten Benutzerkennung notwendig. Sollte die Anmeldung fehlschlagen, prüfen Sie Ihr Passwort über den <a href="https://www.idm.uni-erlangen.de/">Identity Management (IdM) Self Service</a>.', 'rrze-ac'). '</p>';
             
             return $message;
         }
