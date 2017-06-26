@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Access-Control\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-06-26 17:18+0200\n"
+"POT-Creation-Date: 2017-06-26 18:10+0200\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: RRZE-Webteam <webmaster@rrze.fau.de>\n"
@@ -410,18 +410,7 @@ msgstr ""
 "<a href=\"%s\">Login through Single Sign-On (central login service of the "
 "University Erlangen-Nürnberg)</a>"
 
-#: ../rrze-ac.php:2458
-msgid ""
-"Zur Nutzung ist eine Anmeldung mit Hilfe Ihrer uniweiten Benutzerkennung "
-"notwendig. Sollte die Anmeldung fehlschlagen, prüfen Sie Ihr Passwort über "
-"den <a href=\"https://www.idm.uni-erlangen.de/\">Identity Management (IdM) "
-"Self Service</a>."
-msgstr ""
-"To use the services from Uniportal a login with an IdM identifier is "
-"required. If the login fails, check your account at the <a href=\"https://"
-"www.idm.uni-erlangen.de/\">Identity Management (IdM) Self Service</a>."
-
-#: ../rrze-ac.php:2465
+#: ../rrze-ac.php:2464
 msgid ""
 "Sie verfügen nicht über ausreichende Berechtigungen, um auf die Datei "
 "zugreifen zu können. Falls Sie glauben, Sie müssten Zugriff auf die Datei "
@@ -431,7 +420,7 @@ msgstr ""
 "you should have access to the file, please get in touch with the contact "
 "person of the website."
 
-#: ../rrze-ac.php:2467
+#: ../rrze-ac.php:2466
 msgid ""
 "Sie verfügen nicht über ausreichende Berechtigungen, um die Seite anzusehen. "
 "Falls Sie glauben, Sie müssten Zugriff auf die Seite haben, bitte "
@@ -441,7 +430,7 @@ msgstr ""
 "should have access to the page, please get in touch with the contact person "
 "of the website."
 
-#: ../rrze-ac.php:2473
+#: ../rrze-ac.php:2472
 msgid ""
 "Sie verfügen nicht über ausreichende Berechtigungen, um diesen Bereich "
 "anzusehen. Falls Sie glauben, Sie müssten Zugriff auf diesen Bereich haben, "
@@ -450,6 +439,16 @@ msgstr ""
 "You do not have sufficient permissions to view this resource. If you believe "
 "you should have access to this resource, please get in touch with the "
 "contact person of the website."
+
+#~ msgid ""
+#~ "Zur Nutzung ist eine Anmeldung mit Hilfe Ihrer uniweiten Benutzerkennung "
+#~ "notwendig. Sollte die Anmeldung fehlschlagen, prüfen Sie Ihr Passwort "
+#~ "über den <a href=\"https://www.idm.uni-erlangen.de/\">Identity Management "
+#~ "(IdM) Self Service</a>."
+#~ msgstr ""
+#~ "To use the services from Uniportal a login with an IdM identifier is "
+#~ "required. If the login fails, check your account at the <a href=\"https://"
+#~ "www.idm.uni-erlangen.de/\">Identity Management (IdM) Self Service</a>."
 
 #~ msgid ""
 #~ "Sie haben nicht die erforderlichen Rechte, um diese Aktion durchzuführen."
