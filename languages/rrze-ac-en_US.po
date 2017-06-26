@@ -417,9 +417,9 @@ msgid ""
 "den <a href=\"https://www.idm.uni-erlangen.de/\">Identity Management (IdM) "
 "Self Service</a>."
 msgstr ""
-"To use the services from Uniportal a login with an ID is required. If the "
-"login fails, check your account at the <a href=„https://www.idm.uni-erlangen."
-"de/„>Identity Management (IdM) Self Service</a>."
+"To use the services from Uniportal a login with an IdM identifier is "
+"required. If the login fails, check your account at the <a href=\"https://"
+"www.idm.uni-erlangen.de/\">Identity Management (IdM) Self Service</a>."
 
 #: ../rrze-ac.php:2465
 msgid ""
