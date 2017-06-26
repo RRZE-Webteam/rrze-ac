@@ -3,7 +3,7 @@
 /*
   Plugin Name: RRZE-Access-Control
   Plugin URI: https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-  Version: 1.4.3
+  Version: 1.4.4
   Description: Es ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene Funktionen und IP-Adresse.
   Author: RRZE-Webteam
   Author URI: https://blogs.fau.de/webworking/
@@ -35,7 +35,7 @@ register_deactivation_hook(__FILE__, array('RRZE_AC', 'deactivation'));
 
 class RRZE_AC {
 
-    const version = '1.4.3';
+    const version = '1.4.4';
     
     const option_name = 'rrze_ac';
     const version_option_name = 'rrze_ac_version';
@@ -68,6 +68,8 @@ class RRZE_AC {
     private $websso_plugin = 'fau-websso/fau-websso.php';
     
     private $websso_option_name = '_fau_websso';
+    
+    private $simplesaml_auth = NULL;
     
     private $person_affiliation = NULL;
     
@@ -1432,9 +1434,9 @@ class RRZE_AC {
         return $ip_address;
     }
         
-    private function check_sso_logged_in() {
+    private function simplesaml_auth() {
         if (!$this->is_plugin_active($this->websso_plugin)) {
-            return FALSE;
+            return;
         }
         
         if (is_multisite()) {
@@ -1444,26 +1446,29 @@ class RRZE_AC {
         }
         
         if (!isset($options['simplesaml_include']) || !isset($options['simplesaml_auth_source'])) {
-            return FALSE;
+            return;
         }
         
         include_once(WP_CONTENT_DIR . $options['simplesaml_include']);
         
         if(!class_exists('SimpleSAML_Auth_Simple')) {
-            return FALSE;
+            return;
         }
 
-        $as = new SimpleSAML_Auth_Simple($options['simplesaml_auth_source']);
+        $this->simplesaml_auth = new SimpleSAML_Auth_Simple($options['simplesaml_auth_source']);
+    }
+    
+    private function check_sso_logged_in() {
+        $this->simplesaml_auth();
         
-        if ($as->isAuthenticated()) {
-            $attributes = $as->getAttributes();
-            $this->person_affiliation = isset($attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'][0]) ? $attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'][0] : NULL;
-            $this->person_entitlement = isset($attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'][0]) ? $attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'][0] : NULL;                 
-            return TRUE;
+        if (!$this->simplesaml_auth || !$this->simplesaml_auth->isAuthenticated()) {
+            return FALSE;
         }
         
-        $as->requireAuth(); // redirect to IdP
-        exit();
+        $attributes = $this->simplesaml_auth->isAuthenticated();
+        $this->person_affiliation = isset($attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'][0]) ? $attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'][0] : NULL;
+        $this->person_entitlement = isset($attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'][0]) ? $attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'][0] : NULL;                 
+        return TRUE;
     }
     
     private function check_permission($post_id) {
@@ -1475,13 +1480,13 @@ class RRZE_AC {
         if($this->check_author_permission($post_id)) {
             return TRUE;
         }
-        
+                
         if (!$permission = $this->get_the_permission($post_id)) {
             return TRUE;
         }
         
         $permissions = $this->get_the_permissions();
-        
+
         // set permission to default permission if not exist or not active
         if (!isset($permissions[$permission]) || !$permissions[$permission]['active']) {
             $permission = $this->get_default_permission();
@@ -2373,14 +2378,11 @@ class RRZE_AC {
     }
         
     public function template_redirect() {
-        global $wp_query;
-        
-        if(is_singular() && !empty($wp_query->posts)) {
-            foreach($wp_query->posts as $post) {
-                if(in_array($post->post_type, array('page', 'attachment')) && !$this->check_permission($post->ID)) {
-                    status_header(403);
-                    wp_die($this->permission_forbidden_message($post->ID));
-                }
+        if(is_page() || is_attachment()) {
+            global $post;
+            if (!$this->check_permission($post->ID)) {
+                status_header(403);
+                wp_die($this->permission_forbidden_message($post->ID));
             }
         }
     }
@@ -2433,22 +2435,42 @@ class RRZE_AC {
         $message = '';
         
         $post_type = get_post_type($post_id);
-
-        if($this->get_permission_status(self::user_isnt_logged_in) && $post_type == 'page') {
-            $permalink = get_permalink($post_id);
-            $message = sprintf(__('Der Zugriff auf diese Seite ist nur für Mitglieder dieser Webseite möglich. <a href="%s">Bitte melden Sie sich mit Ihrer IdM-Kennung an</a>, um den Inhalt der Seite zu sehen.', 'rrze-ac'), wp_login_url($permalink));
-        } elseif($this->get_permission_status(self::user_isnt_logged_in) && $post_type == 'attachment') {
-            $permalink = get_permalink($post_id);
-            $message = sprintf(__('Der Zugriff auf diese Datei ist nur für Mitglieder dieser Webseite möglich. <a href="%s">Bitte melden Sie sich mit Ihrer IdM-Kennung an</a>, um die Datei herunterzuladen.', 'rrze-ac'), wp_login_url($permalink));        
-        } elseif($this->get_permission_status(self::user_ip_isnt_in_range) && $post_type == 'page') {
-            $message = __('Sie verfügen nicht über ausreichende Berechtigungen, um die Seite anzusehen. Falls Sie glauben, Sie müssten Zugriff auf die Seite haben, bitte kontaktieren Sie den Ansprechpartner der Webseite.', 'rrze-ac');
-        } elseif($this->get_permission_status(self::user_ip_isnt_in_range) && $post_type == 'attachment') {
-            $message = __('Sie verfügen nicht über ausreichende Berechtigungen, um auf die Datei zugreifen zu können. Falls Sie glauben, Sie müssten Zugriff auf die Datei haben, bitte kontaktieren Sie den Ansprechpartner der Webseite.', 'rrze-ac');
-        } else {
-            $message = __('Sie verfügen nicht über ausreichende Berechtigungen, um diesen Bereich anzusehen. Falls Sie glauben, Sie müssten Zugriff auf diesen Bereich haben, bitte kontaktieren Sie den Ansprechpartner der Webseite.', 'rrze-ac');            
+        $permalink = get_permalink($post_id);
+        
+        if($this->get_permission_status(self::user_isnt_logged_in)) {
+            if ($post_type == 'attachment') {
+                $message = '<p>' . sprintf(__('Der Zugriff auf diese Datei ist nur für Mitglieder dieser Website möglich. <a href="%s">Bitte melden Sie sich mit Ihrer IdM-Kennung an</a>, um die Datei herunterzuladen.', 'rrze-ac'), wp_login_url($permalink)) . '</p>';            
+            } else {
+                $message = '<p>' . sprintf(__('Der Zugriff auf diese Seite ist nur für Mitglieder dieser Website möglich. <a href="%s">Bitte melden Sie sich mit Ihrer IdM-Kennung an</a>, um den Inhalt der Seite zu sehen.', 'rrze-ac'), wp_login_url($permalink)) . '</p>';
+            }
+            
+            return $message;
         }
         
-        return $message;        
+        if($this->get_permission_status(self::user_isnt_sso_logged_in) && $this->simplesaml_auth) {
+            $login = $this->simplesaml_auth->getLoginURL($permalink);
+            if ($post_type == 'attachment') {
+                $message = '<p>' . __('Bitte melden Sie sich mit Ihrer IdM-Kennung an, um die Datei herunterzuladen.', 'rrze-ac') . '</p>';
+            } else {
+                $message = '<p>' . __('Bitte melden Sie sich mit Ihrer IdM-Kennung an, um den Inhalt der Seite zu sehen.', 'rrze-ac') . '</p>';                
+            }
+            $message .= '<p>' . sprintf(__('<a href="%s">Anmeldung über Single Sign-On (zentraler Anmeldedienst der Universität Erlangen-Nürnberg)</a>', 'rrze-ac'), $login). '</p>';
+            $message .= '<p>' . __('Zur Nutzung ist eine Anmeldung mit Hilfe Ihrer uniweiten Benutzerkennung notwendig. Sollte die Anmeldung fehlschlagen, prüfen Sie Ihr Passwort über den <a href="https://www.idm.uni-erlangen.de/">Identity Management (IdM) Self Service</a>.', 'rrze-ac'). '</p>';
+            
+            return $message;
+        }
+        
+        if($this->get_permission_status(self::user_ip_isnt_in_range)) {
+            if ($post_type == 'attachment') {
+                $message = '<p>' . __('Sie verfügen nicht über ausreichende Berechtigungen, um auf die Datei zugreifen zu können. Falls Sie glauben, Sie müssten Zugriff auf die Datei haben, bitte kontaktieren Sie den Ansprechpartner der Website.', 'rrze-ac') . '</p>';                
+            } else {
+                $message = '<p>' . __('Sie verfügen nicht über ausreichende Berechtigungen, um die Seite anzusehen. Falls Sie glauben, Sie müssten Zugriff auf die Seite haben, bitte kontaktieren Sie den Ansprechpartner der Website.', 'rrze-ac') . '</p>';                
+            }
+            
+            return $message;
+        }
+        
+        return '<p>' . __('Sie verfügen nicht über ausreichende Berechtigungen, um diesen Bereich anzusehen. Falls Sie glauben, Sie müssten Zugriff auf diesen Bereich haben, bitte kontaktieren Sie den Ansprechpartner der Website.', 'rrze-ac') . '</p>';       
     }
     
     private function get_permission_status($bitmask) {
