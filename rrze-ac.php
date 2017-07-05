@@ -3,7 +3,7 @@
 /*
   Plugin Name: RRZE-Access-Control
   Plugin URI: https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-  Version: 1.4.5
+  Version: 1.4.6
   Description: Es ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene Funktionen und IP-Adresse.
   Author: RRZE-Webteam
   Author URI: https://blogs.fau.de/webworking/
@@ -35,7 +35,7 @@ register_deactivation_hook(__FILE__, array('RRZE_AC', 'deactivation'));
 
 class RRZE_AC {
 
-    const version = '1.4.5';
+    const version = '1.4.6';
     
     const option_name = 'rrze_ac';
     const version_option_name = 'rrze_ac_version';
@@ -226,7 +226,7 @@ class RRZE_AC {
         }
         
         // Überprüft Rewrite-Modul.
-        elseif (!got_mod_rewrite() || !is_writable(get_home_path() . '.htaccess')) {
+        elseif (!got_mod_rewrite()) {
             $error = __('Der Web-Server-Software unterstützt das Rewrite-Modul nicht.', 'rrze-ac');
         }
         
