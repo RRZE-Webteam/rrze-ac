@@ -1,9 +1,9 @@
-RRZE-Access-Control
+RRZE Access-Control
 ===================
 
 WordPress-Plugin
 ----------------
 
-Es ermöglicht das Schützen von Dateien/Dokumente durch benutzerbezogene Funktionen und IP-Adresse.
+Es ermöglicht den eingeschränkten Zugriff auf Dateien und Seiten durch benutzerbezogene Funktionen und IP-Adressen.
 
 Einstellungsmenü: Einstellungen › Zugriffsschutz

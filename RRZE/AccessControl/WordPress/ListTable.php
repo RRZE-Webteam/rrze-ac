@@ -1,23 +1,24 @@
 <?php
 
-if (!defined('ABSPATH') || !class_exists('RRZE_AC')) {
-    exit();
-}
+namespace RRZE\AccessControl\WordPress;
 
-if (!class_exists('WP_List_Table')) {
-    require_once(ABSPATH . 'wp-admin/includes/class-wp-list-table.php');
-}
+use WP_List_Table;
+use RRZE\AccessControl\Main;
 
-class RRZE_AC_List_Table extends WP_List_Table {
+defined('ABSPATH') || exit;
 
-    protected $rrze_ac;
+class ListTable extends WP_List_Table {
+
+    protected $main;
+
     public $list_data = array();
 
-    public function __construct() {
-        $this->rrze_ac = RRZE_AC::instance();
-        $this->list_data = $this->rrze_ac->get_the_permissions();
+    public function __construct(Main $main) {
+        $this->main = $main;
+        
+        $this->list_data = $this->main->get_the_permissions();
         foreach ($this->list_data as $key => $data) {
-            $this->list_data[$key]['default'] = ($data['permission_key'] == $this->rrze_ac->get_default_permission()) ? 1 : 0;
+            $this->list_data[$key]['default'] = ($data['permission_key'] == $this->main->get_default_permission()) ? 1 : 0;
         }
 
         parent::__construct(array(
@@ -59,15 +60,15 @@ class RRZE_AC_List_Table extends WP_List_Table {
         // Build row actions
         $actions = array();
         if (!$item['core']) {
-            $actions['edit'] = '<a href="' . esc_url($this->rrze_ac->options_url(array('action' => 'edit', 'permission' => $item['permission_key']))) . '">' . esc_html(__('Bearbeiten', 'rrze-ac')) . '</a>';
+            $actions['edit'] = '<a href="' . esc_url($this->main->action_url(array('action' => 'edit', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Edit", 'rrze-ac')) . '</a>';
         }
         if (!$item['core'] && !$item['default']) {
             if ($item['active']) {
-                $actions['deactivate'] = '<a href="' . esc_url($this->rrze_ac->options_url(array('action' => 'deactivate', 'permission' => $item['permission_key']))) . '">' . esc_html(__('Deaktivieren', 'rrze-ac')) . '</a>';
+                $actions['deactivate'] = '<a href="' . esc_url($this->main->action_url(array('action' => 'deactivate', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Deactivate", 'rrze-ac')) . '</a>';
             } else {
-                $actions['activate'] = '<a href="' . esc_url($this->rrze_ac->options_url(array('action' => 'activate', 'permission' => $item['permission_key']))) . '">' . esc_html(__('Aktivieren', 'rrze-ac')) . '</a>';
-                if (empty($this->rrze_ac->count_meta_keys($item['permission_key']))) {
-                    $actions['delete'] = '<a href="' . esc_url($this->rrze_ac->options_url(array('action' => 'delete', 'permission' => $item['permission_key']))) . '">' . esc_html(__('Löschen', 'rrze-ac')) . '</a>';
+                $actions['activate'] = '<a href="' . esc_url($this->main->action_url(array('action' => 'activate', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Activate", 'rrze-ac')) . '</a>';
+                if (empty($this->main->count_meta_keys($item['permission_key']))) {
+                    $actions['delete'] = '<a href="' . esc_url($this->main->action_url(array('action' => 'delete', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Delete", 'rrze-ac')) . '</a>';
                 }            
             }
         }
@@ -81,12 +82,12 @@ class RRZE_AC_List_Table extends WP_List_Table {
     public function get_columns() {
         $columns = array(
             'cb' => '<input type="checkbox">', // Render a checkbox instead of text
-            'permission_key' => __('Berechtigung', 'rrze-ac'),
-            'select' => __('Kurzbeschreibung', 'rrze-ac'),
-            'description' => __('Beschreibung', 'rrze-ac'),
-            'logged_in' => __('Angemeldet', 'rrze-ac'),
+            'permission_key' => __("Permission", 'rrze-ac'),
+            'select' => __("Short Description", 'rrze-ac'),
+            'description' => __("Description", 'rrze-ac'),
+            'logged_in' => __("Logged-in", 'rrze-ac'),
             'sso_logged_in' => __('SSO', 'rrze-ac'),
-            'ip_address' => __('IP-Adresse zulassen', 'rrze-ac')
+            'ip_address' => __("Allow IP address", 'rrze-ac')
         );
         return $columns;
     }
@@ -103,15 +104,15 @@ class RRZE_AC_List_Table extends WP_List_Table {
 
     public function get_bulk_actions() {
         $actions = array(
-            'activate' => __('Aktivieren', 'rrze-ac'),
-            'deactivate' => __('Deaktivieren', 'rrze-ac'),
-            'delete' => __('Löschen', 'rrze-ac')
+            'activate' => __("Activate", 'rrze-ac'),
+            'deactivate' => __("Deactivate", 'rrze-ac'),
+            'delete' => __("Delete", 'rrze-ac')
         );
         return $actions;
     }
 
     public function process_bulk_action() {
-        $permission_keys = $this->rrze_ac->request_var($this->_args['singular']);
+        $permission_keys = $this->main->settings->request_var($this->_args['singular']);
 
         if(!empty($permission_keys) && is_array($permission_keys)) {
             switch ($this->current_action()) {               
@@ -129,11 +130,21 @@ class RRZE_AC_List_Table extends WP_List_Table {
     }
 
     private function process_bulk_delete($permission_keys) {
-        $this->rrze_ac->process_bulk_delete($permission_keys);
+        foreach ($permission_keys as $value) {
+            $permission = $this->main->get_permission($value);
+            $this->main->settings->action_delete($permission);
+        }
+        wp_redirect($this->main->action_url());
+        exit();
     }
     
     private function process_bulk_activate($permission_keys, $activate = 1) {
-        $this->rrze_ac->process_bulk_activate($permission_keys, $activate);
+        foreach ($permission_keys as $value) {
+            $permission = $this->main->get_permission($value);
+            $this->main->settings->action_activate($permission, $activate);
+        }
+        wp_redirect($this->main->action_url());
+        exit();
     }
     
     public function prepare_items() {                
