@@ -252,7 +252,7 @@ class Settings {
     private function validate_edit($permission, $input) {
         $permission_key = $permission['permission_key'];
         
-        $select = isset($input['select']) ? wp_trim_words(sanitize_text_field($input['select']), 3, '') : '';       
+        $select = isset($input['select']) ? wp_trim_words(sanitize_text_field($input['select']), 3, '') : '';
         if(!$select) {
             $this->add_settings_error('select', '', __("Short description required.", 'rrze-ac'));
         } else {
@@ -268,13 +268,17 @@ class Settings {
         $ip_range = $this->get_ip_range($ip_address);
         $ip_address = !empty($ip_range) ? $ip_range : '';
         $permission['ip_address'] = $ip_address;
-        
+                
         $logged_in = !empty($input['logged_in']) ? 1 : 0;
         $sso_logged_in = !empty($input['sso_logged_in']) ? 1 : 0;
                 
+        $affiliation = $sso_logged_in && isset($input['affiliation']) ? array_map('trim', explode(',', $input['affiliation'])) : '';
+        $permission['affiliation'] = $affiliation;
+        
         if ($this->settings_errors()) {
             $this->add_settings_error('logged_in', $logged_in, '', FALSE);
             $this->add_settings_error('sso_logged_in', $sso_logged_in, '', FALSE);
+            $this->add_settings_error('affiliation', $affiliation, '', FALSE);
             $this->add_settings_error('ip_address', $ip_address, '', FALSE);
             $this->add_settings_error('description', $description, '', FALSE);
             return FALSE;
@@ -286,7 +290,7 @@ class Settings {
         }
                 
         $this->options['permissions'][$permission_key] = $permission;
-        
+      
         return update_option($this->option_name, $this->options);
     }
 
@@ -388,7 +392,11 @@ class Settings {
         <?php        
     }
 
-    public function admin_settings() {        
+    public function admin_settings() {
+        $permission_key = $this->request_var('permission');
+        $permission = $this->main->get_permission($permission_key);
+        $sso_logged_in = !empty($permission['sso_logged_in']) ? TRUE : FALSE;
+        
         add_settings_section('rrze-ac-new-section', FALSE, '__return_false', 'rrze-ac-new');
         add_settings_field('permission_key', __("Permission", 'rrze-ac'), array($this, 'permission_key_field'), 'rrze-ac-new', 'rrze-ac-new-section');        
         add_settings_field('logged_in', __("Logged-in", 'rrze-ac'), array($this, 'permission_logged_in_field'), 'rrze-ac-new', 'rrze-ac-new-section');
@@ -401,6 +409,9 @@ class Settings {
         add_settings_field('permission_key', __("Permission", 'rrze-ac'), array($this, 'permission_key_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');        
         add_settings_field('logged_in', __("Logged-in", 'rrze-ac'), array($this, 'permission_logged_in_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
         add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permission_sso_logged_in_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
+        if ($sso_logged_in) {
+            add_settings_field('affiliation', '&#8212; ' . __("Person affiliation", 'rrze-ac'), array($this, 'permission_affiliation_field'), 'rrze-ac-edit', 'rrze-ac-edit-section'); 
+        }
         add_settings_field('ip_address', __("Allow IP address", 'rrze-ac'), array($this, 'permission_ip_address_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');        
         add_settings_field('select', __("Short Description", 'rrze-ac'), array($this, 'permission_select_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');        
         add_settings_field('description', __("Description", 'rrze-ac'), array($this, 'permission_description_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
@@ -448,6 +459,18 @@ class Settings {
         <?php
     }
         
+    public function permission_affiliation_field() {
+        $settings_errors = $this->settings_errors();
+        $permission = $this->main->get_permission($this->request_var('permission'));
+        $affiliation = !empty($permission['affiliation']) ? implode(', ', (array) $permission['affiliation']) : '';
+        $affiliation = isset($settings_errors['affiliation']['value']) ? implode(', ', $settings_errors['affiliation']['value']) : $affiliation;
+        $field_invalid = !empty($settings_errors['affiliation']['error']) ? 'field-invalid' : '';
+        ?>
+        <input class="regular-text <?php echo $field_invalid; ?>" type="text" value="<?php echo $affiliation; ?>" name="<?php printf('%s[affiliation]', $this->option_name); ?>">
+        <p class="description"><?php _e('Separate person affiliations with commas.', 'rrze-ac'); ?></p>
+        <?php
+    }
+    
     public function permission_select_field() {
         $settings_errors = $this->settings_errors();
         $permission_key = $this->request_var('permission');

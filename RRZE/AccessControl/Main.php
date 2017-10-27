@@ -244,6 +244,7 @@ class Main {
                     'select' => $value['select'],
                     'logged_in' => $value['logged_in'],
                     'sso_logged_in' => $value['sso_logged_in'],
+                    'affiliation' => $value['affiliation'],
                     'ip_address' => $value['ip_address'],
                     'core' => $value['core'],
                     'active' => $value['active']
@@ -622,10 +623,24 @@ class Main {
             return FALSE;
         }
         
-        $attributes = $this->simplesaml_auth->isAuthenticated();
-        $this->person_affiliation = isset($attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'][0]) ? $attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'][0] : NULL;
-        $this->person_entitlement = isset($attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'][0]) ? $attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'][0] : NULL;                 
+        $attributes = $this->simplesaml_auth->getAttributes();
+        
+        $this->person_affiliation = isset($attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'][0]) ? $attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'][0] : '';
+        $this->person_entitlement = isset($attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'][0]) ? $attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'][0] : '';
+        
         return TRUE;
+    }
+    
+    private function check_person_affiliation($affiliation) {
+        if(empty($affiliation) || !is_array($affiliation)) {
+            return TRUE;
+        }
+
+        if (in_array($this->person_affiliation, $affiliation)) {
+            return TRUE;
+        }
+        
+        return FALSE;
     }
     
     private function check_permission($post_id) {
@@ -658,6 +673,12 @@ class Main {
         // check if permission is set to be sso logged in
         elseif (!empty($permissions[$permission]['sso_logged_in']) && !$this->check_sso_logged_in()) {
             $this->set_permission_status($this->user_isnt_sso_logged_in);
+            return FALSE;
+        }      
+                
+        // check if permission is set to person affiliation
+        elseif (!empty($permissions[$permission]['affiliation']) && !$this->check_person_affiliation($permissions[$permission]['affiliation'])) {
+            $this->set_permission_status($this->user_hasnt_affiliation);
             return FALSE;
         }      
         
@@ -1593,8 +1614,9 @@ class Main {
             
             return $message;
         }
-        
-        if($this->get_permission_status($this->user_ip_isnt_in_range)) {
+                
+        if($this->get_permission_status($this->user_ip_isnt_in_range)
+            || ($this->get_permission_status($this->user_hasnt_affiliation) && $this->simplesaml_auth)) {
             if ($post_type == 'attachment') {
                 $message = '<p>' . __("You do not have sufficient permissions to access the file. If you believe you should have access to the file, please get in touch with the contact person of the website.", 'rrze-ac') . '</p>';                
             } else {
