@@ -14,6 +14,7 @@ defined('ABSPATH') || exit;
 class Main {
 
     public $plugin_basename;
+    public $min;
     
     public $ops;
     public $options;
@@ -47,6 +48,7 @@ class Main {
 
     public function __construct($plugin_basename = NULL) {
         $this->plugin_basename = $plugin_basename;
+        $this->min = defined('WP_DEBUG') && WP_DEBUG ? '' : '.min';
         
         $this->ops = new Options();
         $this->options = $this->ops->get_options();
@@ -61,10 +63,6 @@ class Main {
                 
         if(get_site_option($this->enabled_option_name)) {
             
-            add_action('wp_enqueue_media', array($this, 'enqueue_media'));
-
-            add_filter('attachment_fields_to_edit', array($this, 'attachment_fields_to_edit'), 10, 2);
-
             add_filter('upload_dir', array($this, 'change_upload_directory'), 999);
 
             add_filter('image_downsize', array($this, 'image_downsize_placeholder'), 999, 3);
@@ -74,6 +72,8 @@ class Main {
             // Bezieht sich nur auf den Backend-Bereich
             if (is_admin()) {
                 add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
+
+                add_filter('attachment_fields_to_edit', array($this, 'attachment_fields_to_edit'), 10, 2);
 
                 add_action('load-post-new.php', array($this, 'post_enqueue_scripts'));
                 add_action('load-post.php', array($this, 'post_enqueue_scripts'));
@@ -85,7 +85,6 @@ class Main {
                 add_filter("manage_page_posts_custom_column", array($this, 'manage_pages_custom_column'), 10, 2);
 
                 add_action('add_meta_boxes', array($this, 'attachment_edit_meta_box'));
-                add_action('admin_enqueue_scripts', array($this, 'attachment_edit_enqueue_scripts'));
 
                 add_filter('attachment_fields_to_save', array($this, 'save_attachment_edit_fields'), 10, 2);
 
@@ -191,8 +190,7 @@ class Main {
     }
     
     public function load_media_new() {
-        add_action('admin_enqueue_scripts', array($this, 'media_new_enqueue_scripts'));
-        add_action('admin_footer-media-new.php', array($this, 'media_new_js'));
+        //add_action('admin_footer-media-new.php', array($this, 'admin_footer_media_new'));
         add_action('post-upload-ui', array($this, 'media_new_upload_ui'));
         add_action('pre-plupload-upload-ui', array($this, 'media_new_upload_ui_notice'));        
     }
@@ -209,25 +207,35 @@ class Main {
     }
     
     public function enqueue_scripts() {
-        wp_enqueue_style('access', plugins_url('css/access.css', $this->plugin_basename ), 'all', NULL);
-    }
-
-    public function enqueue_media() {
-        wp_enqueue_style('access-att-fields', plugins_url('css/attachment-fields.css', $this->plugin_basename ), 'all', NULL);
-        wp_enqueue_script('access-att-fields', plugins_url('js/attachment-fields.js', $this->plugin_basename ), array('media-editor'), NULL, TRUE);
+        wp_register_style('access', plugins_url('css/access.css', $this->plugin_basename));
+        wp_register_style('access-att-edit', plugins_url("css/attachment-edit$this->min.css", $this->plugin_basename));        
+        wp_register_style('access-att-fields', plugins_url("css/attachment-fields$this->min.css", $this->plugin_basename));
+        wp_register_style('access-media-new', plugins_url("css/media-new$this->min.css", $this->plugin_basename));
+        
+        wp_register_script('access-att-fields', plugins_url("js/attachment-fields$this->min.js", $this->plugin_basename ), array('media-editor'), NULL, TRUE);       
+        wp_register_script('access-post-edit', plugins_url("/js/post-edit$this->min.js", $this->plugin_basename ), array('jquery-ui-slider'), NULL, TRUE);
+                
+        wp_enqueue_style('access');
+        wp_enqueue_style('access-att-fields');
+        
+        wp_enqueue_script('access-att-fields');
+        
+        $screen = get_current_screen();
+        if (isset($screen->id) && 'attachment' == $screen->id) {
+            wp_enqueue_style('access-att-edit');
+        }
+        
+        if ('media' == $screen->base && 'add' == $screen->action) {
+            wp_enqueue_style('access-media-new');
+        }    
     }
     
     public function post_enqueue_scripts() {
-        wp_enqueue_script('access-post', plugins_url('/js/post-edit.js', $this->plugin_basename ), array('jquery-ui-slider'), NULL, TRUE);       
+        wp_enqueue_script('access-post-edit');
     }
     
-    public function attachment_edit_enqueue_scripts() {
-        $screen = get_current_screen();
-        if (!isset($screen->id) || 'attachment' !== $screen->id) {
-            return;
-        }
-
-        wp_enqueue_style('access-att-edit', plugins_url( 'css/attachment-edit.css', $this->plugin_basename ), 'all', NULL);
+    public function admin_footer_media_new() {
+        wp_enqueue_script('access-media-new');
     }
     
     public function get_permission($permission_key) {
@@ -1474,43 +1482,6 @@ class Main {
 
         wp_redirect($location);
         exit();       
-    }
-    
-    public function media_new_enqueue_scripts() {
-        $screen = get_current_screen();
-        
-        if ('media' == $screen->base && 'add' == $screen->action) {
-            wp_enqueue_style('access-media-new', plugins_url('css/media-new.css', $this->plugin_basename), 'all', NULL);
-        }
-    }
-    
-    public function media_new_js() {
-        ?>
-        <script type="text/javascript">
-            jQuery(document).ready(function($) {
-                'use strict';
-                var input = $('input[name="access_protected"]'),
-                    ctrl = document.getElementById('access_protected'),
-                    ui = $('#plupload-upload-ui');
-
-                function state(check) {
-                    return 'access-' + (check == 'on' ? '' : 'un') + 'checked';
-                }
-
-                input.on('change', function () {
-                    var check = ctrl.checked ? 'on' : 'off';
-                    ui.removeClass(state(check == 'on' ? 'off' : 'on'))
-                            .addClass(state(check));
-
-                    wpUploaderInit.multipart_params.access_protected = check;
-                });
-
-                setTimeout(function () {
-                    input.change();
-                }, 200);
-            });
-        </script>
-        <?php
     }
     
     public function media_new_upload_ui() {
