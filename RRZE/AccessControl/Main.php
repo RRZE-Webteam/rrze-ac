@@ -1116,7 +1116,7 @@ class Main {
             $attachments = $wpdb->get_results(
                 $wpdb->prepare(
                     "SELECT post_id, meta_value FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value LIKE %s", 
-                    '_wp_attachment_metadata', 
+                    '_wp_attached_file', 
                     '%' . $file_info['basename'] . '%'
                 ), ARRAY_A
             );
