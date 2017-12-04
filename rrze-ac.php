@@ -4,7 +4,7 @@
  * Plugin Name:     RRZE Access Control
  * Plugin URI:      https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
  * Description:     Es ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene Funktionen und IP-Adresse.
- * Version:         2.1.0
+ * Version:         2.1.1
  * Author:          RRZE-Webteam
  * Author URI:      https://blogs.fau.de/webworking/
  * License:         GNU General Public License v2
@@ -20,7 +20,7 @@ use RRZE\AccessControl\Main;
 defined('ABSPATH') || exit;
 
 const RRZE_PHP_VERSION = '5.5';
-const RRZE_WP_VERSION = '4.8';
+const RRZE_WP_VERSION = '4.9';
 
 register_activation_hook(__FILE__, 'RRZE\AccessControl\activation');
 
