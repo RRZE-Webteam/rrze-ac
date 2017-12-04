@@ -1113,24 +1113,20 @@ class Main {
             }
 
             global $wpdb;
-            $attachments = $wpdb->get_results(
+            $attachment = $wpdb->get_row(
                 $wpdb->prepare(
-                    "SELECT post_id, meta_value FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value LIKE %s", 
+                    "SELECT post_id FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value LIKE %s", 
                     '_wp_attached_file', 
-                    '%' . $file_info['basename'] . '%'
-                ), ARRAY_A
+                    '%' . $file_info['basename'] . '%'                        
+                )
             );
-
-            $attachment_id = 0;
-            foreach ($attachments as $attachment) {
-
-                $meta_value = unserialize($attachment['meta_value']);
-
-                if (ltrim(dirname($meta_value['file']), '/') == ltrim($file_info['dirname'], '/')) {
-                    $attachment_id = $attachment['post_id'];
-                    break;
-                }
+            
+            if (is_null($attachment)) {
+                status_header(404);
+                wp_die(__("The requested attachment was not found.", 'rrze-ac'));
             }
+            
+            $attachment_id = $attachment->post_id;
 
             if (!$this->check_permission($attachment_id)) {
                 status_header(403);
