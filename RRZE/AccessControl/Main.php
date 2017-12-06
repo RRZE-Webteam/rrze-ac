@@ -48,8 +48,6 @@ class Main {
 
     public function __construct($plugin_basename = NULL) {
         $this->plugin_basename = $plugin_basename;
-        $this->min = defined('WP_DEBUG') && WP_DEBUG ? '' : '.min';
-        
         $this->ops = new Options();
         $this->options = $this->ops->get_options();
         $this->option_name = $this->ops->get_option_name();
@@ -188,32 +186,18 @@ class Main {
 
         return $rewrite_rules;
     }
-    
-    public function load_media_new() {
-        //add_action('admin_footer-media-new.php', array($this, 'admin_footer_media_new'));
-        add_action('post-upload-ui', array($this, 'media_new_upload_ui'));
-        add_action('pre-plupload-upload-ui', array($this, 'media_new_upload_ui_notice'));        
-    }
-    
-    public function load_upload() {       
-        add_filter('media_row_actions', array($this, 'media_row_actions'), 10, 2);
-        add_filter('manage_upload_columns', array($this, 'manage_upload_columns'));
-        add_action('manage_media_custom_column', array($this, 'manage_media_custom_column'), 10, 2);
-        add_action('admin_head-upload.php', array($this, 'media_custom_column_styles'));
-        add_action('admin_footer-upload.php', array($this, 'media_bulk_actions_js'));
-        add_action('admin_notices', array($this, 'media_admin_notices'));
         
-        $this->bulk_actions();
-    }
-    
     public function enqueue_scripts() {
-        wp_register_style('access', plugins_url('css/access.css', $this->plugin_basename));
-        wp_register_style('access-att-edit', plugins_url("css/attachment-edit$this->min.css", $this->plugin_basename));        
-        wp_register_style('access-att-fields', plugins_url("css/attachment-fields$this->min.css", $this->plugin_basename));
-        wp_register_style('access-media-new', plugins_url("css/media-new$this->min.css", $this->plugin_basename));
+        $min = defined('WP_DEBUG') && WP_DEBUG ? '' : '.min';
         
-        wp_register_script('access-att-fields', plugins_url("js/attachment-fields$this->min.js", $this->plugin_basename ), array('media-editor'), NULL, TRUE);       
-        wp_register_script('access-post-edit', plugins_url("/js/post-edit$this->min.js", $this->plugin_basename ), array('jquery-ui-slider'), NULL, TRUE);
+        wp_register_style('access', plugins_url('css/access.css', $this->plugin_basename));
+        wp_register_style('access-att-edit', plugins_url("css/attachment-edit$min.css", $this->plugin_basename));        
+        wp_register_style('access-att-fields', plugins_url("css/attachment-fields$min.css", $this->plugin_basename));
+        wp_register_style('access-media-new', plugins_url("css/media-new$min.css", $this->plugin_basename));
+        
+        wp_register_script('access-att-fields', plugins_url("js/attachment-fields$min.js", $this->plugin_basename), array('jquery', 'media-editor'), NULL, TRUE);       
+        wp_register_script('access-post-edit', plugins_url("/js/post-edit$min.js", $this->plugin_basename), array('jquery', 'jquery-ui-slider'), NULL, TRUE);
+        wp_register_script('access-media-new', plugins_url("/js/media-new$min.js", $this->plugin_basename), array('jquery', 'jquery-ui-slider'), NULL, TRUE);
                 
         wp_enqueue_style('access');
         wp_enqueue_style('access-att-fields');
@@ -227,7 +211,26 @@ class Main {
         
         if ('media' == $screen->base && 'add' == $screen->action) {
             wp_enqueue_style('access-media-new');
+            wp_enqueue_script('access-media-new');
         }    
+    }
+    
+    public function load_media_new() {
+        //add_action('admin_footer-media-new.php', array($this, 'admin_footer_media_new'));
+        add_action('post-upload-ui', array($this, 'media_new_upload_ui'));
+        add_action('pre-plupload-upload-ui', array($this, 'media_new_upload_ui_notice'));        
+    }
+    
+    public function load_upload() {
+        add_action('admin_footer-media-new.php', array($this, 'admin_footer_media_new'));
+        add_filter('media_row_actions', array($this, 'media_row_actions'), 10, 2);
+        add_filter('manage_upload_columns', array($this, 'manage_upload_columns'));
+        add_action('manage_media_custom_column', array($this, 'manage_media_custom_column'), 10, 2);
+        add_action('admin_head-upload.php', array($this, 'media_custom_column_styles'));
+        add_action('admin_footer-upload.php', array($this, 'media_bulk_actions_js'));
+        add_action('admin_notices', array($this, 'media_admin_notices'));
+        
+        $this->bulk_actions();
     }
     
     public function post_enqueue_scripts() {
@@ -235,6 +238,7 @@ class Main {
     }
     
     public function admin_footer_media_new() {
+        wp_enqueue_style('access-media-new');
         wp_enqueue_script('access-media-new');
     }
     
@@ -1020,8 +1024,12 @@ class Main {
             }
         }
 
-        $meta['file'] = path_join($new_reldir, $new_basenames[0]);
-        update_post_meta($attachment_id, '_wp_attached_file', $meta['file']);
+        $file = path_join($new_reldir, $new_basenames[0]);
+        if (wp_attachment_is_image($attachment_id)) {
+            $meta['file'] = $file;
+        }
+               
+        update_post_meta($attachment_id, '_wp_attached_file', $file);
 
         if ($new_basenames[0] != $old_basenames[0]) {
             $orig_basename = ltrim(str_replace($pattern, $replace, $separator . $orig_basename), $separator);
@@ -1046,10 +1054,14 @@ class Main {
         }
 
         update_post_meta($attachment_id, '_wp_attachment_metadata', $meta);
+        
+        $path = explode('/wp-content/', path_join($new_fulldir, $orig_basename));
 
-        $guid = path_join($new_fulldir, $orig_basename);
-        wp_update_post(array('ID' => $attachment_id, 'guid' => $guid));
+        $permalink = site_url('/wp-content/' . $path[1]);
 
+        global $wpdb;
+        $wpdb->update($wpdb->posts, array('guid' => $permalink), array('ID' => $attachment_id), array('%s'), array('%d'));
+        
         return TRUE;
     }
     
@@ -1113,21 +1125,36 @@ class Main {
             }
 
             global $wpdb;
+            $attached_file = trim($file_info['dirname'] . '/' . $file_info['basename'], '/\\');
+            
             $attachment = $wpdb->get_row(
                 $wpdb->prepare(
-                    "SELECT post_id FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value LIKE %s", 
+                    "SELECT post_id FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value = %s", 
                     '_wp_attached_file', 
-                    '%' . $file_info['basename'] . '%'                        
+                    $attached_file
                 )
             );
+            
+            if (is_null($attachment)) {
+                $attachment = $wpdb->get_row(
+                    $wpdb->prepare(
+                        "SELECT post_id "
+                        . "FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value LIKE %s "
+                        . "AND post_id IN (SELECT post_id FROM $wpdb->postmeta WHERE meta_key = %s) ", 
+                        '_wp_attachment_metadata', 
+                        '%' . $file_info['basename'] . '%', 
+                        '_access_permission'
+                    )
+                );
+            }
             
             if (is_null($attachment)) {
                 status_header(404);
                 wp_die(__("The requested attachment was not found.", 'rrze-ac'));
             }
-            
-            $attachment_id = $attachment->post_id;
 
+            $attachment_id = $attachment->post_id;
+            
             if (!$this->check_permission($attachment_id)) {
                 status_header(403);
                 wp_die($this->permission_forbidden_message($attachment_id));
