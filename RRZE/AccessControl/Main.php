@@ -71,10 +71,6 @@ class Main {
             if (is_admin()) {
                 add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
 
-                add_filter('attachment_fields_to_edit', array($this, 'attachment_fields_to_edit'), 10, 2);
-
-                add_action('load-post-new.php', array($this, 'post_enqueue_scripts'));
-                add_action('load-post.php', array($this, 'post_enqueue_scripts'));
                 add_action('post_submitbox_misc_actions', array($this, 'post_protection_submitbox'));
 
                 add_action('save_post', array($this, 'save_post_data'));
@@ -84,6 +80,7 @@ class Main {
 
                 add_action('add_meta_boxes', array($this, 'attachment_edit_meta_box'));
 
+                add_filter('attachment_fields_to_edit', array($this, 'attachment_fields_to_edit'), 10, 2);
                 add_filter('attachment_fields_to_save', array($this, 'save_attachment_edit_fields'), 10, 2);
 
                 add_action('edit_attachment', array($this, 'save_attachment_data'));
@@ -191,8 +188,7 @@ class Main {
         $min = defined('WP_DEBUG') && WP_DEBUG ? '' : '.min';
         
         wp_register_style('access', plugins_url('css/access.css', $this->plugin_basename));
-        wp_register_style('access-att-edit', plugins_url("css/attachment-edit$min.css", $this->plugin_basename));        
-        wp_register_style('access-att-fields', plugins_url("css/attachment-fields$min.css", $this->plugin_basename));
+        wp_register_style('access-att-edit', plugins_url("css/attachment-edit$min.css", $this->plugin_basename));
         wp_register_style('access-media-new', plugins_url("css/media-new$min.css", $this->plugin_basename));
         
         wp_register_script('access-att-fields', plugins_url("js/attachment-fields$min.js", $this->plugin_basename), array('jquery', 'media-editor'), NULL, TRUE);       
@@ -200,29 +196,26 @@ class Main {
         wp_register_script('access-media-new', plugins_url("/js/media-new$min.js", $this->plugin_basename), array('jquery', 'jquery-ui-slider'), NULL, TRUE);
                 
         wp_enqueue_style('access');
-        wp_enqueue_style('access-att-fields');
-        
-        wp_enqueue_script('access-att-fields');
         
         $screen = get_current_screen();
-        if (isset($screen->id) && 'attachment' == $screen->id) {
+        if (isset($screen->id) && 'page' == $screen->id) {
+            wp_enqueue_script('access-post-edit');
+        } elseif (isset($screen->id) && 'attachment' == $screen->id) {
             wp_enqueue_style('access-att-edit');
-        }
-        
-        if ('media' == $screen->base && 'add' == $screen->action) {
+        } elseif (isset($screen->base) && 'upload' == $screen->base) {
+            wp_enqueue_script('access-att-fields');
+        } elseif (isset($screen->base) && 'media' == $screen->base) {
             wp_enqueue_style('access-media-new');
             wp_enqueue_script('access-media-new');
         }    
     }
     
     public function load_media_new() {
-        //add_action('admin_footer-media-new.php', array($this, 'admin_footer_media_new'));
         add_action('post-upload-ui', array($this, 'media_new_upload_ui'));
         add_action('pre-plupload-upload-ui', array($this, 'media_new_upload_ui_notice'));        
     }
     
     public function load_upload() {
-        add_action('admin_footer-media-new.php', array($this, 'admin_footer_media_new'));
         add_filter('media_row_actions', array($this, 'media_row_actions'), 10, 2);
         add_filter('manage_upload_columns', array($this, 'manage_upload_columns'));
         add_action('manage_media_custom_column', array($this, 'manage_media_custom_column'), 10, 2);
@@ -231,15 +224,6 @@ class Main {
         add_action('admin_notices', array($this, 'media_admin_notices'));
         
         $this->bulk_actions();
-    }
-    
-    public function post_enqueue_scripts() {
-        wp_enqueue_script('access-post-edit');
-    }
-    
-    public function admin_footer_media_new() {
-        wp_enqueue_style('access-media-new');
-        wp_enqueue_script('access-media-new');
     }
     
     public function get_permission($permission_key) {
