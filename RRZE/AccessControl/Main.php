@@ -1125,13 +1125,14 @@ class Main {
             }
 
             global $wpdb;
-            $attached_file = trim($file_info['dirname'] . '/' . $file_info['basename'], '/\\');
+            $attachment_dirname = trim($file_info['dirname'], '/\\');
+            $attachment_file = $attachment_dirname . '/' . $file_info['basename'];
             
             $attachment = $wpdb->get_row(
                 $wpdb->prepare(
                     "SELECT post_id FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value = %s", 
                     '_wp_attached_file', 
-                    $attached_file
+                    $attachment_file
                 )
             );
             
@@ -1140,10 +1141,11 @@ class Main {
                     $wpdb->prepare(
                         "SELECT post_id "
                         . "FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value LIKE %s "
-                        . "AND post_id IN (SELECT post_id FROM $wpdb->postmeta WHERE meta_key = %s) ", 
+                        . "AND post_id IN (SELECT post_id FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value LIKE %s) ", 
                         '_wp_attachment_metadata', 
                         '%' . $file_info['basename'] . '%', 
-                        '_access_permission'
+                        '_wp_attached_file', 
+                        '%' . $attachment_dirname . '%'
                     )
                 );
             }
