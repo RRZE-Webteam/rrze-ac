@@ -1109,61 +1109,61 @@ class Main {
 
         $file_info = pathinfo($rel_file);
 
-        // Start der Berechtigungsprüfungen
-        if (0 === stripos($file_info['dirname'] . '/', $this->protected_upload_dir('/', TRUE))) {
+        if (0 !== stripos($file_info['dirname'] . '/', $this->protected_upload_dir('/', TRUE))) {
+            status_header(404);
+            wp_die(__("The requested file was not found.", 'rrze-ac'));            
+        }
 
-            if (!defined('DONOTCACHEPAGE')) {
-                define('DONOTCACHEPAGE', 1);
-            }
+        if (!defined('DONOTCACHEPAGE')) {
+            define('DONOTCACHEPAGE', 1);
+        }
 
-            if (!defined('DONOTCACHEOBJECT')) {
-                define('DONOTCACHEOBJECT', 1);
-            }
+        if (!defined('DONOTCACHEOBJECT')) {
+            define('DONOTCACHEOBJECT', 1);
+        }
 
-            if (!defined('DONOTMINIFY')) {
-                define('DONOTMINIFY', 1);
-            }
+        if (!defined('DONOTMINIFY')) {
+            define('DONOTMINIFY', 1);
+        }
 
-            global $wpdb;
-            $attachment_dirname = trim($file_info['dirname'], '/\\');
-            $attachment_file = $attachment_dirname . '/' . $file_info['basename'];
-            
+        global $wpdb;
+        $attachment_dirname = trim($file_info['dirname'], '/\\');
+        $attachment_file = $attachment_dirname . '/' . $file_info['basename'];
+
+        $attachment = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT post_id FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value = %s", 
+                '_wp_attached_file', 
+                $attachment_file
+            )
+        );
+
+        if (is_null($attachment)) {
             $attachment = $wpdb->get_row(
                 $wpdb->prepare(
-                    "SELECT post_id FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value = %s", 
+                    "SELECT post_id "
+                    . "FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value LIKE %s "
+                    . "AND post_id IN (SELECT post_id FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value LIKE %s) ", 
+                    '_wp_attachment_metadata', 
+                    '%' . $file_info['basename'] . '%', 
                     '_wp_attached_file', 
-                    $attachment_file
+                    '%' . $attachment_dirname . '%'
                 )
             );
-            
-            if (is_null($attachment)) {
-                $attachment = $wpdb->get_row(
-                    $wpdb->prepare(
-                        "SELECT post_id "
-                        . "FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value LIKE %s "
-                        . "AND post_id IN (SELECT post_id FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value LIKE %s) ", 
-                        '_wp_attachment_metadata', 
-                        '%' . $file_info['basename'] . '%', 
-                        '_wp_attached_file', 
-                        '%' . $attachment_dirname . '%'
-                    )
-                );
-            }
-            
-            if (is_null($attachment)) {
-                status_header(404);
-                wp_die(__("The requested attachment was not found.", 'rrze-ac'));
-            }
+        }
 
-            $attachment_id = $attachment->post_id;
-            
-            if (!$this->check_permission($attachment_id)) {
-                status_header(403);
-                wp_die($this->permission_forbidden_message($attachment_id));
-            }
-            
-        } // Ende der Berechtigungsprüfungen
+        if (is_null($attachment)) {
+            status_header(404);
+            wp_die(__("The requested attachment was not found.", 'rrze-ac'));
+        }
 
+        $attachment_id = $attachment->post_id;
+
+        if (!$this->check_permission($attachment_id)) {
+            status_header(403);
+            wp_die($this->permission_forbidden_message($attachment_id));
+        }
+        
         header('Content-Type: ' . $mimetype);
         header('Content-Length: ' . filesize($file));
 
