@@ -620,9 +620,9 @@ class Main {
         }
         
         $attributes = $this->simplesaml_auth->getAttributes();
-        
-        $this->person_affiliation = isset($attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'][0]) ? $attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'][0] : '';
-        $this->person_entitlement = isset($attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'][0]) ? $attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'][0] : '';
+                
+        $this->person_affiliation = isset($_attributes['urn:mace:dir:attribute-def:eduPersonAffiliation']) ? $_attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'] : array();
+        $this->person_entitlement = isset($_attributes['urn:mace:dir:attribute-def:eduPersonEntitlement']) ? $_attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'] : array();
         
         return TRUE;
     }
@@ -632,8 +632,10 @@ class Main {
             return TRUE;
         }
 
-        if (in_array($this->person_affiliation, $affiliation)) {
-            return TRUE;
+        foreach ($affiliation as $attribute) {
+            if (in_array($attribute, $this->person_affiliation)) {
+                return TRUE;
+            }
         }
         
         return FALSE;
