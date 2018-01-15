@@ -628,7 +628,7 @@ class Main {
     }
     
     private function check_person_affiliation($affiliation) {
-        if(empty($affiliation) || !is_array($affiliation)) {
+        if(empty($affiliation) || empty($affiliation[0]) || !is_array($affiliation)) {
             return TRUE;
         }
 

@@ -261,7 +261,7 @@ class Settings {
       
         $permission['select'] = $select;
         
-        $description = isset($input['description']) ? $input['description'] : '';
+        $description = !empty($input['description']) ? $input['description'] : '';
         $permission['description'] = $description;
         
         $ip_address = !empty($input['ip_address']) && is_array($input['ip_address']) ? array_filter($input['ip_address']) : '';
@@ -272,7 +272,7 @@ class Settings {
         $logged_in = !empty($input['logged_in']) ? 1 : 0;
         $sso_logged_in = !empty($input['sso_logged_in']) ? 1 : 0;
                 
-        $affiliation = $sso_logged_in && isset($input['affiliation']) ? array_map('trim', explode(',', $input['affiliation'])) : '';
+        $affiliation = $sso_logged_in && !empty(trim($input['affiliation'])) ? array_map('trim', explode(',', trim($input['affiliation']))) : '';
         $permission['affiliation'] = $affiliation;
         
         if ($this->settings_errors()) {
@@ -461,12 +461,12 @@ class Settings {
         
     public function permission_affiliation_field() {
         $settings_errors = $this->settings_errors();
-        $permission = $this->main->get_permission($this->request_var('permission'));
+        $permission_key = $this->request_var('permission');
+        $permission = $this->main->get_permission($permission_key);
         $affiliation = !empty($permission['affiliation']) ? implode(', ', (array) $permission['affiliation']) : '';
-        $affiliation = isset($settings_errors['affiliation']['value']) ? implode(', ', $settings_errors['affiliation']['value']) : $affiliation;
-        $field_invalid = !empty($settings_errors['affiliation']['error']) ? 'field-invalid' : '';
+        $affiliation = isset($settings_errors['affiliation']['value']) ? implode(', ', (array) $settings_errors['affiliation']['value']) : $affiliation;    
         ?>
-        <input class="regular-text <?php echo $field_invalid; ?>" type="text" value="<?php echo $affiliation; ?>" name="<?php printf('%s[affiliation]', $this->option_name); ?>">
+        <input class="regular-text" type="text" value="<?php echo $affiliation; ?>" name="<?php printf('%s[affiliation]', $this->option_name); ?>">
         <p class="description"><?php _e('Separate person affiliations with commas.', 'rrze-ac'); ?></p>
         <?php
     }
