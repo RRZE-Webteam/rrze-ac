@@ -418,16 +418,16 @@ class Main {
                     return $post;
                 }
                 
-                if (!isset($_POST['access_permission_select']) || empty($_POST['access_permission_select'])) {
+                if (empty($attachment['access_permission_select'])) {
                     return $post;
                 }
 
                 $permissions = $this->get_the_permissions();
 
-                if (!isset($permissions[$_POST['access_permission_select']])) {
+                if (!isset($permissions[$attachment['access_permission_select']])) {
                     delete_post_meta($attachment_id, $this->access_permission_meta_key);
                 } else {
-                    update_post_meta($attachment_id, $this->access_permission_meta_key, $_POST['access_permission_select']);
+                    update_post_meta($attachment_id, $this->access_permission_meta_key, $attachment['access_permission_select']);
                 }
                 
                 return $post;
