@@ -106,7 +106,7 @@ class Settings {
         $nonce = $this->request_var('_wpnonce');        
         
         if (!wp_verify_nonce($nonce, 'rrze-ac-new-options')) {
-            wp_die(__("Cheatin&#8217; uh?", 'rrze-ac'));
+            wp_die(__("Something went wrong.", 'rrze-ac'));
         }
 
         $permission_key = $this->validate_new($input);
@@ -130,7 +130,7 @@ class Settings {
         $nonce = $this->request_var('_wpnonce');
         
         if (!wp_verify_nonce($nonce, 'rrze-ac-edit-options')) {
-            wp_die(__("Cheatin&#8217; uh?", 'rrze-ac'));
+            wp_die(__("Something went wrong.", 'rrze-ac'));
         }
         
         if (!isset($input['permission_key'])) {
@@ -168,7 +168,7 @@ class Settings {
         $nonce = $this->request_var('_wpnonce');
                   
         if (!wp_verify_nonce($nonce, 'rrze-ac-settings-options')) {
-            wp_die(__("Cheatin&#8217; uh?", 'rrze-ac'));
+            wp_die(__("Something went wrong.", 'rrze-ac'));
         }
 
         $validation = $this->validate_settings($input);
@@ -559,7 +559,7 @@ class Settings {
             switch ($action) {
                 case 'activate':
                     if (!wp_verify_nonce($nonce, 'activate')) {
-                        wp_die(__("Cheatin&#8217; uh?", 'rrze-ac'));
+                        wp_die(__("Something went wrong.", 'rrze-ac'));
                     }                   
                     if ($this->action_activate($permission)) {
                         $this->add_admin_notice(__("The permission has been enabled.", 'rrze-ac'));
@@ -569,7 +569,7 @@ class Settings {
                     break;
                 case 'deactivate':
                     if (!wp_verify_nonce($nonce, 'deactivate')) {
-                        wp_die(__("Cheatin&#8217; uh?", 'rrze-ac'));
+                        wp_die(__("Something went wrong.", 'rrze-ac'));
                     }
                     if ($this->action_activate($permission, 0)) {
                         $this->add_admin_notice(__("The permission has been disabled.", 'rrze-ac'));
@@ -579,7 +579,7 @@ class Settings {
                     break;
                 case 'delete':
                     if (!wp_verify_nonce($nonce, 'delete')) {
-                        wp_die(__("Cheatin&#8217; uh?", 'rrze-ac'));
+                        wp_die(__("Something went wrong.", 'rrze-ac'));
                     }
                     if ($this->action_delete($permission)) {
                         $this->add_admin_notice(__("The permission has been deleted.", 'rrze-ac'));
