@@ -520,9 +520,9 @@ class Settings {
         ?>
         <div id="ipAddressDiv">
             <?php if($key == 0) : ?>
-            <p><input type="text" id="ipAddressInput" class="regular-text <?php echo $field_invalid; ?>" name="<?php printf('%s[ip_address][%d]', $this->option_name, $key); ?>" value="<?php echo (isset($ip_address[$key])) ? $ip_address[$key] : $value; ?>"> <span id="addInput" class="dashicons dashicons-plus"> </span></p>
+            <p><input type="text" id="ipAddress" class="regular-text <?php echo $field_invalid; ?>" name="<?php printf('%s[ip_address][%d]', $this->option_name, $key); ?>" value="<?php echo (isset($ip_address[$key])) ? $ip_address[$key] : $value; ?>"> <span id="addInput" class="dashicons dashicons-plus"> </span></p>
             <?php else : ?>
-            <p><input type="text" id="ipAddressInput-<?php echo $key; ?>" class="regular-text <?php echo $field_invalid; ?>" name="<?php printf('%s[ip_address][%d]', $this->option_name, $key); ?>" value="<?php echo (isset($ip_address[$key])) ? $ip_address[$key] : $value; ?>"> <span id="removeInput" class="remove-input dashicons dashicons-no" onclick="removeMe(<?php echo $key; ?>)"> </span></p>
+            <p><input type="text" id="ipAddress-<?php echo $key; ?>" class="regular-text <?php echo $field_invalid; ?>" name="<?php printf('%s[ip_address][%d]', $this->option_name, $key); ?>" value="<?php echo (isset($ip_address[$key])) ? $ip_address[$key] : $value; ?>"> <span id="removeInput" class="remove-input dashicons dashicons-no" onclick="removeMe(<?php echo $key; ?>)"> </span></p>
             <?php endif; ?>
         </div>
         <?php } ?>
@@ -530,14 +530,14 @@ class Settings {
             jQuery(document).ready(function($) {
                 var i = $('#ipAddressDiv p').size();
                 $('#addInput').click(function() {
-                    $('<p><input type="text" id="ipAddressInput-' + i +'" class="regular-text" name="<?php echo $this->option_name; ?>[ip_address][' + i +']" value=""> <span id="removeInput" class="remove-input dashicons dashicons-no" onclick="removeMe('+ i +')"> </span></p>').appendTo(ipAddressDiv);
+                    $('<p><input type="text" id="ipAddress-' + i +'" class="regular-text" name="<?php echo $this->option_name; ?>[ip_address][' + i +']" value=""> <span id="removeInput" class="remove-input dashicons dashicons-no" onclick="removeMe('+ i +')"> </span></p>').appendTo('#ipAddressDiv');
                     i++;
                     $('.remove-input').css('cursor', 'pointer');
                     return false;
                 });
                 removeMe = function(id) {
                     if( i > 1 ) {
-                       $('#ipAddressInput-'+id).parents('p').remove();
+                       $('#ipAddress-' + id).parents('p').remove();
                         i--;
                     }
                     return false;
