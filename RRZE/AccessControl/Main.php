@@ -555,7 +555,7 @@ class Main {
         }
         
         $remote_addr = $this->get_remote_ip_address();
-        
+
         if($remote_addr === FALSE) {
             return FALSE;
         }
@@ -570,22 +570,33 @@ class Main {
     }
     
     private function get_remote_ip_address() {
-        if (isset($_SERVER['HTTP_CLIENT_IP'])) {
-            $addr = $_SERVER['HTTP_CLIENT_IP'];
-        } elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $addr = $_SERVER['HTTP_X_FORWARDED_FOR'];
-        } elseif (isset($_SERVER['HTTP_X_FORWARDED'])) {
-            $addr = $_SERVER['HTTP_X_FORWARDED'];
-        } elseif (isset($_SERVER['HTTP_FORWARDED_FOR'])) {
-            $addr = $_SERVER['HTTP_FORWARDED_FOR'];
-        } elseif (isset($_SERVER['HTTP_FORWARDED'])) {
-            $addr = $_SERVER['HTTP_FORWARDED'];
-        } elseif (isset($_SERVER['REMOTE_ADDR'])) {
-            $addr = $_SERVER['REMOTE_ADDR'];
-        } else {
-            $addr = FALSE;
+        $server_keys = [
+            'HTTP_CLIENT_IP', 
+            'HTTP_X_FORWARDED_FOR', 
+            'HTTP_X_FORWARDED', 
+            'HTTP_X_CLUSTER_CLIENT_IP', 
+            'HTTP_FORWARDED_FOR', 
+            'HTTP_FORWARDED', 
+            'REMOTE_ADDR'
+        ];
+        
+        foreach ($server_keys as $key) {
+            if (array_key_exists($key, $_SERVER) === TRUE) {
+                foreach (explode(',', $_SERVER[$key]) as $ip_address) {
+                    $ip_address = trim($ip_address);
+                    if (!defined('WP_DEBUG') || !WP_DEBUG) {
+                        $filter_flag = FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE;
+                    } else {
+                        $filter_flag = FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6;
+                    }
+                    if (filter_var($ip_address, FILTER_VALIDATE_IP, $filter_flag) !== FALSE) {
+                        return $ip_address;
+                    }
+                }
+            }
         }
-        return $addr;
+        
+        return FALSE;
     }
         
     private function simplesaml_auth() {
