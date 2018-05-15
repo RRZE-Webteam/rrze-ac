@@ -584,18 +584,14 @@ class Main {
             if (array_key_exists($key, $_SERVER) === TRUE) {
                 foreach (explode(',', $_SERVER[$key]) as $ip_address) {
                     $ip_address = trim($ip_address);
-                    if (!defined('WP_DEBUG') || !WP_DEBUG) {
-                        $filter_flag = FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE;
-                    } else {
-                        $filter_flag = FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6;
-                    }
+                    $filter_flag = FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE;
                     if (filter_var($ip_address, FILTER_VALIDATE_IP, $filter_flag) !== FALSE) {
                         return $ip_address;
                     }
                 }
             }
         }
-        
+
         return FALSE;
     }
         
