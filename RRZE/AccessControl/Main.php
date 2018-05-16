@@ -584,14 +584,15 @@ class Main {
             if (array_key_exists($key, $_SERVER) === TRUE) {
                 foreach (explode(',', $_SERVER[$key]) as $ip_address) {
                     $ip_address = trim($ip_address);
-                    $filter_flag = FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE;
+                    $filter_flag = FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6;
                     if (filter_var($ip_address, FILTER_VALIDATE_IP, $filter_flag) !== FALSE) {
+                        do_action('rrze.log.info', ['ip-address' => $ip_address]);
                         return $ip_address;
                     }
                 }
             }
         }
-
+        do_action('rrze.log.warning', ['ip-address' => 'unknown']);
         return FALSE;
     }
         
