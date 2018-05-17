@@ -586,13 +586,13 @@ class Main {
                     $ip_address = trim($ip_address);
                     $filter_flag = FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6;
                     if (filter_var($ip_address, FILTER_VALIDATE_IP, $filter_flag) !== FALSE) {
-                        do_action('rrze.log.info', ['ip-address' => $ip_address]);
+                        do_action('rrze.log.info', ['plugin' =>'rrze-ac', 'ip-address' => $ip_address]);
                         return $ip_address;
                     }
                 }
             }
         }
-        do_action('rrze.log.warning', ['ip-address' => 'unknown']);
+        do_action('rrze.log.warning', ['plugin' =>'rrze-ac', 'ip-address' => 'unknown']);
         return FALSE;
     }
         
@@ -663,6 +663,7 @@ class Main {
             return TRUE;
         }
         
+        do_action('rrze.log.info', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission]);
         $permissions = $this->get_the_permissions();
 
         // set permission to default permission if not exist or not active
@@ -673,27 +674,32 @@ class Main {
         // check if permission is set to be logged in
         if (!is_user_logged_in() && isset($permissions[$permission]['logged_in']) && $permissions[$permission]['logged_in']) {
             $this->set_permission_status($this->user_isnt_logged_in);
+            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_isnt_logged_in']);
             return FALSE;
         }
              
         // check if permission is set to be sso logged in
         elseif (!empty($permissions[$permission]['sso_logged_in']) && !$this->check_sso_logged_in()) {
             $this->set_permission_status($this->user_isnt_sso_logged_in);
+            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_isnt_sso_logged_in']);
             return FALSE;
         }      
                 
         // check if permission is set to person affiliation
         elseif (!empty($permissions[$permission]['affiliation']) && !$this->check_person_affiliation($permissions[$permission]['affiliation'])) {
             $this->set_permission_status($this->user_hasnt_affiliation);
+            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_hasnt_affiliation']);
             return FALSE;
         }      
         
         // check if permission is set to ip address
         elseif (!empty($permissions[$permission]['ip_address']) && !$this->check_ip_address_range($permissions[$permission]['ip_address'])) {
             $this->set_permission_status($this->user_ip_isnt_in_range);
+            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_ip_isnt_in_range']);
             return FALSE;
         }
-                
+        
+        do_action('rrze.log.info', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'allowed']);
         return TRUE;
     }
     
