@@ -216,7 +216,7 @@ class Settings {
         $ip_range = $this->get_ip_range($ip_address);
         $ip_address = !empty($ip_range) ? $ip_range : '';
         
-        $description = !empty($input['description']) ? $input['description'] : '';
+        $description = !empty($input['description']) ? sanitize_textarea_field($input['description']) : '';
         
         $logged_in = !empty($input['logged_in']) ? 1 : 0;
         $sso_logged_in = !empty($input['sso_logged_in']) ? 1 : 0;
@@ -261,7 +261,7 @@ class Settings {
       
         $permission['select'] = $select;
         
-        $description = !empty($input['description']) ? $input['description'] : '';
+        $description = !empty($input['description']) ? sanitize_textarea_field($input['description']) : '';
         $permission['description'] = $description;
         
         $ip_address = !empty($input['ip_address']) && is_array($input['ip_address']) ? array_filter($input['ip_address']) : '';
