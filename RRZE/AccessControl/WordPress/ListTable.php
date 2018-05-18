@@ -43,7 +43,7 @@ class ListTable extends WP_List_Table {
                 $item[$column_name] = !empty($item[$column_name]) ? $item[$column_name] : '';
                 break;
             case 'description':
-                $item[$column_name] = !empty($item[$column_name]) ? esc_html(wp_trim_words($item[$column_name], 10)) : '';
+                $item[$column_name] = !empty($item[$column_name]) ? esc_html(wp_trim_words(sanitize_textarea_field($item[$column_name]))) : '';
                 break;
             case 'ip_address':
                 $item[$column_name] = !empty($item[$column_name]) ? implode('<br>', $item[$column_name]) : '';
