@@ -59,6 +59,8 @@ class Main {
         
         add_action('init', array($this, 'check_rewrite'));
                 
+        add_action('init', array($this, 'register_post_status'));
+                
         if(get_site_option($this->enabled_option_name)) {
             
             add_filter('upload_dir', array($this, 'change_upload_directory'), 999);
@@ -98,13 +100,16 @@ class Main {
 
                 add_filter('rrze_menu_walker_nav_menu_edit', array($this, 'walker_nav_menu_edit'), 10, 5);
                 
+                add_action('views_edit-page', array($this, 'views_edit'));
+                add_filter('pre_get_posts', array($this, 'pre_get_posts_list'));
+                
             // Bezieht sich nur auf den Frontend-Bereich
             } else {
                 // Menüelemente die geschützte Objekte verlinken sind abgeschlossen
                 add_filter('wp_nav_menu_objects', array($this, 'nav_menu_objects'), 10, 1);
                 
                 // Anpassung des Abfrageobjekts
-                add_filter('pre_get_posts', array($this, 'pre_get_posts'));
+                add_filter('pre_get_posts', array($this, 'pre_get_posts_single'));
             }
             
         } else {
@@ -1561,7 +1566,7 @@ class Main {
         }
     }
 
-    public function pre_get_posts($query) {
+    public function pre_get_posts_single($query) {
         if (is_admin() || !$query->is_main_query() || $query->is_singular) {
             return $query;
         }
@@ -1669,5 +1674,71 @@ class Main {
         return $output;
     }
 
-}
+    public function register_post_status() {
+	register_post_status('protected', [
+            'label'                     => __('Protected', 'rrze-ac'),
+            'public'                    => false,
+            'exclude_from_search'       => true,
+            'show_in_admin_all_list'    => false,
+            'show_in_admin_status_list' => false,
+            'label_count'               => _n_noop('Protected <span class="count">(%s)</span>', 'Protected <span class="count">(%s)</span>', 'rrze-ac'),
+	]);
+    }
+    
+    public function views_edit($views) {
+        global $wp_query, $post_type;
+        
+        if (!in_array($post_type, ['page'])) {
+            return $views;
+        }
+        
+        $query = new \WP_Query(
+            [
+                'post_type'  => $post_type,
+                'meta_query' => [
+                    [
+                        'key' => $this->access_permission_meta_key,
+                        'compare' => 'EXISTS'
+                    ]
+                ]
+            ]
+        );
+        
+        $count = $query->found_posts;
+        $class = $wp_query->query['post_status'] == 'protected' ? ' class="current"' : '';
 
+        $views['protected'] = sprintf('<a href="%s"%s>%s</a>',
+            admin_url(sprintf('edit.php?post_status=protected&post_type=%s', $post_type)),
+            $class,
+            sprintf(translate_nooped_plural(_n_noop('Protected <span class="count">(%s)</span>', 'Protected <span class="count">(%s)</span>'), $count, 'rrze-ac'), $count )
+        );
+        
+        return $views;
+    }
+
+    public function pre_get_posts_list($query) {
+        global $post_type;
+        
+        if (!is_admin() || !isset($query->query_vars['post_status']) || $query->query_vars['post_status'] != 'protected') {
+            return $query;
+        }
+        
+        if (!in_array($post_type, ['page'])) {
+            return $views;
+        }
+        
+        $query->set('post_status', ['publish', 'pending', 'draft', 'future', 'private', 'inherit', 'protected']);
+        
+        $meta_query = [
+            [
+                'key' => $this->access_permission_meta_key,
+                'compare' => 'EXISTS'
+            ]
+        ];
+        
+        $query->set('meta_query', $meta_query);
+
+        return $query;
+    }
+    
+}
