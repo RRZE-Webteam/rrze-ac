@@ -28,11 +28,11 @@ class Main {
     public $protected_dirname = '_protected';
     public $access_permission_meta_key = '_access_permission';
         
-    private $user_isnt_logged_in = 0;
-    private $user_ip_isnt_in_range = 1;
-    private $user_isnt_sso_logged_in = 2;
-    private $user_hasnt_affiliation = 4;
-    private $user_hasnt_entitlement = 8;
+    private $user_isnt_logged_in = 1;
+    private $user_ip_isnt_in_range = 2;
+    private $user_isnt_sso_logged_in = 4;
+    private $user_hasnt_affiliation = 8;
+    private $user_hasnt_entitlement = 16;
     
     private $permission_status = NULL;
     
@@ -1593,7 +1593,12 @@ class Main {
         $message = '';
         
         $post_type = get_post_type($post_id);
-        $permalink = get_permalink($post_id);
+        
+        if ($post_type == 'attachment' && !wp_attachment_is_image($post_id)) {
+            $permalink = wp_get_attachment_url($post_id);
+        } else {
+            $permalink = get_permalink($post_id);
+        }
         
         if($this->get_permission_status($this->user_isnt_logged_in)) {
             if ($post_type == 'attachment') {
