@@ -106,7 +106,7 @@ class Main {
             // Bezieht sich nur auf den Frontend-Bereich
             } else {
                 // Menüelemente die geschützte Objekte verlinken sind abgeschlossen
-                add_filter('wp_nav_menu_objects', array($this, 'nav_menu_objects'), 10, 1);
+                //add_filter('wp_nav_menu_objects', array($this, 'nav_menu_objects'), 10, 1);
                 
                 // Anpassung des Abfrageobjekts
                 add_filter('pre_get_posts', array($this, 'pre_get_posts_single'));
