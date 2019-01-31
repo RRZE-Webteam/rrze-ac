@@ -4,21 +4,22 @@ namespace RRZE\AccessControl\Core;
 
 defined('ABSPATH') || exit;
 
-class Options {
-    
+class Options
+{
     protected $option_name = 'rrze_ac';
     protected $version_option_name = 'rrze_ac_version';
     protected $enabled_option_name = 'rrze_ac_enabled';
-    
-    public function __construct() {
 
+    public function __construct()
+    {
     }
-    
+
     /*
      * Standard Einstellungen werden definiert
      * @return array
      */
-    private function default_options() {
+    private function default_options()
+    {
         $options = array(
             'permissions' => array(
                 'logged-in' =>  array(
@@ -29,6 +30,7 @@ class Options {
                     'sso_logged_in'  => 0,
                     'affiliation'    => '',
                     'entitlement'    => '',
+                    'domain'         => '',
                     'ip_address'     => '',
                     'core'           => 1,
                     'active'         => 1
@@ -40,12 +42,13 @@ class Options {
                     'logged_in'      => 0,
                     'sso_logged_in'  => 0,
                     'affiliation'    => '',
-                    'entitlement'    => '',                    
+                    'entitlement'    => '',
+                    'domain'         => '',
                     'ip_address'     => '',
                     'core'           => 1,
                     'active'         => 1
                 )
-            ),           
+            ),
             'default_permission' => 'logged-in'
         );
 
@@ -55,8 +58,9 @@ class Options {
     /*
      * Standard Berechtigung wird definiert.
      * @return array
-     */    
-     private function default_permission() {
+     */
+    private function default_permission()
+    {
         $permission = array(
             'permission_key' => '',
             'description'    => '',
@@ -65,11 +69,12 @@ class Options {
             'sso_logged_in'  => 0,
             'affiliation'    => '',
             'entitlement'    => '',
+            'domain'         => '',
             'ip_address'     => '',
             'core'           => 0,
             'active'         => 0
         );
-        
+
         return $permission;
     }
 
@@ -77,21 +82,23 @@ class Options {
      * Gibt die Einstellungen zurück.
      * @return object
      */
-     public function get_options() {
+    public function get_options()
+    {
         $defaults = $this->default_options();
         $default_permission = $this->default_permission();
         $options = (array) get_option($this->option_name);
 
         $options = wp_parse_args($options, $defaults);
         $options['permissions'] = wp_parse_args($options['permissions'], $defaults['permissions']);
-        foreach($options['permissions'] as $key => $permission) {
+        foreach ($options['permissions'] as $key => $permission) {
             $options['permissions'][$key] = $this->combine_atts($default_permission, $permission);
         }
-        
+
         return $options;
     }
-    
-    private function combine_atts($default_atts, $atts) {
+
+    private function combine_atts($default_atts, $atts)
+    {
         $atts = (array)$atts;
         $combine_atts = array();
         foreach ($default_atts as $key => $default) {
@@ -101,16 +108,17 @@ class Options {
                 $combine_atts[$key] = $default;
             }
         }
-        
-        return $combine_atts;        
+
+        return $combine_atts;
     }
 
-    public function get_option_name() {
+    public function get_option_name()
+    {
         return $this->option_name;
     }
-    
-    public function get_enabled_option_name() {
+
+    public function get_enabled_option_name()
+    {
         return $this->enabled_option_name;
     }
-    
 }

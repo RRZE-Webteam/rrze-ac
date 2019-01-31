@@ -15,7 +15,7 @@ class ListTable extends WP_List_Table {
 
     public function __construct(Main $main) {
         $this->main = $main;
-        
+
         $this->list_data = $this->main->get_the_permissions();
         foreach ($this->list_data as $key => $data) {
             $this->list_data[$key]['default'] = ($data['permission_key'] == $this->main->get_default_permission()) ? 1 : 0;
@@ -25,7 +25,7 @@ class ListTable extends WP_List_Table {
             'singular' => 'rrzeac',
             'plural' => 'rrzeacs',
             'ajax' => FALSE
-        ));                
+        ));
     }
 
     public function single_row($item) {
@@ -45,6 +45,7 @@ class ListTable extends WP_List_Table {
             case 'description':
                 $item[$column_name] = !empty($item[$column_name]) ? esc_html(wp_trim_words(sanitize_textarea_field($item[$column_name]))) : '';
                 break;
+            case 'domain':
             case 'ip_address':
                 $item[$column_name] = !empty($item[$column_name]) ? implode('<br>', $item[$column_name]) : '';
                 break;
@@ -69,7 +70,7 @@ class ListTable extends WP_List_Table {
                 $actions['activate'] = '<a href="' . esc_url($this->main->action_url(array('action' => 'activate', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Activate", 'rrze-ac')) . '</a>';
                 if (empty($this->main->count_meta_keys($item['permission_key']))) {
                     $actions['delete'] = '<a href="' . esc_url($this->main->action_url(array('action' => 'delete', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Delete", 'rrze-ac')) . '</a>';
-                }            
+                }
             }
         }
         return sprintf('%1$s %2$s', $item['permission_key'], $this->row_actions($actions));
@@ -87,6 +88,7 @@ class ListTable extends WP_List_Table {
             'description' => __("Description", 'rrze-ac'),
             'logged_in' => __("Logged-in", 'rrze-ac'),
             'sso_logged_in' => __('SSO', 'rrze-ac'),
+            'domain' => __("Allow domain", 'rrze-ac'),
             'ip_address' => __("Allow IP address", 'rrze-ac')
         );
         return $columns;
@@ -115,7 +117,7 @@ class ListTable extends WP_List_Table {
         $permission_keys = $this->main->settings->request_var($this->_args['singular']);
 
         if(!empty($permission_keys) && is_array($permission_keys)) {
-            switch ($this->current_action()) {               
+            switch ($this->current_action()) {
                 case 'activate':
                     $this->process_bulk_activate($permission_keys);
                     break;
@@ -124,7 +126,7 @@ class ListTable extends WP_List_Table {
                     break;
                 case 'delete':
                     $this->process_bulk_delete($permission_keys);
-                    break;                
+                    break;
             }
         }
     }
@@ -137,7 +139,7 @@ class ListTable extends WP_List_Table {
         wp_redirect($this->main->action_url());
         exit();
     }
-    
+
     private function process_bulk_activate($permission_keys, $activate = 1) {
         foreach ($permission_keys as $value) {
             $permission = $this->main->get_permission($value);
@@ -146,19 +148,28 @@ class ListTable extends WP_List_Table {
         wp_redirect($this->main->action_url());
         exit();
     }
-    
-    public function prepare_items() {                
+
+    public function prepare_items() {
         $this->_column_headers = $this->get_column_info();
-        
+
         usort($this->list_data, array(&$this, 'sort_data'));
-        
+
         if (isset($_GET['s']) && mb_strlen(trim($_GET['s'])) > 0) {
             $search = trim($_GET['s']);
             foreach ($this->list_data as $key => $data) {
                 $permission_key = mb_stripos($data['permission_key'], $search) === FALSE ? TRUE : FALSE;
                 $select = mb_stripos($data['select'], $search) === FALSE ? TRUE : FALSE;
                 $description = mb_stripos($data['description'], $search) === FALSE ? TRUE : FALSE;
-                
+
+                $domain = !empty($data['domain']) ? $data['domain'] : array();
+                $ip = TRUE;
+                foreach ($domain as $value) {
+                    if (isset($value) && mb_stripos($value, $search) !== FALSE) {
+                        $dom = FALSE;
+                        break;
+                    }
+                }
+
                 $ip_address = !empty($data['ip_address']) ? $data['ip_address'] : array();
                 $ip = TRUE;
                 foreach ($ip_address as $value) {
@@ -167,12 +178,12 @@ class ListTable extends WP_List_Table {
                         break;
                     }
                 }
-                
-                if ($permission_key && $select && $description && $ip) {
+
+                if ($permission_key && $select && $description && $ip && $dom) {
                     unset($this->list_data[$key]);
                 }
             }
-        }        
+        }
 
         $this->process_bulk_action();
 
@@ -188,12 +199,12 @@ class ListTable extends WP_List_Table {
             'total_pages' => ceil($total_items / $per_page)   // Total number of pages
         ));
     }
-    
+
     public function sort_data($a, $b) {
         $orderby = (!empty($_REQUEST['orderby'])) ? $_REQUEST['orderby'] : 'select';
         $order = (!empty($_GET['order'])) ? $_GET['order'] : 'asc';
         $result = strnatcmp($a[$orderby], $b[$orderby]);
         return ($order === 'asc') ? $result : -$result;
     }
-        
+
 }
