@@ -205,7 +205,7 @@ class Settings
 
         $permission_key = !empty($input['permission_key']) ? sanitize_title($input['permission_key']) : '';
 
-        if (!$permission_key) {
+        if (! $permission_key) {
             $this->add_settings_error('permission_key', '', __("Permission required.", 'rrze-ac'));
         } elseif (isset($this->options['permissions'][$permission_key])) {
             $this->add_settings_error('permission_key', $permission_key, __("Permission already exists.", 'rrze-ac'));
@@ -213,26 +213,30 @@ class Settings
             $this->add_settings_error('permission_key', $permission_key, '', false);
         }
 
-        $select = !empty($input['select']) ? wp_trim_words(sanitize_text_field($input['select']), 3, '') : '';
-
-        if (!$select) {
+        $select = isset($input['select']) ? wp_trim_words(sanitize_text_field($input['select']), 3, '') : '';
+        if (! $select) {
             $this->add_settings_error('select', '', __("Short description required.", 'rrze-ac'));
         } else {
             $this->add_settings_error('select', $select, '', false);
         }
 
-        $ip_address = !empty($input['ip_address']) && is_array($input['ip_address']) ? array_filter($input['ip_address']) : '';
+        $domain = isset($input['domain']) && is_array($input['domain']) ? array_unique($input['domain']) : '';
+        $domain = $this->get_valid_domains($domain);
+        $domain = ! empty($domain) ? $domain : '';
+
+        $ip_address = isset($input['ip_address']) && is_array($input['ip_address']) ? array_unique($input['ip_address']) : '';
         $ip_range = $this->get_ip_range($ip_address);
-        $ip_address = !empty($ip_range) ? $ip_range : '';
+        $ip_address = ! empty($ip_range) ? $ip_range : '';
 
-        $description = !empty($input['description']) ? sanitize_textarea_field($input['description']) : '';
+        $description = ! empty($input['description']) ? sanitize_textarea_field($input['description']) : '';
 
-        $logged_in = !empty($input['logged_in']) ? 1 : 0;
-        $sso_logged_in = !empty($input['sso_logged_in']) ? 1 : 0;
+        $logged_in = ! empty($input['logged_in']) ? 1 : 0;
+        $sso_logged_in = ! empty($input['sso_logged_in']) ? 1 : 0;
 
         if ($this->settings_errors()) {
             $this->add_settings_error('logged_in', $logged_in, '', false);
             $this->add_settings_error('sso_logged_in', $sso_logged_in, '', false);
+            $this->add_settings_error('domain', $domain, '', false);
             $this->add_settings_error('ip_address', $ip_address, '', false);
             $this->add_settings_error('description', $description, '', false);
             return false;
@@ -264,7 +268,7 @@ class Settings
         $permission_key = $permission['permission_key'];
 
         $select = isset($input['select']) ? wp_trim_words(sanitize_text_field($input['select']), 3, '') : '';
-        if (!$select) {
+        if (! $select) {
             $this->add_settings_error('select', '', __("Short description required.", 'rrze-ac'));
         } else {
             $this->add_settings_error('select', $select, '', false);
@@ -272,19 +276,19 @@ class Settings
 
         $permission['select'] = $select;
 
-        $description = !empty($input['description']) ? sanitize_textarea_field($input['description']) : '';
+        $description = ! empty($input['description']) ? sanitize_textarea_field($input['description']) : '';
         $permission['description'] = $description;
 
-        $domain = !empty($input['domain']) && is_array($input['domain']) ? array_values(array_unique($input['domain'])) : '';
-        $permission['domain'] = $domain;
+        $domain = isset($input['domain']) && is_array($input['domain']) ? array_unique($input['domain']) : '';
+        $domain = $this->get_valid_domains($domain);
+        $permission['domain'] = ! empty($domain) ? $domain : '';
 
-        $ip_address = !empty($input['ip_address']) && is_array($input['ip_address']) ? array_values(array_unique($input['ip_address'])) : '';
+        $ip_address = isset($input['ip_address']) && is_array($input['ip_address']) ? array_unique($input['ip_address']) : '';
         $ip_range = $this->get_ip_range($ip_address);
-        $ip_address = !empty($ip_range) ? $ip_range : '';
-        $permission['ip_address'] = $ip_address;
+        $permission['ip_address'] = ! empty($ip_range) ? $ip_range : '';
 
-        $logged_in = !empty($input['logged_in']) ? 1 : 0;
-        $sso_logged_in = !empty($input['sso_logged_in']) ? 1 : 0;
+        $logged_in = ! empty($input['logged_in']) ? 1 : 0;
+        $sso_logged_in = ! empty($input['sso_logged_in']) ? 1 : 0;
 
         $affiliation = $sso_logged_in && !empty(trim($input['affiliation'])) ? array_map('trim', explode(',', trim($input['affiliation']))) : '';
         $permission['affiliation'] = $affiliation;
@@ -308,11 +312,34 @@ class Settings
         return update_option($this->option_name, $this->options);
     }
 
-    private function get_ip_range($ip_address)
+    protected function get_valid_domains($domain)
     {
-        $ip_range = array();
+        $domain_ary = [];
+        if (!empty($domain)) {
+            foreach ((array) $domain as $key => $value) {
+                $value = trim($value);
+                if (empty($value)) {
+                    continue;
+                }
+                $domain_ary[] = $value;
+                $match = preg_match("/^(?=.{4,255}$)([a-zA-Z0-9_]([a-zA-Z0-9_-]{0,61}[a-zA-Z0-9_])?.){1,126}[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]$/i", $value);
+                if (! $match) {
+                    $this->add_settings_error('domain-' . $key, $ip_address, sprintf(__("The domain %s is not valid.", 'rrze-ac'), $value));
+                }
+            }
+        }
+        return $domain_ary;
+    }
+
+    protected function get_ip_range($ip_address)
+    {
+        $ip_range = [];
         if (!empty($ip_address)) {
             foreach ($ip_address as $key => $value) {
+                $value = trim($value);
+                if (empty($value)) {
+                    continue;
+                }
                 $sanitized_value = IPUtils::sanitizeIpRange($value);
                 if (!is_null($sanitized_value)) {
                     $ip_range[] = $sanitized_value;
