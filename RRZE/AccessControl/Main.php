@@ -1246,7 +1246,7 @@ class Main
 
         if (!$this->check_permission($attachment_id)) {
             status_header(403);
-            wp_die($this->permission_forbidden_message($attachment_id));
+            wp_die($this->permission_message($attachment_id));
         }
 
         header('Content-Type: ' . $mimetype);
@@ -1651,7 +1651,7 @@ class Main
             global $post;
             if (!$this->check_permission($post->ID)) {
                 status_header(403);
-                wp_die($this->permission_forbidden_message($post->ID));
+                wp_die($this->permission_message($post->ID));
             }
         }
     }
@@ -1697,7 +1697,7 @@ class Main
         return $query;
     }
 
-    protected function permission_forbidden_message($post_id = null)
+    protected function permission_message($post_id = null)
     {
         $message = '';
 
