@@ -155,7 +155,7 @@ class Main
         <?php
     }
 
-    private function check_rewrite_rules()
+    protected function check_rewrite_rules()
     {
         $upload_dir = wp_upload_dir();
 
@@ -170,7 +170,7 @@ class Main
         return true;
     }
 
-    private function rewrite_rules()
+    protected function rewrite_rules()
     {
         $uploads_path = '';
 
@@ -294,7 +294,7 @@ class Main
         return $wpdb->get_results($wpdb->prepare($query, $this->access_permission_meta_key));
     }
 
-    private function meta_values()
+    protected function meta_values()
     {
         global $wpdb;
 
@@ -485,7 +485,7 @@ class Main
         return apply_filters('access_edit_permissions', $access_permissions);
     }
 
-    private function get_the_permission($post_id)
+    protected function get_the_permission($post_id)
     {
         if (get_post_type($post_id) == 'attachment') {
             return $this->get_attachment_permission($post_id);
@@ -496,7 +496,7 @@ class Main
         return !empty($permission) ? $permission : false;
     }
 
-    private function check_author_permission($post_id)
+    protected function check_author_permission($post_id)
     {
         if (!is_user_logged_in()) {
             return false;
@@ -521,7 +521,7 @@ class Main
         return false;
     }
 
-    private function post_authors($post_id, $post_author)
+    protected function post_authors($post_id, $post_author)
     {
         $authors = array();
 
@@ -536,7 +536,7 @@ class Main
         return $authors;
     }
 
-    private function workflow_authors($post_id)
+    protected function workflow_authors($post_id)
     {
         global $wpdb;
 
@@ -569,7 +569,7 @@ class Main
         return $authors;
     }
 
-    private function get_attachment_permission($attachment_id)
+    protected function get_attachment_permission($attachment_id)
     {
         if (!$this->is_attachment_protected($attachment_id)) {
             return false;
@@ -580,7 +580,7 @@ class Main
         return empty($permission) ? $this->get_default_permission() : $permission;
     }
 
-    private function is_attachment_protected($attachment_id)
+    protected function is_attachment_protected($attachment_id)
     {
         $file = get_post_meta($attachment_id, '_wp_attached_file', true);
 
@@ -591,7 +591,7 @@ class Main
         return false;
     }
 
-    private function check_ip_address_range($ip_address)
+    protected function check_ip_address_range($ip_address)
     {
         if (empty($ip_address) || !is_array($ip_address)) {
             return true;
@@ -649,7 +649,7 @@ class Main
         return $remoteAddress->getIpAddress();
     }
 
-    private function simplesaml_auth()
+    protected function simplesaml_auth()
     {
         if (!$this->is_plugin_active($this->websso_plugin)) {
             return;
@@ -674,7 +674,7 @@ class Main
         $this->simplesaml_auth = new SimpleSAML_Auth_Simple($options['simplesaml_auth_source']);
     }
 
-    private function check_sso_logged_in()
+    protected function check_sso_logged_in()
     {
         $this->simplesaml_auth();
 
@@ -690,7 +690,7 @@ class Main
         return true;
     }
 
-    private function check_person_affiliation($affiliation)
+    protected function check_person_affiliation($affiliation)
     {
         if (empty($affiliation) || empty($affiliation[0]) || !is_array($affiliation)) {
             return true;
@@ -705,7 +705,7 @@ class Main
         return false;
     }
 
-    private function check_permission($post_id)
+    protected function check_permission($post_id)
     {
         if (empty($post_id)) {
             return false;
@@ -969,7 +969,7 @@ class Main
         }
     }
 
-    private function move_attachment_from_protected($attachment_id)
+    protected function move_attachment_from_protected($attachment_id)
     {
         $file = get_post_meta($attachment_id, '_wp_attached_file', true);
 
@@ -982,7 +982,7 @@ class Main
         return $this->move_attachment_files($attachment_id, $new_reldir);
     }
 
-    private function move_attachment_to_protected($attachment_id)
+    protected function move_attachment_to_protected($attachment_id)
     {
         $file = get_post_meta($attachment_id, '_wp_attached_file', true);
 
@@ -1000,7 +1000,7 @@ class Main
         return $this->move_attachment_files($attachment_id, $new_reldir);
     }
 
-    private function move_attachment_files($attachment_id, $new_reldir)
+    protected function move_attachment_files($attachment_id, $new_reldir)
     {
         if ('attachment' != get_post_type($attachment_id)) {
             return new WP_Error('not_attachment', sprintf(
@@ -1162,7 +1162,7 @@ class Main
         }
     }
 
-    private function get_file($rel_file)
+    protected function get_file($rel_file)
     {
         $rel_file = isset($rel_file) ? $rel_file : '';
         $upload_dir = wp_upload_dir();
@@ -1287,7 +1287,7 @@ class Main
         exit();
     }
 
-    private function protected_upload_dir($path = '', $in_url = false)
+    protected function protected_upload_dir($path = '', $in_url = false)
     {
         $dirpath = $in_url ? '/' : '';
         $dirpath .= $this->protected_dirname;
@@ -1697,7 +1697,7 @@ class Main
         return $query;
     }
 
-    private function permission_forbidden_message($post_id = null)
+    protected function permission_forbidden_message($post_id = null)
     {
         $message = '';
 
@@ -1710,23 +1710,28 @@ class Main
         }
 
         if ($this->get_permission_status($this->user_isnt_logged_in)) {
+            $login_url = wp_login_url($permalink);
             if ($post_type == 'attachment') {
-                $message = '<p>' . sprintf(__("Access to this file is only available for members of this website. <a href=\"%s\">Please login with your IdM username</a>, to download the file.", 'rrze-ac'), wp_login_url($permalink)) . '</p>';
+                $message .= '<h3>' . __("Access to the requested file is denied", 'rrze-ac') . '</h3>';
+                $message .= '<p>' . sprintf(__("Access to this file is only available for members of this website. <a href=\"%s\">Please login with your IdM username</a> to download the file.", 'rrze-ac'), $login_url) . '</p>';
             } else {
-                $message = '<p>' . sprintf(__("Access to this page is only available to members of this website. <a href=\"%s\">Please login with your IdM username</a> to see the contents of the page.", 'rrze-ac'), wp_login_url($permalink)) . '</p>';
+                $message .= '<h3>' . __("Access to the requested page is denied", 'rrze-ac') . '</h3>';
+                $message .= '<p>' . sprintf(__("Access to this page is only available to members of this website. <a href=\"%s\">Please login with your IdM username</a> to see the contents of the page.", 'rrze-ac'), $login_url) . '</p>';
             }
-
+            $message .= '<p>' . sprintf(__("<a href=\"%s\">Login through Single Sign-On (central login service of the University Erlangen-Nürnberg)</a>.", 'rrze-ac'), $login_url). '</p>';
             return $message;
         }
 
         if ($this->get_permission_status($this->user_isnt_sso_logged_in) && $this->simplesaml_auth) {
-            $login = $this->simplesaml_auth->getLoginURL($permalink);
+            $login_url = $this->simplesaml_auth->getLoginURL($permalink);
             if ($post_type == 'attachment') {
-                $message = '<p>' . __("Please log in with your IdM username to download the file.", 'rrze-ac') . '</p>';
+                $message .= '<h3>' . __("Access to the requested file is denied", 'rrze-ac') . '</h3>';
+                $message .= '<p>' . sprintf(__("Access to this file is only possible for logged in users. <a href=\"%s\">Please login with your IdM username</a> to download the file.", 'rrze-ac'), $login_url) . '</p>';
             } else {
-                $message = '<p>' . __("Please login with your IdM username to see the contents of the page.", 'rrze-ac') . '</p>';
+                $message .= '<h3>' . __("Access to the requested page is denied", 'rrze-ac') . '</h3>';
+                $message .= '<p>' . sprintf(__("Access to this page is only possible for logged in users. <a href=\"%s\">Please login with your IdM username</a> to see the contents of the page.", 'rrze-ac'), $login_url) . '</p>';
             }
-            $message .= '<p>' . sprintf(__("<a href=\"%s\">Login through Single Sign-On (central login service of the University Erlangen-Nürnberg)</a>.", 'rrze-ac'), $login). '</p>';
+            $message .= '<p>' . sprintf(__("<a href=\"%s\">Login through Single Sign-On (central login service of the University Erlangen-Nürnberg)</a>.", 'rrze-ac'), $login_url). '</p>';
 
             return $message;
         }
@@ -1735,33 +1740,65 @@ class Main
             || $this->get_permission_status($this->user_ip_isnt_in_range)
             || ($this->get_permission_status($this->user_hasnt_affiliation) && $this->simplesaml_auth)) {
             if ($post_type == 'attachment') {
-                $message = '<p>' . __("You do not have sufficient permissions to access the file. If you believe you should have access to the file, please get in touch with the contact person of the website.", 'rrze-ac') . '</p>';
+                $message .= '<h4>' . __("Access to the requested file is denied", 'rrze-ac') . '</h4>';
+                $message .= '<p>' . __("You do not have sufficient permissions to access the file. If you believe you should have access to the file, please get in touch with the contact person of the website.", 'rrze-ac') . '</p>';
             } else {
-                $message = '<p>' . __("You do not have sufficient permissions to view this page. If you believe you should have access to the page, please get in touch with the contact person of the website.", 'rrze-ac') . '</p>';
+                $message .= '<p>' . __("Access to the requested page is denied.", 'rrze-ac') . '</p>';
+                $message .= '<p>' . __("You do not have sufficient permissions to view this page. If you believe you should have access to the page, please get in touch with the contact person of the website.", 'rrze-ac') . '</p>';
             }
 
             return $message;
         }
 
-        return '<p>' . __("You do not have sufficient permissions to view this area. If you believe you should have access to this area, please get in touch with the contact person of the website.", 'rrze-ac') . '</p>';
+        $message .= '<h3>' . __("Access is denied", 'rrze-ac') . '</h3>';
+        $message .= '<p>' . __("You do not have sufficient permissions to view this area. If you believe you should have access to this area, please get in touch with the contact person of the website.", 'rrze-ac') . '</p>';
+        $message .= $this->get_contact();
+        return $message;
     }
 
-    private function get_permission_status($bitmask)
+    protected function get_contact()
+    {
+        global $wpdb;
+
+        $blog_prefix = $wpdb->get_blog_prefix(get_current_blog_id());
+        $users = $wpdb->get_results(
+             "SELECT user_id, user_id AS ID, user_login, display_name, user_email, meta_value
+             FROM $wpdb->users, $wpdb->usermeta
+             WHERE {$wpdb->users}.ID = {$wpdb->usermeta}.user_id AND meta_key = '{$blog_prefix}capabilities'
+             ORDER BY {$wpdb->usermeta}.user_id");
+
+        if (empty($users)) {
+            return '';
+        }
+
+        $output = '<h4>' . __("Contact persons", 'rrze-ac') . '</h4>';
+
+        foreach ($users as $user) {
+            $roles = unserialize($user->meta_value);
+            if (isset($roles['administrator'])) {
+                $output .= sprintf('<p>%1$s<br/>%2$s %3$s</p>' . "\n", $user->display_name, __("Email Address:", 'rrze-ac'), make_clickable($user->user_email));
+            }
+        }
+
+        return $output;
+    }
+
+    protected function get_permission_status($bitmask)
     {
         return ($this->permission_status & (1 << $bitmask)) != 0;
     }
 
-    private function set_permission_status($bitmask, $new = true)
+    protected function set_permission_status($bitmask, $new = true)
     {
         $this->permission_status = ($this->permission_status & ~(1 << $bitmask)) | ($new << $bitmask);
     }
 
-    private function is_plugin_active($plugin)
+    protected function is_plugin_active($plugin)
     {
         return in_array($plugin, (array) get_option('active_plugins', array())) || $this->is_plugin_active_for_network($plugin);
     }
 
-    private function is_plugin_active_for_network($plugin)
+    protected function is_plugin_active_for_network($plugin)
     {
         if (!is_multisite()) {
             return false;
