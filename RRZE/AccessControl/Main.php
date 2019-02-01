@@ -731,30 +731,24 @@ class Main
         }
 
         // check if permission is set to be logged in
-        if (! empty($permissions[$permission]['logged_in'])) {
-            if (! is_user_logged_in()) {
-                $status[] = $this->user_isnt_logged_in;
-            } else {
-                $allow = true;
-            }
+        if (! empty($permissions[$permission]['logged_in']) && ! is_user_logged_in()) {
+            $this->set_permission_status($this->user_isnt_logged_in);
+            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_isnt_logged_in', 'message' => 'User is not logged in.']);
+            return false;
         }
 
         // check if permission is set to be sso logged in
-        if (! empty($permissions[$permission]['sso_logged_in'])) {
-            if (! $this->check_sso_logged_in()) {
-                $status[] = $this->user_isnt_sso_logged_in;
-            } else {
-                $allow = true;
-            }
+        if (! empty($permissions[$permission]['sso_logged_in']) && ! $this->check_sso_logged_in()) {
+            $this->set_permission_status($this->user_isnt_sso_logged_in);
+            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_isnt_sso_logged_in', 'message' => 'User is not SSO logged in.']);
+            return false;
         }
 
         // check if permission is set to person affiliation
-        if (! empty($permissions[$permission]['affiliation'])) {
-            if (! $this->check_person_affiliation($permissions[$permission]['affiliation'])) {
-                $status[] = $this->user_hasnt_affiliation;
-            } else {
-                $allow = true;
-            }
+        if (! empty($permissions[$permission]['affiliation']) && (! $this->check_sso_logged_in() || ! $this->check_person_affiliation($permissions[$permission]['affiliation']))) {
+            $this->set_permission_status($this->user_hasnt_affiliation);
+            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_hasnt_affiliation', 'message' => 'User has not affiliation.']);
+            return false;
         }
 
         // check if permission is set to domain
