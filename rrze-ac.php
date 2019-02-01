@@ -4,7 +4,7 @@
  * Plugin Name:     RRZE Access Control
  * Plugin URI:      https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
  * Description:     Es ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene Funktionen und IP-Adresse.
- * Version:         2.3.3
+ * Version:         2.4.0
  * Author:          RRZE-Webteam
  * Author URI:      https://blogs.fau.de/webworking/
  * License:         GNU General Public License v2
@@ -19,8 +19,8 @@ use RRZE\AccessControl\Main;
 
 defined('ABSPATH') || exit;
 
-const RRZE_PHP_VERSION = '5.5';
-const RRZE_WP_VERSION = '4.9';
+const RRZE_PHP_VERSION = '7.1';
+const RRZE_WP_VERSION = '5.0';
 
 register_activation_hook(__FILE__, 'RRZE\AccessControl\activation');
 
@@ -43,9 +43,9 @@ function activation() {
     load_textdomain();
 
     // Überprüft die minimal erforderliche PHP- u. WP-Version.
-    system_requirements();  
+    system_requirements();
  }
- 
+
  /*
   * Überprüft die minimal erforderliche PHP- u. WP-Version.
   * @return void
@@ -69,12 +69,12 @@ function system_requirements() {
     elseif (!$is_apache) {
         $error = __("The Web server software is not compatible. Please use instead the Apache Web server software.", 'rrze-ac');
     }
-    
+
     // Überprüft Multisite-Einstellung.
     elseif (!is_multisite()) {
         $error = __("The WordPress instance is not a MultiSite.", 'rrze-ac');
     }
-    
+
     // Überprüft Rewrite-Modul.
     elseif (!got_mod_rewrite()) {
         $error = __("The Web server software does not support the Rewrite module.", 'rrze-ac');
@@ -86,7 +86,7 @@ function system_requirements() {
         wp_die($error);
     }
  }
- 
+
 /*
 * Wird durchgeführt, nachdem das WP-Grundsystem hochgefahren
 * und alle Plugins eingebunden wurden.
@@ -95,10 +95,10 @@ function system_requirements() {
 function loaded() {
     // Sprachdateien werden eingebunden.
     load_textdomain();
-        
+
     // Erforderliche WP-Dateien.
     require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
-        
+
     // Automatische Laden von Klassen.
     autoload();
 }
@@ -108,6 +108,6 @@ function loaded() {
  * @return void
  */
 function autoload() {
-    require 'autoload.php';    
+    require 'autoload.php';
     $main = new Main(plugin_basename(__FILE__));
 }

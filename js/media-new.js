@@ -8,15 +8,15 @@ jQuery(document).ready(function($) {
         return 'access-' + (check == 'on' ? '' : 'un') + 'checked';
     }
 
-    input.on('change', function () {
+    input.on('change', function() {
         var check = ctrl.checked ? 'on' : 'off';
         ui.removeClass(state(check == 'on' ? 'off' : 'on'))
-                .addClass(state(check));
+            .addClass(state(check));
 
         wpUploaderInit.multipart_params.access_protected = check;
     });
 
-    setTimeout(function () {
+    setTimeout(function() {
         input.change();
     }, 200);
 });

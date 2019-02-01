@@ -1,8 +1,8 @@
-jQuery(document).ready(function ($) {
+jQuery(document).ready(function($) {
 
     var previous = $('#access-permission-select').val();
 
-    $('.edit-post-protection, .save-post-protection, .cancel-post-protection').click(function (e) {
+    $('.edit-post-protection, .save-post-protection, .cancel-post-protection').click(function(e) {
 
         e.preventDefault();
 

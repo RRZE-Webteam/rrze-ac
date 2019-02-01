@@ -3,15 +3,15 @@
 }
 
 span.access-icon:before {
-	color: #0073AA;
+    color: #0073AA;
 }
 
 span.access-all-icon:before {
-	color: #82878C;
+    color: #82878C;
 }
 
 span.access-error-icon:before {
-	color: #D64E07;
+    color: #D64E07;
 }
 
 /* Fields */
@@ -42,7 +42,7 @@ input.field-invalid, input.field-invalid:focus, select.field-invalid, select.fie
     box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.1) inset;
 }
 
-.rrzeacs tr.active + tr.inactive td, .rrzeacs tr.active + tr.inactive th, .rrzeacs tr.active.rrzeac-update-tr + tr.inactive td, .rrzeacs tr.active.rrzeac-update-tr + tr.inactive th {
+.rrzeacs tr.active+tr.inactive td, .rrzeacs tr.active+tr.inactive th, .rrzeacs tr.active.rrzeac-update-tr+tr.inactive td, .rrzeacs tr.active.rrzeac-update-tr+tr.inactive th {
     border-top: 1px solid rgba(0, 0, 0, 0.03);
     box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02) inset, 0 -1px 0 #e1e1e1 inset;
 }

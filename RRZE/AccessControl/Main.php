@@ -6,16 +6,17 @@ use RRZE\AccessControl\Core\Options;
 use RRZE\AccessControl\Core\Settings;
 use RRZE\AccessControl\Main;
 use RRZE\AccessControl\Network\IP;
+use RRZE\AccessControl\Network\RemoteAddress;
 use SimpleSAML_Auth_Simple;
 use WP_Media_List_Table;
 
 defined('ABSPATH') || exit;
 
-class Main {
-
+class Main
+{
     public $plugin_basename;
     public $min;
-    
+
     public $ops;
     public $options;
     public $option_name;
@@ -27,26 +28,28 @@ class Main {
 
     public $protected_dirname = '_protected';
     public $access_permission_meta_key = '_access_permission';
-        
+
     private $user_isnt_logged_in = 1;
     private $user_ip_isnt_in_range = 2;
     private $user_isnt_sso_logged_in = 4;
     private $user_hasnt_affiliation = 8;
     private $user_hasnt_entitlement = 16;
-    
-    private $permission_status = NULL;
-    
-    private $websso_plugin = 'fau-websso/fau-websso.php';
-    
-    private $websso_option_name = '_fau_websso';
-    
-    private $simplesaml_auth = NULL;
-    
-    private $person_affiliation = NULL;
-    
-    private $person_entitlement = NULL;
+    private $user_domain_not_allowed = 32;
 
-    public function __construct($plugin_basename = NULL) {
+    private $permission_status = null;
+
+    private $websso_plugin = 'fau-websso/fau-websso.php';
+
+    private $websso_option_name = '_fau_websso';
+
+    private $simplesaml_auth = null;
+
+    private $person_affiliation = null;
+
+    private $person_entitlement = null;
+
+    public function __construct($plugin_basename = null)
+    {
         $this->plugin_basename = $plugin_basename;
         $this->ops = new Options();
         $this->options = $this->ops->get_options();
@@ -56,19 +59,22 @@ class Main {
         $this->settings = new Settings($this);
 
         add_action('init', array($this, 'request_file'), 0);
-        
+
         add_action('init', array($this, 'check_rewrite'));
-                
+
         add_action('init', array($this, 'register_post_status'));
-                
-        if(get_site_option($this->enabled_option_name)) {
-            
+
+        if (get_site_option($this->enabled_option_name)) {
             add_filter('upload_dir', array($this, 'change_upload_directory'), 999);
 
             add_filter('image_downsize', array($this, 'image_downsize_placeholder'), 999, 3);
 
             add_action('template_redirect', array($this, 'template_redirect'), 0);
-            
+
+            // WP-REST-API
+            add_filter("rest_page_query", array($this, 'rest_filter'));
+            add_filter("rest_attachment_query", array($this, 'rest_filter'));
+
             // Bezieht sich nur auf den Backend-Bereich
             if (is_admin()) {
                 add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
@@ -76,7 +82,7 @@ class Main {
                 add_action('post_submitbox_misc_actions', array($this, 'post_protection_submitbox'));
 
                 add_action('save_post', array($this, 'save_post_data'));
-                
+
                 add_action("manage_edit-page_columns", array($this, 'manage_pages_column'));
                 add_filter("manage_page_posts_custom_column", array($this, 'manage_pages_custom_column'), 10, 2);
 
@@ -90,36 +96,35 @@ class Main {
                 add_action('load-media-new.php', array($this, 'load_media_new'));
                 add_action('load-upload.php', array($this, 'load_upload'));
 
-                add_filter('plugin_action_links_' . $plugin_basename, function($links) {
+                add_filter('plugin_action_links_' . $plugin_basename, function ($links) {
                     $settings_link = '<a href="' . $this->action_url(array('page' => 'rrze-ac-settings')) . '">' . esc_html(__("Settings", 'rrze-ac')) . '</a>';
                     array_unshift($links, $settings_link);
                     return $links;
-                });                
-                
+                });
+
                 add_action('admin_notices', array($this->settings, 'admin_notices'));
 
                 add_filter('rrze_menu_walker_nav_menu_edit', array($this, 'walker_nav_menu_edit'), 10, 5);
-                
+
                 add_action('views_edit-page', array($this, 'views_edit'));
                 add_filter('pre_get_posts', array($this, 'pre_get_posts_list'));
-                
+
             // Bezieht sich nur auf den Frontend-Bereich
             } else {
                 // Menüelemente die geschützte Objekte verlinken sind abgeschlossen
                 //add_filter('wp_nav_menu_objects', array($this, 'nav_menu_objects'), 10, 1);
-                
+
                 // Anpassung des Abfrageobjekts
                 add_filter('pre_get_posts', array($this, 'pre_get_posts_single'));
             }
-            
         } else {
             add_action('admin_notices', array($this, 'admin_error_notice'));
-            add_action('network_admin_notices', array($this, 'admin_error_notice'));            
+            add_action('network_admin_notices', array($this, 'admin_error_notice'));
         }
-        
     }
-    
-    public function check_rewrite() {
+
+    public function check_rewrite()
+    {
         if (is_admin() && !get_site_option($this->enabled_option_name)) {
             global $pagenow;
             if ($this->check_rewrite_rules()) {
@@ -129,56 +134,57 @@ class Main {
             }
         }
     }
-    
-    public function admin_error_notice() {
+
+    public function admin_error_notice()
+    {
         if (!current_user_can('manage_options')) {
             return;
         }
-        
+
         $message = __("The RRZE Access Control Plugin is not configured properly. The files and documents can not be protected.", 'rrze-ac');
         $message .= ' ';
-        if(is_network_admin() || is_super_admin()) {
+        if (is_network_admin() || is_super_admin()) {
             $message .= __("The following rewrite commands must be added in the .htaccess file after the WordPress command &#8222;RewriteRule ^index\\.php$ - [L]&#8220;.", 'rrze-ac');
             $message .= '<p>' . implode('<br>', $this->rewrite_rules()) . '</p>';
         } else {
-            $message .= __("Please contact your system administrator.", 'rrze-ac');                
-        }
-        ?>
+            $message .= __("Please contact your system administrator.", 'rrze-ac');
+        } ?>
         <div class="error">
             <p><?php echo $message; ?></p>
         </div>
         <?php
     }
-    
-    private function check_rewrite_rules() {
+
+    protected function check_rewrite_rules()
+    {
         $upload_dir = wp_upload_dir();
 
-        $protected_test = $this->protected_upload_dir('/access_rewrite_test.txt?access_rewrite_test=1', TRUE);
+        $protected_test = $this->protected_upload_dir('/access_rewrite_test.txt?access_rewrite_test=1', true);
 
         $check_url = $upload_dir['baseurl'] . $protected_test;
-        $check = wp_remote_get($check_url, array('sslverify' => FALSE, 'httpversion' => '1.1'));
+        $check = wp_remote_get($check_url, array('sslverify' => false, 'httpversion' => '1.1'));
         if (is_wp_error($check) || !isset($check['response']['code']) || 200 != $check['response']['code'] || !isset($check['body']) || 'rewrite test passed' != $check['body']) {
-            return FALSE;
+            return false;
         }
-        
-        return TRUE;
+
+        return true;
     }
-    
-    private function rewrite_rules() {
-        
+
+    protected function rewrite_rules()
+    {
         $uploads_path = '';
-         
+
         if (!get_site_option('ms_files_rewriting')) {
             $uploads_path .= 'wp-content(?:/uploads)?(?:/sites/[0-9]+)?';
-        } else {            
+        } else {
             $uploads_path .= '(?:wp-content/uploads)?(?:files)?';
         }
-        
+
         if (!is_subdomain_install()) {
             $uploads_path = '(?:[_0-9a-zA-Z-]+/)?' . $uploads_path;
         }
-        
-        $protected_path = $uploads_path . '(' . $this->protected_upload_dir('/.*\.\w+)$', TRUE);
+
+        $protected_path = $uploads_path . '(' . $this->protected_upload_dir('/.*\.\w+)$', true);
 
         $rewrite_rules = array(
             '# Beginn Access Rewrite Rules',
@@ -188,20 +194,19 @@ class Main {
 
         return $rewrite_rules;
     }
-        
-    public function enqueue_scripts() {
-        $min = defined('WP_DEBUG') && WP_DEBUG ? '' : '.min';
-        
+
+    public function enqueue_scripts()
+    {
         wp_register_style('access', plugins_url('css/access.css', $this->plugin_basename));
-        wp_register_style('access-att-edit', plugins_url("css/attachment-edit$min.css", $this->plugin_basename));
-        wp_register_style('access-media-new', plugins_url("css/media-new$min.css", $this->plugin_basename));
-        
-        wp_register_script('access-att-fields', plugins_url("js/attachment-fields$min.js", $this->plugin_basename), array('jquery', 'media-editor'), NULL, TRUE);       
-        wp_register_script('access-post-edit', plugins_url("/js/post-edit$min.js", $this->plugin_basename), array('jquery', 'jquery-ui-slider'), NULL, TRUE);
-        wp_register_script('access-media-new', plugins_url("/js/media-new$min.js", $this->plugin_basename), array('jquery', 'jquery-ui-slider'), NULL, TRUE);
-                
+        wp_register_style('access-att-edit', plugins_url("css/attachment-edit.min.css", $this->plugin_basename));
+        wp_register_style('access-media-new', plugins_url("css/media-new.min.css", $this->plugin_basename));
+
+        wp_register_script('access-att-fields', plugins_url("js/attachment-fields.min.js", $this->plugin_basename), array('jquery', 'media-editor'), null, true);
+        wp_register_script('access-post-edit', plugins_url("/js/post-edit.min.js", $this->plugin_basename), array('jquery', 'jquery-ui-slider'), null, true);
+        wp_register_script('access-media-new', plugins_url("/js/media-new.min.js", $this->plugin_basename), array('jquery', 'jquery-ui-slider'), null, true);
+
         wp_enqueue_style('access');
-        
+
         $screen = get_current_screen();
         if (isset($screen->id) && 'page' == $screen->id) {
             wp_enqueue_script('access-post-edit');
@@ -212,33 +217,36 @@ class Main {
         } elseif (isset($screen->base) && 'media' == $screen->base) {
             wp_enqueue_style('access-media-new');
             wp_enqueue_script('access-media-new');
-        }    
+        }
     }
-    
-    public function load_media_new() {
+
+    public function load_media_new()
+    {
         add_action('post-upload-ui', array($this, 'media_new_upload_ui'));
-        add_action('pre-plupload-upload-ui', array($this, 'media_new_upload_ui_notice'));        
+        add_action('pre-plupload-upload-ui', array($this, 'media_new_upload_ui_notice'));
     }
-    
-    public function load_upload() {
+
+    public function load_upload()
+    {
         add_filter('media_row_actions', array($this, 'media_row_actions'), 10, 2);
         add_filter('manage_upload_columns', array($this, 'manage_upload_columns'));
         add_action('manage_media_custom_column', array($this, 'manage_media_custom_column'), 10, 2);
         add_action('admin_head-upload.php', array($this, 'media_custom_column_styles'));
         add_action('admin_footer-upload.php', array($this, 'media_bulk_actions_js'));
         add_action('admin_notices', array($this, 'media_admin_notices'));
-        
+
         $this->bulk_actions();
     }
-    
-    public function get_permission($permission_key) {
-        if(empty($permission_key)) {
+
+    public function get_permission($permission_key)
+    {
+        if (empty($permission_key)) {
             return array();
         }
-        
+
         $permission = array();
-        foreach($this->options['permissions'] as $key => $value) {
-            if($key == $permission_key) {
+        foreach ($this->options['permissions'] as $key => $value) {
+            if ($key == $permission_key) {
                 $permission =  array(
                     'permission_key' => $permission_key,
                     'description' => $value['description'],
@@ -246,56 +254,78 @@ class Main {
                     'logged_in' => $value['logged_in'],
                     'sso_logged_in' => $value['sso_logged_in'],
                     'affiliation' => $value['affiliation'],
+                    'domain' => $value['domain'],
                     'ip_address' => $value['ip_address'],
                     'core' => $value['core'],
                     'active' => $value['active']
                 );
             }
         }
-                
+
         return $permission;
     }
-    
-    public function get_permission_metas() {
+
+    public function get_permission_metas($post_type = '')
+    {
         global $wpdb;
+
+        $pt_query = [
+            'page' => "p.post_type = 'page'",
+            'attachment' => "p.post_type = 'attachment'"
+        ];
+
+        switch ($post_type) {
+            case 'page':
+                unset($pt_query['attachment']);
+                break;
+            case 'attachment':
+                unset($pt_query['page']);
+                break;
+            default:
+                break;
+        }
 
         $query = "SELECT pm.post_id, pm.meta_value FROM {$wpdb->postmeta} pm
             LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id
-            WHERE pm.meta_key = '%s' 
+            WHERE pm.meta_key = '%s'
             AND p.post_status = 'publish'
-            AND (p.post_type = 'page' OR p.post_type = 'attachment')";
+            AND (" . implode(' OR ', $pt_query) . ")";
 
         return $wpdb->get_results($wpdb->prepare($query, $this->access_permission_meta_key));
-    }    
-    
-    private function meta_values() {
+    }
+
+    protected function meta_values()
+    {
         global $wpdb;
-        
+
         $metas = array();
-        
-        $result = $wpdb->get_results ("
+
+        $result = $wpdb->get_results("
             SELECT pm.post_id, pm.meta_value FROM {$wpdb->postmeta} pm
             LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id
             WHERE pm.meta_key = '" . $this->access_permission_meta_key . "'
             AND ((p.post_type = 'attachment' AND p.post_status = 'inherit') OR (p.post_type = 'page' AND p.post_status = 'publish'))");
-            
+
         foreach ($result as $r) {
             $metas[$r->post_id] = $r->meta_value;
         }
-        
+
         return $metas;
     }
-    
-    public function count_meta_keys($permission_key) {
+
+    public function count_meta_keys($permission_key)
+    {
         $metas = $this->meta_values();
-        return array_keys($metas, $permission_key, TRUE);
+        return array_keys($metas, $permission_key, true);
     }
-    
-    public function action_url($atts = array()) {
+
+    public function action_url($atts = array())
+    {
         $atts = array_merge(
             array(
                 'page' => 'rrze-ac'
-            ), $atts
+            ),
+            $atts
         );
 
         if (isset($atts['action'])) {
@@ -308,43 +338,44 @@ class Main {
                     break;
                 case 'delete':
                     $atts['nonce'] = wp_create_nonce('delete');
-                    break;                
+                    break;
                 default:
                     break;
             }
         }
-        
-        return add_query_arg($atts, get_admin_url(NULL, 'admin.php'));
+
+        return add_query_arg($atts, get_admin_url(null, 'admin.php'));
     }
-    
-    public function nav_menu_objects($menu_items) {
+
+    public function nav_menu_objects($menu_items)
+    {
         foreach ($menu_items as $key => $menu_item) {
-            if($menu_item->object == 'page' && !$this->check_permission($menu_item->object_id)) {
+            if ($menu_item->object == 'page' && !$this->check_permission($menu_item->object_id)) {
                 unset($menu_items[$key]);
             }
         }
-        
+
         return $menu_items;
     }
-    
-    public function change_upload_directory($param) {
 
+    public function change_upload_directory($param)
+    {
         if (isset($_POST['access_protected']) && 'on' == $_POST['access_protected']) {
-            $param['subdir'] = $this->protected_upload_dir($param['subdir'], TRUE);
+            $param['subdir'] = $this->protected_upload_dir($param['subdir'], true);
             $param['path'] = $param['basedir'] . $param['subdir'];
             $param['url'] = $param['baseurl'] . $param['subdir'];
         }
 
         return $param;
     }
-    
-    public function attachment_fields_to_edit($form_fields, $post) {
 
+    public function attachment_fields_to_edit($form_fields, $post)
+    {
         if (!is_null(get_current_screen())) {
             return $form_fields;
         }
 
-        $permission = get_post_meta( $post->ID, $this->access_permission_meta_key, TRUE );
+        $permission = get_post_meta($post->ID, $this->access_permission_meta_key, true);
 
         $permissions = $this->get_the_permissions();
 
@@ -352,8 +383,7 @@ class Main {
             $permission = $this->get_default_permission();
         }
 
-        ob_start();
-        ?>
+        ob_start(); ?>
         <tr id="access-attachment-fields">
             <th class="label" scope="row">
                 <label for="attachments-1054405-attachment_tag">
@@ -363,9 +393,9 @@ class Main {
             </th>
             <td class="field">
                 <input type="hidden" name="attachments[<?php echo $post->ID ?>][access_protection_toggle]" value="off">
-                <input class="radio access-protection-toggle" type="checkbox" id="attachments[<?php echo $post->ID; ?>][access_protection_toggle]" name="attachments[<?php echo $post->ID; ?>][access_protection_toggle]" <?php checked($this->is_attachment_protected($post->ID )); ?>>
+                <input class="radio access-protection-toggle" type="checkbox" id="attachments[<?php echo $post->ID; ?>][access_protection_toggle]" name="attachments[<?php echo $post->ID; ?>][access_protection_toggle]" <?php checked($this->is_attachment_protected($post->ID)); ?>>
                 <p id="access-attachment-permissions-field">
-                    <label for="attachments[<?php echo $post->ID; ?>][access_permission_select]"><?php esc_html_e("Permission", 'rrze-ac' ); ?></label>
+                    <label for="attachments[<?php echo $post->ID; ?>][access_permission_select]"><?php esc_html_e("Permission", 'rrze-ac'); ?></label>
                     <select class="access-permission-select" id="attachments[<?php echo $post->ID; ?>][access_permission_select]" name="attachments[<?php echo $post->ID; ?>][access_permission_select]">
                         <?php foreach ($permissions as $key => $data) : ?>
                         <option value="<?php echo esc_attr($key); ?>" <?php selected($permission, $key); ?>>
@@ -387,17 +417,17 @@ class Main {
         return $form_fields;
     }
 
-    public function save_attachment_edit_fields($post, $attachment) {
-
+    public function save_attachment_edit_fields($post, $attachment)
+    {
         if (!isset($attachment['access_protection_toggle'])) {
             return $post;
         }
-        
+
         $attachment_id = $post['ID'];
 
         switch ($attachment['access_protection_toggle']) {
 
-            case 'off' :
+            case 'off':
                 remove_action('edit_attachment', array($this, 'save_attachment_data'));
 
                 $move_attachment = $this->move_attachment_from_protected($attachment_id);
@@ -407,7 +437,7 @@ class Main {
                 if (is_wp_error($move_attachment)) {
                     return $post;
                 }
-                
+
                 delete_post_meta($attachment_id, $this->access_permission_meta_key);
 
                 return $post;
@@ -422,7 +452,7 @@ class Main {
                 if (is_wp_error($move_attachment)) {
                     return $post;
                 }
-                
+
                 if (empty($attachment['access_permission_select'])) {
                     return $post;
                 }
@@ -434,82 +464,88 @@ class Main {
                 } else {
                     update_post_meta($attachment_id, $this->access_permission_meta_key, $attachment['access_permission_select']);
                 }
-                
+
                 return $post;
-                
+
             default:
                 return $post;
         }
     }
-       
-    public function get_default_permission() {
+
+    public function get_default_permission()
+    {
         $permissions = $this->get_the_permissions();
-        $default_permission = isset($permissions[$this->options['default_permission']]) && $permissions[$this->options['default_permission']]['active'] ? $this->options['default_permission'] : 'logged-in';       
+        $default_permission = isset($permissions[$this->options['default_permission']]) && $permissions[$this->options['default_permission']]['active'] ? $this->options['default_permission'] : 'logged-in';
         return $default_permission;
     }
-    
-    public function get_the_permissions() {
+
+    public function get_the_permissions()
+    {
         $access_permissions = $this->options['permissions'];
         return apply_filters('access_edit_permissions', $access_permissions);
     }
 
-    private function get_the_permission($post_id) {
-
+    protected function get_the_permission($post_id)
+    {
         if (get_post_type($post_id) == 'attachment') {
             return $this->get_attachment_permission($post_id);
         }
-        
-        $permission = get_post_meta($post_id, $this->access_permission_meta_key, TRUE);
 
-        return !empty($permission) ? $permission : FALSE;
+        $permission = get_post_meta($post_id, $this->access_permission_meta_key, true);
+
+        return !empty($permission) ? $permission : false;
     }
-    
-    private function check_author_permission($post_id) {
-        if(!is_user_logged_in()) {
-            return FALSE;
+
+    protected function check_author_permission($post_id)
+    {
+        if (!is_user_logged_in()) {
+            return false;
         }
-        
+
         if (current_user_can('manage_options')) {
-            return TRUE;
+            return true;
         }
-        
+
         $current_user = wp_get_current_user();
-                
+
         $post = get_post($post_id);
-                
+
         $post_author = $post->post_author;
-        
+
         $authors = $this->post_authors($post_id, $post_author);
-                
-        if(isset($authors[$current_user->ID])) {
-            return TRUE;
+
+        if (isset($authors[$current_user->ID])) {
+            return true;
         }
-        
-        return FALSE;
+
+        return false;
     }
-        
-    private function post_authors($post_id, $post_author) {
+
+    protected function post_authors($post_id, $post_author)
+    {
         $authors = array();
 
         // CMS-Workflow stuff
         include_once(ABSPATH . 'wp-admin/includes/plugin.php');
-        if($this->is_plugin_active('cms-workflow/cms-workflow.php')) {
+        if ($this->is_plugin_active('cms-workflow/cms-workflow.php')) {
             $authors = $this->workflow_authors($post_id);
         }
-        
+
         $authors[$post_author] = $post_author;
-        
+
         return $authors;
     }
-    
-    private function workflow_authors($post_id) {
+
+    protected function workflow_authors($post_id)
+    {
         global $wpdb;
-        
+
         $authors = array();
-        
-        $workflow_authors = $wpdb->get_col($wpdb->prepare(
+
+        $workflow_authors = $wpdb->get_col(
+            $wpdb->prepare(
             "
-            SELECT t.name 
+            SELECT t.name
             FROM $wpdb->terms AS t
             INNER JOIN $wpdb->term_taxonomy AS tt ON tt.term_id = t.term_id
             INNER JOIN $wpdb->term_relationships AS tr ON tr.term_taxonomy_id = tt.term_taxonomy_id
@@ -518,8 +554,8 @@ class Main {
             $post_id
             )
         );
-        
-        if($workflow_authors) {
+
+        if ($workflow_authors) {
             foreach ($workflow_authors as $author) {
                 $user = get_user_by('login', $author);
                 if (!$user || !is_user_member_of_blog($user->ID)) {
@@ -529,207 +565,242 @@ class Main {
                 $authors[$user->ID] = $user->ID;
             }
         }
-        
-        return $authors;        
+
+        return $authors;
     }
-    
-    private function get_attachment_permission($attachment_id) {
+
+    protected function get_attachment_permission($attachment_id)
+    {
         if (!$this->is_attachment_protected($attachment_id)) {
-            return FALSE;
+            return false;
         }
-                
-        $permission = get_post_meta($attachment_id, $this->access_permission_meta_key, TRUE);
 
-        return empty($permission) ? $this->get_default_permission() : $permission;        
+        $permission = get_post_meta($attachment_id, $this->access_permission_meta_key, true);
+
+        return empty($permission) ? $this->get_default_permission() : $permission;
     }
-    
-    private function is_attachment_protected($attachment_id) {
 
-        $file = get_post_meta($attachment_id, '_wp_attached_file', TRUE);
+    protected function is_attachment_protected($attachment_id)
+    {
+        $file = get_post_meta($attachment_id, '_wp_attached_file', true);
 
         if (!empty($file) && (0 === stripos($file, $this->protected_upload_dir('/')))) {
-            return TRUE;
+            return true;
         }
 
-        return FALSE;
+        return false;
     }
-    
-    private function check_ip_address_range($ip_address) {
-        if(empty($ip_address) || !is_array($ip_address)) {
-            return TRUE;
-        }
-        
-        $remote_addr = $this->get_remote_ip_address();
 
-        if($remote_addr === FALSE) {
-            do_action('rrze.log.warning', ['plugin' =>'rrze-ac', 'message' => 'Remote IP address is UNKNOWN.']);
-            return FALSE;
+    protected function check_ip_address_range($ip_address)
+    {
+        if (empty($ip_address) || !is_array($ip_address)) {
+            return true;
+        }
+
+        $remote_addr = $this->getRemoteIpAddress();
+
+        if (! $remote_addr) {
+            do_action('rrze.log.warning', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'message' => 'Remote IP address is UNKNOWN.']);
+            return false;
         }
 
         $ip = IP::fromStringIP($remote_addr);
-        
-        if($ip->isInRanges($ip_address)) {
-            return TRUE;
+
+        if ($ip->isInRanges($ip_address)) {
+            return true;
         }
-        
-        do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'message' => sprintf('Remote IP address %s is not in range.', $remote_addr)]);
-        return FALSE;        
+
+        do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'message' => sprintf('Remote IP address %s is not in range.', $remote_addr)]);
+        return false;
     }
-    
-    private function get_remote_ip_address() {
-        $server_keys = [
-            'HTTP_CLIENT_IP', 
-            'HTTP_X_FORWARDED_FOR', 
-            'HTTP_X_FORWARDED', 
-            'HTTP_X_CLUSTER_CLIENT_IP', 
-            'HTTP_FORWARDED_FOR', 
-            'HTTP_FORWARDED', 
-            'REMOTE_ADDR'
-        ];
-        
-        foreach ($server_keys as $key) {
-            if (array_key_exists($key, $_SERVER) === TRUE) {
-                foreach (explode(',', $_SERVER[$key]) as $ip_address) {
-                    $ip_address = trim($ip_address);
-                    $filter_flag = FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6;
-                    if (filter_var($ip_address, FILTER_VALIDATE_IP, $filter_flag) !== FALSE) {
-                        return $ip_address;
-                    }
-                }
+
+    protected function checkRemoteDomain($allowedDomains) {
+        if (empty($allowedDomains) || !is_array($allowedDomains)) {
+            return true;
+        }
+
+        $remote_addr = $this->getRemoteIpAddress();
+
+        if (! $remote_addr) {
+            do_action('rrze.log.warning', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'message' => 'Remote IP address is UNKNOWN.']);
+            return false;
+        }
+
+        $ip = IP::fromStringIP($remote_addr);
+        $hostname = $ip->getHostname();
+
+        if ($hostname === null) {
+            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'message' => sprintf('Cannot get hostname from remote IP address %s.', $remote_addr)]);
+            return false;
+        }
+
+        foreach ($allowedDomains as $domain) {
+            if (strrpos($domain, $hostname) !== false) {
+                return true;
             }
         }
-        
-        return FALSE;
+
+        do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'message' => sprintf('Remote hostname %s is not allowed.', $hostname)]);
+        return false;
     }
-        
-    private function simplesaml_auth() {
+
+    protected function getRemoteIpAddress() {
+        $remoteAddress = new RemoteAddress();
+        return $remoteAddress->getIpAddress();
+    }
+
+    protected function simplesaml_auth()
+    {
         if (!$this->is_plugin_active($this->websso_plugin)) {
             return;
         }
-        
+
         if (is_multisite()) {
             $options = get_site_option($this->websso_option_name);
         } else {
             $options = get_option($this->websso_option_name);
         }
-        
+
         if (!isset($options['simplesaml_include']) || !isset($options['simplesaml_auth_source'])) {
             return;
         }
-        
+
         include_once(WP_CONTENT_DIR . $options['simplesaml_include']);
-        
-        if(!class_exists('SimpleSAML_Auth_Simple')) {
+
+        if (!class_exists('SimpleSAML_Auth_Simple')) {
             return;
         }
 
         $this->simplesaml_auth = new SimpleSAML_Auth_Simple($options['simplesaml_auth_source']);
     }
-    
-    private function check_sso_logged_in() {
+
+    protected function check_sso_logged_in()
+    {
         $this->simplesaml_auth();
-        
+
         if (!$this->simplesaml_auth || !$this->simplesaml_auth->isAuthenticated()) {
-            return FALSE;
+            return false;
         }
-        
+
         $attributes = $this->simplesaml_auth->getAttributes();
-                
+
         $this->person_affiliation = isset($attributes['urn:mace:dir:attribute-def:eduPersonAffiliation']) ? $attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'] : array();
         $this->person_entitlement = isset($attributes['urn:mace:dir:attribute-def:eduPersonEntitlement']) ? $attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'] : array();
-        
-        return TRUE;
+
+        return true;
     }
-    
-    private function check_person_affiliation($affiliation) {
-        if(empty($affiliation) || empty($affiliation[0]) || !is_array($affiliation)) {
-            return TRUE;
+
+    protected function check_person_affiliation($affiliation)
+    {
+        if (empty($affiliation) || empty($affiliation[0]) || !is_array($affiliation)) {
+            return true;
         }
 
         foreach ($affiliation as $attribute) {
             if (in_array($attribute, $this->person_affiliation)) {
-                return TRUE;
+                return true;
             }
         }
-        
-        return FALSE;
+
+        return false;
     }
-    
-    private function check_permission($post_id) {
-        
-        if(empty($post_id)) {
-            return FALSE;
-        }              
-                       
-        if($this->check_author_permission($post_id)) {
-            return TRUE;
+
+    protected function check_permission($post_id)
+    {
+        if (empty($post_id)) {
+            return false;
         }
-                
-        if (!$permission = $this->get_the_permission($post_id)) {
-            return TRUE;
+
+        if ($this->check_author_permission($post_id)) {
+            return true;
         }
-        
-        do_action('rrze.log.info', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission]);
+
+        if (! $permission = $this->get_the_permission($post_id)) {
+            return true;
+        }
+
+        $allow = false;
+        $status = [];
+
+        do_action('rrze.log.info', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'postID' => $post_id, 'permission' => $permission]);
         $permissions = $this->get_the_permissions();
 
         // set permission to default permission if not exist or not active
-        if (!isset($permissions[$permission]) || !$permissions[$permission]['active']) {
+        if (! isset($permissions[$permission]) || ! $permissions[$permission]['active']) {
             $permission = $this->get_default_permission();
         }
-                
+
         // check if permission is set to be logged in
-        if (!is_user_logged_in() && isset($permissions[$permission]['logged_in']) && $permissions[$permission]['logged_in']) {
+        if (! empty($permissions[$permission]['logged_in']) && ! is_user_logged_in()) {
             $this->set_permission_status($this->user_isnt_logged_in);
             do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_isnt_logged_in', 'message' => 'User is not logged in.']);
-            return FALSE;
+            return false;
         }
-             
+
         // check if permission is set to be sso logged in
-        elseif (!empty($permissions[$permission]['sso_logged_in']) && !$this->check_sso_logged_in()) {
+        if (! empty($permissions[$permission]['sso_logged_in']) && ! $this->check_sso_logged_in()) {
             $this->set_permission_status($this->user_isnt_sso_logged_in);
             do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_isnt_sso_logged_in', 'message' => 'User is not SSO logged in.']);
-            return FALSE;
-        }      
-                
+            return false;
+        }
+
         // check if permission is set to person affiliation
-        elseif (!empty($permissions[$permission]['affiliation']) && !$this->check_person_affiliation($permissions[$permission]['affiliation'])) {
+        if (! empty($permissions[$permission]['affiliation']) && (! $this->check_sso_logged_in() || ! $this->check_person_affiliation($permissions[$permission]['affiliation']))) {
             $this->set_permission_status($this->user_hasnt_affiliation);
             do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_hasnt_affiliation', 'message' => 'User has not affiliation.']);
-            return FALSE;
-        }      
-        
-        // check if permission is set to ip address
-        elseif (!empty($permissions[$permission]['ip_address']) && !$this->check_ip_address_range($permissions[$permission]['ip_address'])) {
-            $this->set_permission_status($this->user_ip_isnt_in_range);
-            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_ip_isnt_in_range', 'message' => 'Remote IP address is not in range.']);
-            return FALSE;
+            return false;
         }
-        
-        do_action('rrze.log.info', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'allowed']);
-        return TRUE;
+
+        // check if permission is set to domain
+        if (! empty($permissions[$permission]['domain'])) {
+            if (! $this->checkRemoteDomain($permissions[$permission]['domain'])) {
+                $status[] = $this->user_domain_do_not_match;
+            } else {
+                $allow = true;
+            }
+        }
+
+        // check if permission is set to ip address
+        if (! empty($permissions[$permission]['ip_address'])) {
+            if (! $this->check_ip_address_range($permissions[$permission]['ip_address'])) {
+                $status[] = $this->user_ip_isnt_in_range;
+            } else {
+                $allow = true;
+            }
+        }
+
+        $allow = empty($status) ? true : $allow;
+
+        if (! $allow) {
+            $this->set_permission_status($status[0]);
+        }
+
+        do_action('rrze.log.info', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'postID' => $post_id, 'permission' => $permission, 'status' => $allow ? 'allowed' : 'not allowed']);
+        return $allow;
     }
-    
-    public function attachment_edit_meta_box() {
+
+    public function attachment_edit_meta_box()
+    {
         add_meta_box(
             'attachment-protection-metabox',
-            __("Access Restriction", 'rrze-ac' ),
-            array($this, 'post_protection_metabox'),
+            __("Access Restriction", 'rrze-ac'),
+            [$this, 'post_protection_metabox'],
             'attachment',
             'side'
         );
     }
-        
-    public function post_protection_metabox($post) {
+
+    public function post_protection_metabox($post)
+    {
         wp_nonce_field('attachment_protection_metabox', 'attachment_protection_metabox_nonce');
 
-        $permission = get_post_meta($post->ID, $this->access_permission_meta_key, TRUE);
+        $permission = get_post_meta($post->ID, $this->access_permission_meta_key, true);
 
         $permissions = $this->get_the_permissions();
 
         if (empty($permission) || !isset($permissions[$permission]) || !$permissions[$permission]['active']) {
             $permission = $this->get_default_permission();
-        }
-        ?>
+        } ?>
         <input type="hidden" name="access_protection_toggle" value="off">
         <input type="checkbox" id="access-protection-toggle" name="access_protection_toggle" <?php checked($this->is_attachment_protected($post->ID)); ?>>
         <label class="access-protection-toggle" for="access-protection-toggle">
@@ -742,7 +813,9 @@ class Main {
             </label>
             <select id="access-permission-select" name="access_permission_select">
             <?php foreach ($permissions as $key => $data) : ?>
-                <?php if (!$data['active']) continue; ?>
+                <?php if (!$data['active']) {
+            continue;
+        } ?>
                 <option value="<?php echo esc_attr($key); ?>" <?php selected($permission, $key); ?>>
                     <?php echo sanitize_text_field($data['select']); ?>
                 </option>
@@ -751,10 +824,11 @@ class Main {
         </div>
         <?php
     }
-    
-    public function post_protection_submitbox() {
+
+    public function post_protection_submitbox()
+    {
         global $post;
-        
+
         if (get_post_type($post->ID) != 'page') {
             return;
         }
@@ -762,17 +836,16 @@ class Main {
         wp_nonce_field('post_protection_submitbox', 'post_protection_submitbox_nonce');
 
 
-        $permission = get_post_meta($post->ID, $this->access_permission_meta_key, TRUE);
+        $permission = get_post_meta($post->ID, $this->access_permission_meta_key, true);
 
         $permissions = $this->get_the_permissions();
 
         if (empty($permission) || !isset($permissions[$permission])) {
             $permission = 'all';
         }
-        
+
         $label = $permissions[$permission]['select'];
-        $class = $permission == 'all' ? 'access-all-icon' : 'access-icon';
-        ?>
+        $class = $permission == 'all' ? 'access-all-icon' : 'access-icon'; ?>
         <div id="post-protection-wrap" class="misc-pub-section">
             <span>
                 <span id="access-icon" class="<?php echo $class; ?> dashicons dashicons-shield"></span>
@@ -786,7 +859,9 @@ class Main {
             <div id="post-protection-field" class="hide-if-js">
                 <select id="access-permission-select" name="access_permission_select">
                 <?php foreach ($permissions as $key => $data) : ?>
-                    <?php if (!$data['active']) continue; ?>
+                    <?php if (!$data['active']) {
+            continue;
+        } ?>
                     <option value="<?php echo esc_attr($key); ?>" <?php selected($permission, $key); ?>>
                         <?php echo sanitize_text_field($data['select']); ?>
                     </option>
@@ -795,12 +870,12 @@ class Main {
                 <a href="#" class="save-post-protection hide-if-no-js button"><?php _e('OK', 'rrze-ac'); ?></a>
                 <a href="#" class="cancel-post-protection hide-if-no-js button-cancel"><?php _e("Cancel", 'rrze-ac'); ?></a>
             </div>
-        </div>        
+        </div>
         <?php
     }
-    
-    public function save_post_data($post_id) {
-        
+
+    public function save_post_data($post_id)
+    {
         if ((defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || (defined('DOING_AJAX') && DOING_AJAX) || isset($_REQUEST['bulk_edit'])) {
             return;
         }
@@ -812,7 +887,7 @@ class Main {
         if (get_post_type($post_id) != 'page') {
             return;
         }
-        
+
         if (!current_user_can('edit_post', $post_id)) {
             return;
         }
@@ -820,7 +895,7 @@ class Main {
         if (!isset($_POST['access_permission_select']) || empty($_POST['access_permission_select'])) {
             return;
         }
-        
+
         $permissions = $this->get_the_permissions();
 
         if (isset($permissions[$_POST['access_permission_select']]) && 'all' == $_POST['access_permission_select']) {
@@ -828,19 +903,18 @@ class Main {
         } elseif (isset($permissions[$_POST['access_permission_select']])) {
             update_post_meta($post_id, $this->access_permission_meta_key, $_POST['access_permission_select']);
         }
-        
     }
-  
-    public function save_attachment_data($attachment_id) {
 
+    public function save_attachment_data($attachment_id)
+    {
         if ((defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || (defined('DOING_AJAX') && DOING_AJAX) || isset($_REQUEST['bulk_edit'])) {
             return;
         }
 
         if (!isset($_POST['attachment_protection_metabox_nonce']) || !wp_verify_nonce($_POST['attachment_protection_metabox_nonce'], 'attachment_protection_metabox')) {
             return;
-        }    
-        
+        }
+
         if (!current_user_can('edit_post', $attachment_id)) {
             return;
         }
@@ -848,10 +922,10 @@ class Main {
         if (!isset($_POST['access_protection_toggle'])) {
             return;
         }
-        
+
         switch ($_POST['access_protection_toggle']) {
 
-            case 'off' :
+            case 'off':
                 remove_action('edit_attachment', array($this, 'save_attachment_data'));
 
                 $move_attachment = $this->move_attachment_from_protected($attachment_id);
@@ -861,7 +935,7 @@ class Main {
                 if (is_wp_error($move_attachment)) {
                     return;
                 }
-                
+
                 delete_post_meta($attachment_id, $this->access_permission_meta_key);
 
                 break;
@@ -876,7 +950,7 @@ class Main {
                 if (is_wp_error($move_attachment)) {
                     return;
                 }
-                
+
                 if (!isset($_POST['access_permission_select']) || empty($_POST['access_permission_select'])) {
                     return;
                 }
@@ -888,36 +962,36 @@ class Main {
                 } else {
                     update_post_meta($attachment_id, $this->access_permission_meta_key, $_POST['access_permission_select']);
                 }
-                
+
                 break;
-            
+
             default: return;
         }
     }
-        
-    private function move_attachment_from_protected($attachment_id) {
 
-        $file = get_post_meta($attachment_id, '_wp_attached_file', TRUE);
+    protected function move_attachment_from_protected($attachment_id)
+    {
+        $file = get_post_meta($attachment_id, '_wp_attached_file', true);
 
         if (0 !== stripos($file, $this->protected_upload_dir('/'))) {
-            return TRUE;
+            return true;
         }
 
         $new_reldir = ltrim(dirname($file), $this->protected_upload_dir('/'));
 
         return $this->move_attachment_files($attachment_id, $new_reldir);
     }
-  
-    private function move_attachment_to_protected($attachment_id) {
 
-        $file = get_post_meta($attachment_id, '_wp_attached_file', TRUE);
+    protected function move_attachment_to_protected($attachment_id)
+    {
+        $file = get_post_meta($attachment_id, '_wp_attached_file', true);
 
         if (0 === stripos($file, $this->protected_upload_dir('/'))) {
-            return TRUE;
+            return true;
         }
 
         $reldir = dirname($file);
-        if (in_array($reldir, array('\\', '/', '.'), TRUE)) {
+        if (in_array($reldir, array('\\', '/', '.'), true)) {
             $reldir = '';
         }
 
@@ -925,36 +999,38 @@ class Main {
 
         return $this->move_attachment_files($attachment_id, $new_reldir);
     }
-    
-    private function move_attachment_files($attachment_id, $new_reldir) {
 
+    protected function move_attachment_files($attachment_id, $new_reldir)
+    {
         if ('attachment' != get_post_type($attachment_id)) {
             return new WP_Error('not_attachment', sprintf(
-                __("The post %d is not a Media Post-Type.", 'rrze-ac'), $attachment_id
+                __("The post %d is not a Media Post-Type.", 'rrze-ac'),
+                $attachment_id
             ));
         }
-        
+
         if (path_is_absolute($new_reldir)) {
             return new WP_Error('new_reldir_not_relative', sprintf(
-                __("The newly specified path %s is absolute. The new path must be a path relative to the WP uploads directory.", 'rrze-ac'), $new_relpath
+                __("The newly specified path %s is absolute. The new path must be a path relative to the WP uploads directory.", 'rrze-ac'),
+                $new_relpath
             ));
         }
 
         $meta = wp_get_attachment_metadata($attachment_id);
 
-        $file = get_post_meta($attachment_id, '_wp_attached_file', TRUE);
+        $file = get_post_meta($attachment_id, '_wp_attached_file', true);
 
-        $backups = get_post_meta($attachment_id, '_wp_attachment_backup_sizes', TRUE);
+        $backups = get_post_meta($attachment_id, '_wp_attachment_backup_sizes', true);
 
         $upload_dir = wp_upload_dir();
 
         $old_reldir = dirname($file);
-        if (in_array($old_reldir, array('\\', '/', '.'), TRUE)) {
+        if (in_array($old_reldir, array('\\', '/', '.'), true)) {
             $old_reldir = '';
         }
 
         if ($new_reldir === $old_reldir) {
-            return NULL;
+            return null;
         }
 
         $old_fulldir = path_join($upload_dir['basedir'], $old_reldir);
@@ -962,7 +1038,8 @@ class Main {
 
         if (!wp_mkdir_p($new_fulldir)) {
             return new WP_Error('wp_mkdir_p_error', sprintf(
-                __("An error has occurred while creating the directory %s.", 'rrze-ac'), $new_fulldir
+                __("An error has occurred while creating the directory %s.", 'rrze-ac'),
+                $new_fulldir
             ));
         }
 
@@ -989,16 +1066,16 @@ class Main {
 
         $orig_filename = pathinfo($orig_basename);
         $orig_filename = $orig_filename['filename'];
-        $conflict = TRUE;
+        $conflict = true;
         $number = 1;
         $separator = '#';
         $med_filename = $orig_filename;
 
         while ($conflict) {
-            $conflict = FALSE;
+            $conflict = false;
             foreach ($new_basenames as $basename) {
                 if (is_file(path_join($new_fulldir, $basename))) {
-                    $conflict = TRUE;
+                    $conflict = true;
                     break;
                 }
             }
@@ -1025,7 +1102,9 @@ class Main {
 
             if (!is_file($new_fullpath)) {
                 return new WP_Error('rename_failed', sprintf(
-                    __("The file can not be moved from %s to %s.", 'rrze-ac'), $old_fullpath, $new_fullpath
+                    __("The file can not be moved from %s to %s.", 'rrze-ac'),
+                    $old_fullpath,
+                    $new_fullpath
                 ));
             }
         }
@@ -1034,7 +1113,7 @@ class Main {
         if (wp_attachment_is_image($attachment_id)) {
             $meta['file'] = $file;
         }
-               
+
         update_post_meta($attachment_id, '_wp_attached_file', $file);
 
         if ($new_basenames[0] != $old_basenames[0]) {
@@ -1060,31 +1139,31 @@ class Main {
         }
 
         update_post_meta($attachment_id, '_wp_attachment_metadata', $meta);
-        
+
         $path = explode('/wp-content/', path_join($new_fulldir, $orig_basename));
 
         $permalink = site_url('/wp-content/' . $path[1]);
 
         global $wpdb;
         $wpdb->update($wpdb->posts, array('guid' => $permalink), array('ID' => $attachment_id), array('%s'), array('%d'));
-        
-        return TRUE;
+
+        return true;
     }
-    
-    public function request_file() {
+
+    public function request_file()
+    {
         if (isset($_GET['protected_file']) && !empty($_GET['protected_file'])) {
-            
             if (isset($_GET['access_rewrite_test']) && $_GET['access_rewrite_test']) {
                 die('rewrite test passed');
             }
-            
+
             $this->get_file($_GET['protected_file']);
             exit();
         }
     }
-    
-    private function get_file($rel_file) {
 
+    protected function get_file($rel_file)
+    {
         $rel_file = isset($rel_file) ? $rel_file : '';
         $upload_dir = wp_upload_dir();
 
@@ -1115,9 +1194,9 @@ class Main {
 
         $file_info = pathinfo($rel_file);
 
-        if (0 !== stripos($file_info['dirname'] . '/', $this->protected_upload_dir('/', TRUE))) {
+        if (0 !== stripos($file_info['dirname'] . '/', $this->protected_upload_dir('/', true))) {
             status_header(404);
-            wp_die(__("The requested file was not found.", 'rrze-ac'));            
+            wp_die(__("The requested file was not found.", 'rrze-ac'));
         }
 
         if (!defined('DONOTCACHEPAGE')) {
@@ -1138,8 +1217,8 @@ class Main {
 
         $attachment = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT post_id FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value = %s", 
-                '_wp_attached_file', 
+                "SELECT post_id FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value = %s",
+                '_wp_attached_file',
                 $attachment_file
             )
         );
@@ -1149,10 +1228,10 @@ class Main {
                 $wpdb->prepare(
                     "SELECT post_id "
                     . "FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value LIKE %s "
-                    . "AND post_id IN (SELECT post_id FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value LIKE %s) ", 
-                    '_wp_attachment_metadata', 
-                    '%' . $file_info['basename'] . '%', 
-                    '_wp_attached_file', 
+                    . "AND post_id IN (SELECT post_id FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value LIKE %s) ",
+                    '_wp_attachment_metadata',
+                    '%' . $file_info['basename'] . '%',
+                    '_wp_attached_file',
                     '%' . $attachment_dirname . '%'
                 )
             );
@@ -1167,9 +1246,9 @@ class Main {
 
         if (!$this->check_permission($attachment_id)) {
             status_header(403);
-            wp_die($this->permission_forbidden_message($attachment_id));
+            wp_die($this->permission_message($attachment_id));
         }
-        
+
         header('Content-Type: ' . $mimetype);
         header('Content-Length: ' . filesize($file));
 
@@ -1181,10 +1260,10 @@ class Main {
         header('Pragma: no-cache');
         header('Expires: Thu, 01 Dec 1994 16:00:00 GMT');
 
-        $client_etag = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? stripslashes($_SERVER['HTTP_IF_NONE_MATCH']) : FALSE;
+        $client_etag = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? stripslashes($_SERVER['HTTP_IF_NONE_MATCH']) : false;
 
         if (!isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
-            $_SERVER['HTTP_IF_MODIFIED_SINCE'] = FALSE;
+            $_SERVER['HTTP_IF_MODIFIED_SINCE'] = false;
         }
 
         $client_last_modified = trim($_SERVER['HTTP_IF_MODIFIED_SINCE']);
@@ -1208,32 +1287,34 @@ class Main {
         exit();
     }
 
-    private function protected_upload_dir($path = '', $in_url = FALSE) {
+    protected function protected_upload_dir($path = '', $in_url = false)
+    {
         $dirpath = $in_url ? '/' : '';
         $dirpath .= $this->protected_dirname;
         $dirpath .= $path;
 
         return $dirpath;
     }
-    
-    public function image_downsize_placeholder($img, $attachment_id, $size) {
+
+    public function image_downsize_placeholder($img, $attachment_id, $size)
+    {
         $upload_dir = wp_upload_dir();
 
-        if (isset($img[0]) && 0 !== strpos(ltrim($img[0], $upload_dir['baseurl']), $this->protected_upload_dir('/', TRUE))) {
+        if (isset($img[0]) && 0 !== strpos(ltrim($img[0], $upload_dir['baseurl']), $this->protected_upload_dir('/', true))) {
             return $img;
         }
-        
+
         if ($this->check_permission($attachment_id)) {
             return $img;
         }
-        
+
         if (!$this->is_attachment_protected($attachment_id)) {
             remove_filter('image_downsize', array($this, 'image_downsize_placeholder'), 999, 3);
-            
+
             $placeholder = wp_get_attachment_image_src($attachment_id, $size);
-            
+
             add_filter('image_downsize', array($this, 'image_downsize_placeholder'), 999, 3);
-            
+
             return $placeholder;
         } else {
             list($width, $height) = image_constrain_size_for_editor(1024, 1024, $size);
@@ -1242,26 +1323,28 @@ class Main {
                 plugins_url('images/media-placeholder.jpg', $this->plugin_basename),
                 $width,
                 $height,
-                FALSE
+                false
             );
         }
     }
-    
-    public function media_row_actions($actions, $post) {
 
+    public function media_row_actions($actions, $post)
+    {
         if (!$this->check_permission($post->ID)) {
             return array(esc_html__("You do not have sufficient permissions to access the file.", 'rrze-ac'));
         }
-        
+
         return $actions;
     }
-    
-    public function manage_pages_column($columns) {
+
+    public function manage_pages_column($columns)
+    {
         $columns['access_info'] = '<span title="' . esc_attr__("Access Restriction", 'rrze-ac') . '" class="dashicons dashicons-shield"></span>';
         return $columns;
     }
 
-    public function manage_pages_custom_column($column_name, $post_id) {
+    public function manage_pages_custom_column($column_name, $post_id)
+    {
         if ('access_info' != $column_name) {
             return;
         }
@@ -1282,24 +1365,26 @@ class Main {
             $error = __("Permission has been disabled.", 'rrze-ac');
             $permission = $this->get_default_permission();
         }
-        
+
         $class = $permission == 'all' ? 'access-all-icon' : 'access-icon';
         $permission = $permissions[$permission];
-        
+
         $description = isset($permission['description']) && !empty($permission['description']) ? $permission['description'] : $permission['permission_key'];
         $description = !$error ?
             '<span title="' . esc_attr__($description) . '" class="' . $class . ' dashicons dashicons-shield"></span>' :
             '<span title="' . sprintf(esc_attr__('An error has occurred: %1$s and has been replaced by the default permission %2$s.', 'rrze-ac'), $error, $description) . '" class="access-error-icon dashicons dashicons-shield"></span>';
-        
+
         echo $description;
     }
-    
-    public function manage_upload_columns($columns) {
+
+    public function manage_upload_columns($columns)
+    {
         $columns['access_info'] = '<span title="' . esc_attr__("Access Restriction", 'rrze-ac') . '" class="dashicons dashicons-shield"></span>';
         return $columns;
     }
-    
-    public function manage_media_custom_column($column_name, $post_id) {
+
+    public function manage_media_custom_column($column_name, $post_id)
+    {
         if ('access_info' != $column_name) {
             return;
         }
@@ -1320,19 +1405,20 @@ class Main {
             $error = __("The permission has been disabled.", 'rrze-ac');
             $permission = $this->get_default_permission();
         }
-        
+
         $class = $permission == 'all' ? 'access-all-icon' : 'access-icon';
         $permission = $permissions[$permission];
-        
+
         $description = isset($permission['description']) && !empty($permission['description']) ? $permission['description'] : $permission['permission_key'];
         $description = !$error ?
             '<span title="' . esc_attr__($description) . '" class="' . $class . ' dashicons dashicons-shield"></span>' :
             '<span title="' . sprintf(esc_attr__("An error has occurred: %1$s and has been replaced by the default permission %2$s.", 'rrze-ac'), $error, $description) . '" class="access-error-icon dashicons dashicons-shield"></span>';
-        
+
         echo $description;
     }
-    
-    public function media_custom_column_styles() {
+
+    public function media_custom_column_styles()
+    {
         ?>
 
         <style type="text/css">
@@ -1343,9 +1429,9 @@ class Main {
 
         <?php
     }
-    
-    public function media_bulk_actions_js() {
 
+    public function media_bulk_actions_js()
+    {
         if (!current_user_can('edit_posts')) {
             return;
         }
@@ -1356,8 +1442,7 @@ class Main {
         }
         if (!isset($_GET['access-show-unprotected'])) {
             $bulk_actions['access-unprotect'] = esc_html__("Remove permission", 'rrze-ac');
-        }
-        ?>
+        } ?>
         <script type="text/javascript">
             jQuery(document).ready(function($) {
                 $.each(<?php echo json_encode($bulk_actions); ?>, function (index, value) {
@@ -1372,19 +1457,20 @@ class Main {
         </script>
         <?php
     }
-    
-    public function media_admin_notices() {
 
+    public function media_admin_notices()
+    {
         $screen = get_current_screen();
         if ('upload' === $screen->id) {
-
             if (isset($_REQUEST['access-protected']) && (int) $_REQUEST['access-protected']) {
                 $message = sprintf(
                     _n(
                         "Media file is now protected.", //singular
                         "%s media files are now protected.", //plural
-                        $_REQUEST['access-protected'], 'rrze-ac'
-                    ), number_format_i18n($_REQUEST['access-protected'])
+                        $_REQUEST['access-protected'],
+                        'rrze-ac'
+                    ),
+                    number_format_i18n($_REQUEST['access-protected'])
                 );
                 echo '<div class="updated"><p>' . esc_html($message) . '</p></div>';
                 $_SERVER['REQUEST_URI'] = remove_query_arg('access-protected', $_SERVER['REQUEST_URI']);
@@ -1395,16 +1481,19 @@ class Main {
                     _n(
                         "Data protection on Media file has been removed.", //singular
                         "Data protection on %s Media files has been removed.", //plural
-                        $_REQUEST['access-unprotected'], 'rrze-ac'
-                    ), number_format_i18n($_REQUEST['access-unprotected'])
+                        $_REQUEST['access-unprotected'],
+                        'rrze-ac'
+                    ),
+                    number_format_i18n($_REQUEST['access-unprotected'])
                 );
                 echo '<div class="updated"><p>' . esc_html($message) . '</p></div>';
                 $_SERVER['REQUEST_URI'] = remove_query_arg('access-unprotected', $_SERVER['REQUEST_URI']);
             }
         }
     }
-    
-    public function bulk_actions() {
+
+    public function bulk_actions()
+    {
         $wp_list_table = _get_list_table('WP_Media_List_Table');
         $action = $wp_list_table->current_action();
 
@@ -1421,16 +1510,17 @@ class Main {
         if (isset($_REQUEST['media'])) {
             $media_ids = array_map('intval', $_REQUEST['media']);
         }
-        
+
         if (empty($media_ids)) {
             return;
         }
 
         $location = 'upload.php';
         if ($referer = wp_get_referer()) {
-            if (FALSE !== strpos($referer, 'upload.php')) {
+            if (false !== strpos($referer, 'upload.php')) {
                 $location = remove_query_arg(
-                    array('access-protected', 'access-unprotected', 'trashed', 'untrashed', 'deleted', 'message', 'ids', 'posted'), $referer
+                    array('access-protected', 'access-unprotected', 'trashed', 'untrashed', 'deleted', 'message', 'ids', 'posted'),
+                    $referer
                 );
             }
         }
@@ -1439,17 +1529,16 @@ class Main {
         if ($pagenum > 1) {
             $location = add_query_arg('paged', $pagenum, $location);
         }
-        
+
         switch ($action) {
 
             case 'access-protect':
                 if (!current_user_can('edit_posts')) {
                     wp_die(__("You are not allowed to add media files to the protected directory.", 'rrze-ac'));
                 }
-                
+
                 $protected = 0;
                 foreach ((array) $media_ids as $media_id) {
-
                     if (!current_user_can('edit_post', $media_id)) {
                         continue;
                     }
@@ -1463,7 +1552,7 @@ class Main {
                     if (is_wp_error($move_attachment)) {
                         wp_die(__("An error has occurred while moving the media files in the protected directory.", 'rrze-ac') . '<br/>' . $move_attachment->get_error_message());
                     }
-                    
+
                     $protected++;
                 }
 
@@ -1477,10 +1566,9 @@ class Main {
                 if (!current_user_can('edit_posts')) {
                     wp_die(__("You are not allowed to remove media files from the protected directory.", 'rrze-ac'));
                 }
-                
+
                 $unprotected = 0;
                 foreach ((array) $media_ids as $media_id) {
-
                     if (!current_user_can('edit_post', $media_id)) {
                         continue;
                     }
@@ -1488,13 +1576,13 @@ class Main {
                     if (!$this->is_attachment_protected($media_id)) {
                         continue;
                     }
-                    
+
                     $move_attachment = $this->move_attachment_from_protected($media_id);
 
                     if (is_wp_error($move_attachment)) {
                         wp_die(__("An error has occurred while removing the media files from the protected directory.", 'rrze-ac') . '<br/>' . $move_attachment->get_error_message());
                     }
-                    
+
                     delete_post_meta($media_id, $this->access_permission_meta_key);
 
                     $unprotected++;
@@ -1512,11 +1600,11 @@ class Main {
         $location = remove_query_arg(array('action', 'action2', 'media'), $location);
 
         wp_redirect($location);
-        exit();       
+        exit();
     }
-    
-    public function media_new_upload_ui() {
 
+    public function media_new_upload_ui()
+    {
         $screen = get_current_screen();
         if ('media' == $screen->base && 'add' == $screen->action) :
             ?>
@@ -1543,9 +1631,9 @@ class Main {
         <?php
         endif;
     }
-    
-    public function media_new_upload_ui_notice() {
 
+    public function media_new_upload_ui_notice()
+    {
         $screen = get_current_screen();
         if (isset($screen->base) && 'media' == $screen->base && 'add' == $screen->action) :
             ?>
@@ -1556,18 +1644,38 @@ class Main {
         <?php
         endif;
     }
-        
-    public function template_redirect() {
-        if(is_page() || is_attachment()) {
+
+    public function template_redirect()
+    {
+        if (is_page() || is_attachment()) {
             global $post;
             if (!$this->check_permission($post->ID)) {
                 status_header(403);
-                wp_die($this->permission_forbidden_message($post->ID));
+                wp_die($this->permission_message($post->ID));
             }
         }
     }
 
-    public function pre_get_posts_single($query) {
+    public function rest_filter($args) {
+        $post_not_in = array();
+        $permissions = $this->get_the_permissions();
+        $permission_metas = $this->get_permission_metas($args['post_type']);
+
+        foreach ($permission_metas as $pm) {
+            if (isset($permissions[$pm->meta_value]) && $permissions[$pm->meta_value]['active'] && !$this->check_author_permission($pm->post_id)) {
+                $post_not_in[] = $pm->post_id;
+            }
+        }
+
+        if (!empty($post_not_in)) {
+            $args['post__not_in'] = $post_not_in;
+        }
+
+        return $args;
+    }
+
+    public function pre_get_posts_single($query)
+    {
         if (is_admin() || !$query->is_main_query() || $query->is_singular) {
             return $query;
         }
@@ -1588,116 +1696,162 @@ class Main {
 
         return $query;
     }
-            
-    private function permission_forbidden_message($post_id = NULL) {
+
+    protected function permission_message($post_id = null)
+    {
         $message = '';
-        
+
         $post_type = get_post_type($post_id);
-        
+
         if ($post_type == 'attachment' && !wp_attachment_is_image($post_id)) {
             $permalink = wp_get_attachment_url($post_id);
         } else {
             $permalink = get_permalink($post_id);
         }
-        
-        if($this->get_permission_status($this->user_isnt_logged_in)) {
+
+        if ($this->get_permission_status($this->user_isnt_logged_in)) {
+            $login_url = wp_login_url($permalink);
             if ($post_type == 'attachment') {
-                $message = '<p>' . sprintf(__("Access to this file is only available for members of this website. <a href=\"%s\">Please login with your IdM username</a>, to download the file.", 'rrze-ac'), wp_login_url($permalink)) . '</p>';            
+                $message .= '<h3>' . __("Access to the requested file is denied", 'rrze-ac') . '</h3>';
+                $message .= '<p>' . sprintf(__("Access to this file is only available for members of this website. <a href=\"%s\">Please login with your IdM username</a> to download the file.", 'rrze-ac'), $login_url) . '</p>';
             } else {
-                $message = '<p>' . sprintf(__("Access to this page is only available to members of this website. <a href=\"%s\">Please login with your IdM username</a> to see the contents of the page.", 'rrze-ac'), wp_login_url($permalink)) . '</p>';
+                $message .= '<h3>' . __("Access to the requested page is denied", 'rrze-ac') . '</h3>';
+                $message .= '<p>' . sprintf(__("Access to this page is only available to members of this website. <a href=\"%s\">Please login with your IdM username</a> to see the contents of the page.", 'rrze-ac'), $login_url) . '</p>';
             }
-            
+            $message .= '<p>' . sprintf(__("<a href=\"%s\">Login through Single Sign-On (central login service of the University Erlangen-Nürnberg)</a>.", 'rrze-ac'), $login_url). '</p>';
             return $message;
         }
-        
-        if($this->get_permission_status($this->user_isnt_sso_logged_in) && $this->simplesaml_auth) {
-            $login = $this->simplesaml_auth->getLoginURL($permalink);
+
+        if ($this->get_permission_status($this->user_isnt_sso_logged_in) && $this->simplesaml_auth) {
+            $login_url = $this->simplesaml_auth->getLoginURL($permalink);
             if ($post_type == 'attachment') {
-                $message = '<p>' . __("Please log in with your IdM username to download the file.", 'rrze-ac') . '</p>';
+                $message .= '<h3>' . __("Access to the requested file is denied", 'rrze-ac') . '</h3>';
+                $message .= '<p>' . sprintf(__("Access to this file is only possible for logged in users. <a href=\"%s\">Please login with your IdM username</a> to download the file.", 'rrze-ac'), $login_url) . '</p>';
             } else {
-                $message = '<p>' . __("Please login with your IdM username to see the contents of the page.", 'rrze-ac') . '</p>';                
+                $message .= '<h3>' . __("Access to the requested page is denied", 'rrze-ac') . '</h3>';
+                $message .= '<p>' . sprintf(__("Access to this page is only possible for logged in users. <a href=\"%s\">Please login with your IdM username</a> to see the contents of the page.", 'rrze-ac'), $login_url) . '</p>';
             }
-            $message .= '<p>' . sprintf(__("<a href=\"%s\">Login through Single Sign-On (central login service of the University Erlangen-Nürnberg)</a>.", 'rrze-ac'), $login). '</p>';
-            
+            $message .= '<p>' . sprintf(__("<a href=\"%s\">Login through Single Sign-On (central login service of the University Erlangen-Nürnberg)</a>.", 'rrze-ac'), $login_url). '</p>';
+
             return $message;
         }
-                
-        if($this->get_permission_status($this->user_ip_isnt_in_range)
+
+        if ($this->get_permission_status($this->user_domain_not_allowed)
+            || $this->get_permission_status($this->user_ip_isnt_in_range)
             || ($this->get_permission_status($this->user_hasnt_affiliation) && $this->simplesaml_auth)) {
             if ($post_type == 'attachment') {
-                $message = '<p>' . __("You do not have sufficient permissions to access the file. If you believe you should have access to the file, please get in touch with the contact person of the website.", 'rrze-ac') . '</p>';                
+                $message .= '<h4>' . __("Access to the requested file is denied", 'rrze-ac') . '</h4>';
+                $message .= '<p>' . __("You do not have sufficient permissions to access the file. If you believe you should have access to the file, please get in touch with the contact person of the website.", 'rrze-ac') . '</p>';
             } else {
-                $message = '<p>' . __("You do not have sufficient permissions to view this page. If you believe you should have access to the page, please get in touch with the contact person of the website.", 'rrze-ac') . '</p>';                
+                $message .= '<p>' . __("Access to the requested page is denied.", 'rrze-ac') . '</p>';
+                $message .= '<p>' . __("You do not have sufficient permissions to view this page. If you believe you should have access to the page, please get in touch with the contact person of the website.", 'rrze-ac') . '</p>';
             }
-            
+
             return $message;
         }
-        
-        return '<p>' . __("You do not have sufficient permissions to view this area. If you believe you should have access to this area, please get in touch with the contact person of the website.", 'rrze-ac') . '</p>';       
+
+        $message .= '<h3>' . __("Access is denied", 'rrze-ac') . '</h3>';
+        $message .= '<p>' . __("You do not have sufficient permissions to view this area. If you believe you should have access to this area, please get in touch with the contact person of the website.", 'rrze-ac') . '</p>';
+        $message .= $this->get_contact();
+        return $message;
     }
-    
-    private function get_permission_status($bitmask) {
+
+    protected function get_contact()
+    {
+        global $wpdb;
+
+        $blog_prefix = $wpdb->get_blog_prefix(get_current_blog_id());
+        $users = $wpdb->get_results(
+             "SELECT user_id, user_id AS ID, user_login, display_name, user_email, meta_value
+             FROM $wpdb->users, $wpdb->usermeta
+             WHERE {$wpdb->users}.ID = {$wpdb->usermeta}.user_id AND meta_key = '{$blog_prefix}capabilities'
+             ORDER BY {$wpdb->usermeta}.user_id");
+
+        if (empty($users)) {
+            return '';
+        }
+
+        $output = '<h4>' . __("Contact persons", 'rrze-ac') . '</h4>';
+
+        foreach ($users as $user) {
+            $roles = unserialize($user->meta_value);
+            if (isset($roles['administrator'])) {
+                $output .= sprintf('<p>%1$s<br/>%2$s %3$s</p>' . "\n", $user->display_name, __("Email Address:", 'rrze-ac'), make_clickable($user->user_email));
+            }
+        }
+
+        return $output;
+    }
+
+    protected function get_permission_status($bitmask)
+    {
         return ($this->permission_status & (1 << $bitmask)) != 0;
     }
-    
-    private function set_permission_status($bitmask, $new = TRUE) {
+
+    protected function set_permission_status($bitmask, $new = true)
+    {
         $this->permission_status = ($this->permission_status & ~(1 << $bitmask)) | ($new << $bitmask);
     }
-    
-    private function is_plugin_active($plugin) {
+
+    protected function is_plugin_active($plugin)
+    {
         return in_array($plugin, (array) get_option('active_plugins', array())) || $this->is_plugin_active_for_network($plugin);
     }
- 
-    private function is_plugin_active_for_network($plugin) {
+
+    protected function is_plugin_active_for_network($plugin)
+    {
         if (!is_multisite()) {
-            return FALSE;
+            return false;
         }
 
         $plugins = get_site_option('active_sitewide_plugins');
         if (isset($plugins[$plugin])) {
-                return TRUE;
+            return true;
         }
 
-        return FALSE;
+        return false;
     }
 
-    public function walker_nav_menu_edit($output, $item, $depth, $args, $id) {
-        $permission = get_post_meta($item->object_id, $this->access_permission_meta_key, TRUE);       
+    public function walker_nav_menu_edit($output, $item, $depth, $args, $id)
+    {
+        $permission = get_post_meta($item->object_id, $this->access_permission_meta_key, true);
         $permissions = $this->get_the_permissions();
         $pos = strpos($output, '<span class="menu-item-title">');
-        
-        if (!empty($permission) && isset($permissions[$permission]) && $pos !== FALSE) {
+
+        if (!empty($permission) && isset($permissions[$permission]) && $pos !== false) {
             $substr = array(
                 substr($output, 0, $pos),
                 '<span class="access-icon dashicons dashicons-shield"></span>',
                 PHP_EOL,
                 substr($output, $pos),
             );
-            
-            $output = implode('', $substr);        
+
+            $output = implode('', $substr);
         }
-        
+
         return $output;
     }
 
-    public function register_post_status() {
-	register_post_status('protected', [
+    public function register_post_status()
+    {
+        register_post_status('protected', [
             'label'                     => __('Protected', 'rrze-ac'),
             'public'                    => false,
             'exclude_from_search'       => true,
             'show_in_admin_all_list'    => false,
             'show_in_admin_status_list' => false,
             'label_count'               => _n_noop('Protected <span class="count">(%s)</span>', 'Protected <span class="count">(%s)</span>', 'rrze-ac'),
-	]);
+    ]);
     }
-    
-    public function views_edit($views) {
+
+    public function views_edit($views)
+    {
         global $wp_query, $post_type;
-        
+
         if (!in_array($post_type, ['page'])) {
             return $views;
         }
-        
+
         $query = new \WP_Query(
             [
                 'post_type'  => $post_type,
@@ -1709,42 +1863,43 @@ class Main {
                 ]
             ]
         );
-        
-        $count = $query->found_posts;
-        $class = $wp_query->query['post_status'] == 'protected' ? ' class="current"' : '';
 
-        $views['protected'] = sprintf('<a href="%s"%s>%s</a>',
+        $count = $query->found_posts;
+        $class = isset($wp_query->query['post_status']) && $wp_query->query['post_status'] == 'protected' ? ' class="current"' : '';
+
+        $views['protected'] = sprintf(
+            '<a href="%s"%s>%s</a>',
             admin_url(sprintf('edit.php?post_status=protected&post_type=%s', $post_type)),
             $class,
-            sprintf(translate_nooped_plural(_n_noop('Protected <span class="count">(%s)</span>', 'Protected <span class="count">(%s)</span>'), $count, 'rrze-ac'), $count )
+            sprintf(translate_nooped_plural(_n_noop('Protected <span class="count">(%s)</span>', 'Protected <span class="count">(%s)</span>'), $count, 'rrze-ac'), $count)
         );
-        
+
         return $views;
     }
 
-    public function pre_get_posts_list($query) {
+    public function pre_get_posts_list($query)
+    {
         global $post_type;
-        
+
         if (!is_admin() || !isset($query->query_vars['post_status']) || $query->query_vars['post_status'] != 'protected') {
             return $query;
         }
-        
+
         if (!in_array($post_type, ['page'])) {
             return $views;
         }
-        
+
         $query->set('post_status', ['publish', 'pending', 'draft', 'future', 'private', 'inherit', 'protected']);
-        
+
         $meta_query = [
             [
                 'key' => $this->access_permission_meta_key,
                 'compare' => 'EXISTS'
             ]
         ];
-        
+
         $query->set('meta_query', $meta_query);
 
         return $query;
     }
-    
 }
