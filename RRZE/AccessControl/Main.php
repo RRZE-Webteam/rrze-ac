@@ -626,22 +626,22 @@ class Main
             return false;
         }
 
+        $ip = IP::fromStringIP($remote_addr);
+        $hostname = $ip->getHostname();
+
+        if ($hostname === null) {
+            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'message' => sprintf('Cannot get hostname from remote IP address %s.', $remote_addr)]);
+            return false;
+        }
+
         foreach ($allowedDomains as $domain) {
-            $ip = IP::fromStringIP($remote_addr);
-            $hostname = $ip->getHostname();
-
-            if ($hostname === null) {
-                do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'message' => sprintf('Cannot get hostname from remote IP address %s.', $remote_addr)]);
-                return false;
-            }
-
-            if (strrpos($domain, $hostname) === false) {
-                do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'message' => sprintf('Remote hostname %s is not allowed.', $hostname)]);
-                return false;
+            if (strrpos($domain, $hostname) !== false) {
+                return true;
             }
         }
 
-        return true;
+        do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'message' => sprintf('Remote hostname %s is not allowed.', $hostname)]);
+        return false;
     }
 
     protected function getRemoteIpAddress() {
@@ -715,55 +715,74 @@ class Main
             return true;
         }
 
-        if (!$permission = $this->get_the_permission($post_id)) {
+        if (! $permission = $this->get_the_permission($post_id)) {
             return true;
         }
+
+        $allow = false;
+        $status = [];
 
         do_action('rrze.log.info', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'postID' => $post_id, 'permission' => $permission]);
         $permissions = $this->get_the_permissions();
 
         // set permission to default permission if not exist or not active
-        if (!isset($permissions[$permission]) || !$permissions[$permission]['active']) {
+        if (! isset($permissions[$permission]) || ! $permissions[$permission]['active']) {
             $permission = $this->get_default_permission();
         }
 
         // check if permission is set to be logged in
-        if (!is_user_logged_in() && isset($permissions[$permission]['logged_in']) && $permissions[$permission]['logged_in']) {
-            $this->set_permission_status($this->user_isnt_logged_in);
-            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_isnt_logged_in', 'message' => 'User is not logged in.']);
-            return false;
+        if (! empty($permissions[$permission]['logged_in'])) {
+            if (! is_user_logged_in()) {
+                $status[] = $this->user_isnt_logged_in;
+            } else {
+                $allow = true;
+            }
         }
 
         // check if permission is set to be sso logged in
-        elseif (!empty($permissions[$permission]['sso_logged_in']) && !$this->check_sso_logged_in()) {
-            $this->set_permission_status($this->user_isnt_sso_logged_in);
-            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_isnt_sso_logged_in', 'message' => 'User is not SSO logged in.']);
-            return false;
+        if (! empty($permissions[$permission]['sso_logged_in'])) {
+            if (! $this->check_sso_logged_in()) {
+                $status[] = $this->user_isnt_sso_logged_in;
+            } else {
+                $allow = true;
+            }
         }
 
         // check if permission is set to person affiliation
-        elseif (!empty($permissions[$permission]['affiliation']) && !$this->check_person_affiliation($permissions[$permission]['affiliation'])) {
-            $this->set_permission_status($this->user_hasnt_affiliation);
-            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_hasnt_affiliation', 'message' => 'User has not affiliation.']);
-            return false;
+        if (! empty($permissions[$permission]['affiliation'])) {
+            if (! $this->check_person_affiliation($permissions[$permission]['affiliation'])) {
+                $status[] = $this->user_hasnt_affiliation;
+            } else {
+                $allow = true;
+            }
         }
 
         // check if permission is set to domain
-        elseif (!empty($permissions[$permission]['domain']) && !$this->checkRemoteDomain($permissions[$permission]['domain'])) {
-            $this->set_permission_status($this->user_domain_do_not_match);
-            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_domain_not_allowed', 'message' => 'Remote domain is not allowed.']);
-            return false;
+        if (! empty($permissions[$permission]['domain'])) {
+            if (! $this->checkRemoteDomain($permissions[$permission]['domain'])) {
+                $status[] = $this->user_domain_do_not_match;
+            } else {
+                $allow = true;
+            }
         }
 
         // check if permission is set to ip address
-        elseif (!empty($permissions[$permission]['ip_address']) && !$this->check_ip_address_range($permissions[$permission]['ip_address'])) {
-            $this->set_permission_status($this->user_ip_isnt_in_range);
-            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_ip_isnt_in_range', 'message' => 'Remote IP address is not in range.']);
-            return false;
+        if (! empty($permissions[$permission]['ip_address'])) {
+            if (! $this->check_ip_address_range($permissions[$permission]['ip_address'])) {
+                $status[] = $this->user_ip_isnt_in_range;
+            } else {
+                $allow = true;
+            }
         }
 
-        do_action('rrze.log.info', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'postID' => $post_id, 'permission' => $permission, 'status' => 'allowed']);
-        return true;
+        $allow = empty($status) ? true : $allow;
+
+        if (! $allow) {
+            $this->set_permission_status($status[0]);
+        }
+
+        do_action('rrze.log.info', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'postID' => $post_id, 'permission' => $permission, 'status' => $allow ? 'allowed' : 'not allowed']);
+        return $allow;
     }
 
     public function attachment_edit_meta_box()
@@ -771,7 +790,7 @@ class Main
         add_meta_box(
             'attachment-protection-metabox',
             __("Access Restriction", 'rrze-ac'),
-            array($this, 'post_protection_metabox'),
+            [$this, 'post_protection_metabox'],
             'attachment',
             'side'
         );
