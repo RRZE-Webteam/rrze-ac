@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Access Control\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-02-01 14:05+0000\n"
+"POT-Creation-Date: 2019-06-04 08:23+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: \n"
@@ -45,7 +45,7 @@ msgstr ""
 
 #: RRZE/AccessControl/Main.php:100 RRZE/AccessControl/Core/Settings.php:51
 #: RRZE/AccessControl/Core/Settings.php:51
-#: RRZE/AccessControl/Core/Settings.php:416
+#: RRZE/AccessControl/Core/Settings.php:420
 msgid "Settings"
 msgstr ""
 
@@ -65,166 +65,166 @@ msgstr ""
 msgid "Please contact your system administrator."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:390 RRZE/AccessControl/Main.php:786
-#: RRZE/AccessControl/Main.php:1342 RRZE/AccessControl/Main.php:1382
-#: RRZE/AccessControl/Main.php:1616
+#: RRZE/AccessControl/Main.php:391 RRZE/AccessControl/Main.php:809
+#: RRZE/AccessControl/Main.php:1365 RRZE/AccessControl/Main.php:1405
+#: RRZE/AccessControl/Main.php:1639
 msgid "Access Restriction"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:398 RRZE/AccessControl/Core/Settings.php:443
-#: RRZE/AccessControl/Core/Settings.php:452
+#: RRZE/AccessControl/Main.php:399 RRZE/AccessControl/Core/Settings.php:447
+#: RRZE/AccessControl/Core/Settings.php:456
 #: RRZE/AccessControl/WordPress/ListTable.php:86
 msgid "Permission"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:807 RRZE/AccessControl/Main.php:1441
+#: RRZE/AccessControl/Main.php:830 RRZE/AccessControl/Main.php:1464
 msgid "Enable permission"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:808 RRZE/AccessControl/Main.php:1444
+#: RRZE/AccessControl/Main.php:831 RRZE/AccessControl/Main.php:1467
 msgid "Remove permission"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:812 RRZE/AccessControl/Main.php:852
+#: RRZE/AccessControl/Main.php:835 RRZE/AccessControl/Main.php:875
 msgid "Permission:"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:856
+#: RRZE/AccessControl/Main.php:879
 #: RRZE/AccessControl/WordPress/ListTable.php:64
 msgid "Edit"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:857 RRZE/AccessControl/Core/Settings.php:384
+#: RRZE/AccessControl/Main.php:880 RRZE/AccessControl/Core/Settings.php:388
 msgid "Edit permission"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:870
+#: RRZE/AccessControl/Main.php:893
 msgid "OK"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:871
+#: RRZE/AccessControl/Main.php:894
 msgid "Cancel"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1007
+#: RRZE/AccessControl/Main.php:1030
 #, php-format
 msgid "The post %d is not a Media Post-Type."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1014
+#: RRZE/AccessControl/Main.php:1037
 #, php-format
 msgid ""
 "The newly specified path %s is absolute. The new path must be a path "
 "relative to the WP uploads directory."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1041
+#: RRZE/AccessControl/Main.php:1064
 #, php-format
 msgid "An error has occurred while creating the directory %s."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1105
+#: RRZE/AccessControl/Main.php:1128
 #, php-format
 msgid "The file can not be moved from %s to %s."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1172 RRZE/AccessControl/Main.php:1182
-#: RRZE/AccessControl/Main.php:1199
+#: RRZE/AccessControl/Main.php:1195 RRZE/AccessControl/Main.php:1205
+#: RRZE/AccessControl/Main.php:1222
 msgid "The requested file was not found."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1192
+#: RRZE/AccessControl/Main.php:1215
 msgid "The request was due lack of client permission not performed."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1242
+#: RRZE/AccessControl/Main.php:1265
 msgid "The requested attachment was not found."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1334
+#: RRZE/AccessControl/Main.php:1357
 msgid "You do not have sufficient permissions to access the file."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1361 RRZE/AccessControl/Main.php:1401
+#: RRZE/AccessControl/Main.php:1384 RRZE/AccessControl/Main.php:1424
 msgid "Permission does not exist or has been removed."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1365
+#: RRZE/AccessControl/Main.php:1388
 msgid "Permission has been disabled."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1375
+#: RRZE/AccessControl/Main.php:1398
 #, php-format
 msgid ""
 "An error has occurred: %1$s and has been replaced by the default permission "
 "%2$s."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1405 RRZE/AccessControl/Core/Settings.php:664
+#: RRZE/AccessControl/Main.php:1428 RRZE/AccessControl/Core/Settings.php:681
 msgid "The permission has been disabled."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1467
+#: RRZE/AccessControl/Main.php:1490
 #, php-format
 msgid "Media file is now protected."
 msgid_plural "%s media files are now protected."
 msgstr[0] ""
 msgstr[1] ""
 
-#: RRZE/AccessControl/Main.php:1481
+#: RRZE/AccessControl/Main.php:1504
 #, php-format
 msgid "Data protection on Media file has been removed."
 msgid_plural "Data protection on %s Media files has been removed."
 msgstr[0] ""
 msgstr[1] ""
 
-#: RRZE/AccessControl/Main.php:1537
+#: RRZE/AccessControl/Main.php:1560
 msgid "You are not allowed to add media files to the protected directory."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1553
+#: RRZE/AccessControl/Main.php:1576
 msgid ""
 "An error has occurred while moving the media files in the protected "
 "directory."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1567
+#: RRZE/AccessControl/Main.php:1590
 msgid "You are not allowed to remove media files from the protected directory."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1583
+#: RRZE/AccessControl/Main.php:1606
 msgid ""
 "An error has occurred while removing the media files from the protected "
 "directory."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1624
+#: RRZE/AccessControl/Main.php:1647
 #: RRZE/AccessControl/WordPress/ListTable.php:70
 #: RRZE/AccessControl/WordPress/ListTable.php:109
 msgid "Activate"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1642
+#: RRZE/AccessControl/Main.php:1665
 msgid "New files are protected"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1715 RRZE/AccessControl/Main.php:1728
-#: RRZE/AccessControl/Main.php:1743
+#: RRZE/AccessControl/Main.php:1738 RRZE/AccessControl/Main.php:1751
+#: RRZE/AccessControl/Main.php:1767
 msgid "Access to the requested file is denied"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1716
+#: RRZE/AccessControl/Main.php:1739
 #, php-format
 msgid ""
 "Access to this file is only available for members of this website. <a "
 "href=\"%s\">Please login with your IdM username</a> to download the file."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1718 RRZE/AccessControl/Main.php:1731
+#: RRZE/AccessControl/Main.php:1741 RRZE/AccessControl/Main.php:1754
 msgid "Access to the requested page is denied"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1719
+#: RRZE/AccessControl/Main.php:1742
 #, php-format
 msgid ""
 "Access to this page is only available to members of this website. <a "
@@ -232,69 +232,69 @@ msgid ""
 "the page."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1721 RRZE/AccessControl/Main.php:1734
+#: RRZE/AccessControl/Main.php:1744 RRZE/AccessControl/Main.php:1757
 #, php-format
 msgid ""
 "<a href=\"%s\">Login through Single Sign-On (central login service of the "
 "University Erlangen-Nürnberg)</a>."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1729
+#: RRZE/AccessControl/Main.php:1752
 #, php-format
 msgid ""
 "Access to this file is only possible for logged in users. <a href=\"%s\">"
 "Please login with your IdM username</a> to download the file."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1732
+#: RRZE/AccessControl/Main.php:1755
 #, php-format
 msgid ""
 "Access to this page is only possible for logged in users. <a href=\"%s\">"
 "Please login with your IdM username</a> to see the contents of the page."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1744
+#: RRZE/AccessControl/Main.php:1768
 msgid ""
 "You do not have sufficient permissions to access the file. If you believe "
 "you should have access to the file, please get in touch with the contact "
 "person of the website."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1746
+#: RRZE/AccessControl/Main.php:1770
 msgid "Access to the requested page is denied."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1747
+#: RRZE/AccessControl/Main.php:1771
 msgid ""
 "You do not have sufficient permissions to view this page. If you believe you "
 "should have access to the page, please get in touch with the contact person "
 "of the website."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1753
+#: RRZE/AccessControl/Main.php:1777
 msgid "Access is denied"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1754
+#: RRZE/AccessControl/Main.php:1778
 msgid ""
 "You do not have sufficient permissions to view this area. If you believe you "
 "should have access to this area, please get in touch with the contact person "
 "of the website."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1774
+#: RRZE/AccessControl/Main.php:1798
 msgid "Contact persons"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1779
+#: RRZE/AccessControl/Main.php:1803
 msgid "Email Address:"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1838
+#: RRZE/AccessControl/Main.php:1862
 msgid "Protected"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1843
+#: RRZE/AccessControl/Main.php:1867
 #, php-format
 msgid "Protected <span class=\"count\">(%s)</span>"
 msgid_plural "Protected <span class=\"count\">(%s)</span>"
@@ -315,17 +315,17 @@ msgid "Items per page:"
 msgstr ""
 
 #: RRZE/AccessControl/Core/Settings.php:79
-#: RRZE/AccessControl/Core/Settings.php:371
-#: RRZE/AccessControl/Core/Settings.php:376
+#: RRZE/AccessControl/Core/Settings.php:375
+#: RRZE/AccessControl/Core/Settings.php:380
 msgid "Add New Permission"
 msgstr ""
 
 #: RRZE/AccessControl/Core/Settings.php:115
 #: RRZE/AccessControl/Core/Settings.php:140
 #: RRZE/AccessControl/Core/Settings.php:179
-#: RRZE/AccessControl/Core/Settings.php:651
-#: RRZE/AccessControl/Core/Settings.php:661
-#: RRZE/AccessControl/Core/Settings.php:671
+#: RRZE/AccessControl/Core/Settings.php:668
+#: RRZE/AccessControl/Core/Settings.php:678
+#: RRZE/AccessControl/Core/Settings.php:688
 msgid "Something went wrong."
 msgstr ""
 
@@ -359,85 +359,93 @@ msgstr ""
 msgid "Short description required."
 msgstr ""
 
-#: RRZE/AccessControl/Core/Settings.php:327
+#: RRZE/AccessControl/Core/Settings.php:331
 #, php-format
 msgid "The domain %s is not valid."
 msgstr ""
 
-#: RRZE/AccessControl/Core/Settings.php:348
+#: RRZE/AccessControl/Core/Settings.php:352
 #, php-format
 msgid "The IP address %s is not valid."
 msgstr ""
 
-#: RRZE/AccessControl/Core/Settings.php:389
+#: RRZE/AccessControl/Core/Settings.php:393
 msgid "Save Changes"
 msgstr ""
 
-#: RRZE/AccessControl/Core/Settings.php:401
+#: RRZE/AccessControl/Core/Settings.php:405
 msgid "Search"
 msgstr ""
 
-#: RRZE/AccessControl/Core/Settings.php:444
-#: RRZE/AccessControl/Core/Settings.php:453
+#: RRZE/AccessControl/Core/Settings.php:448
+#: RRZE/AccessControl/Core/Settings.php:457
 #: RRZE/AccessControl/WordPress/ListTable.php:89
 msgid "Logged-in"
 msgstr ""
 
-#: RRZE/AccessControl/Core/Settings.php:445
-#: RRZE/AccessControl/Core/Settings.php:454
+#: RRZE/AccessControl/Core/Settings.php:449
+#: RRZE/AccessControl/Core/Settings.php:458
 #: RRZE/AccessControl/WordPress/ListTable.php:90
 msgid "SSO"
 msgstr ""
 
-#: RRZE/AccessControl/Core/Settings.php:446
-#: RRZE/AccessControl/Core/Settings.php:458
+#: RRZE/AccessControl/Core/Settings.php:450
+#: RRZE/AccessControl/Core/Settings.php:463
 #: RRZE/AccessControl/WordPress/ListTable.php:91
 msgid "Allow domain"
 msgstr ""
 
-#: RRZE/AccessControl/Core/Settings.php:447
-#: RRZE/AccessControl/Core/Settings.php:459
+#: RRZE/AccessControl/Core/Settings.php:451
+#: RRZE/AccessControl/Core/Settings.php:464
 #: RRZE/AccessControl/WordPress/ListTable.php:92
 msgid "Allow IP address"
 msgstr ""
 
-#: RRZE/AccessControl/Core/Settings.php:448
-#: RRZE/AccessControl/Core/Settings.php:460
+#: RRZE/AccessControl/Core/Settings.php:452
+#: RRZE/AccessControl/Core/Settings.php:465
 #: RRZE/AccessControl/WordPress/ListTable.php:87
 msgid "Short Description"
 msgstr ""
 
-#: RRZE/AccessControl/Core/Settings.php:449
-#: RRZE/AccessControl/Core/Settings.php:461
+#: RRZE/AccessControl/Core/Settings.php:453
+#: RRZE/AccessControl/Core/Settings.php:466
 #: RRZE/AccessControl/WordPress/ListTable.php:88
 msgid "Description"
 msgstr ""
 
-#: RRZE/AccessControl/Core/Settings.php:456
+#: RRZE/AccessControl/Core/Settings.php:460
 msgid "Person affiliation"
 msgstr ""
 
-#: RRZE/AccessControl/Core/Settings.php:464
+#: RRZE/AccessControl/Core/Settings.php:461
+msgid "Person entitlement"
+msgstr ""
+
+#: RRZE/AccessControl/Core/Settings.php:469
 msgid "Standard Permission"
 msgstr ""
 
-#: RRZE/AccessControl/Core/Settings.php:488
+#: RRZE/AccessControl/Core/Settings.php:493
 msgid "The user must be logged-in and a member of the website."
 msgstr ""
 
-#: RRZE/AccessControl/Core/Settings.php:501
+#: RRZE/AccessControl/Core/Settings.php:506
 msgid "The user must be SSO logged-in."
 msgstr ""
 
-#: RRZE/AccessControl/Core/Settings.php:514
-msgid "Separate person affiliations with commas."
+#: RRZE/AccessControl/Core/Settings.php:519
+msgid "Enter one person affiliation per line."
 msgstr ""
 
-#: RRZE/AccessControl/Core/Settings.php:654
+#: RRZE/AccessControl/Core/Settings.php:531
+msgid "Enter one person entitlement per line."
+msgstr ""
+
+#: RRZE/AccessControl/Core/Settings.php:671
 msgid "The permission has been enabled."
 msgstr ""
 
-#: RRZE/AccessControl/Core/Settings.php:674
+#: RRZE/AccessControl/Core/Settings.php:691
 msgid "The permission has been deleted."
 msgstr ""
 
@@ -467,8 +475,8 @@ msgstr ""
 
 #. Description of the plugin
 msgid ""
-"Es ermöglicht das Schützen von Dateien/Dokumente durch Benutzerbezogene "
-"Funktionen und IP-Adresse."
+"Allows protection of files/documents through user and network related "
+"functions."
 msgstr ""
 
 #. URI of the plugin
@@ -476,7 +484,7 @@ msgid "https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac"
 msgstr ""
 
 #. Author of the plugin
-msgid "RRZE-Webteam"
+msgid "RRZE Webteam"
 msgstr ""
 
 #. Author URI of the plugin
