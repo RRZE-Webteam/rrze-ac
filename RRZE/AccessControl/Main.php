@@ -254,6 +254,7 @@ class Main
                     'logged_in' => $value['logged_in'],
                     'sso_logged_in' => $value['sso_logged_in'],
                     'affiliation' => $value['affiliation'],
+                    'entitlement' => $value['entitlement'],
                     'domain' => $value['domain'],
                     'ip_address' => $value['ip_address'],
                     'core' => $value['core'],
@@ -705,6 +706,21 @@ class Main
         return false;
     }
 
+    protected function check_person_entitlement($entitlement)
+    {
+        if (empty($entitlement) || empty($entitlement[0]) || !is_array($entitlement)) {
+            return true;
+        }
+
+        foreach ($entitlement as $attribute) {
+            if (in_array($attribute, $this->person_entitlement)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     protected function check_permission($post_id)
     {
         if (empty($post_id)) {
@@ -748,6 +764,13 @@ class Main
         if (! empty($permissions[$permission]['affiliation']) && (! $this->check_sso_logged_in() || ! $this->check_person_affiliation($permissions[$permission]['affiliation']))) {
             $this->set_permission_status($this->user_hasnt_affiliation);
             do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_hasnt_affiliation', 'message' => 'User has not affiliation.']);
+            return false;
+        }
+
+        // check if permission is set to person entitlement
+        if (! empty($permissions[$permission]['entitlement']) && (! $this->check_sso_logged_in() || ! $this->check_person_entitlement($permissions[$permission]['entitlement']))) {
+            $this->set_permission_status($this->user_hasnt_entitlement);
+            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_hasnt_entitlement', 'message' => 'User has not entitlement.']);
             return false;
         }
 
@@ -1738,7 +1761,8 @@ class Main
 
         if ($this->get_permission_status($this->user_domain_not_allowed)
             || $this->get_permission_status($this->user_ip_isnt_in_range)
-            || ($this->get_permission_status($this->user_hasnt_affiliation) && $this->simplesaml_auth)) {
+            || ($this->get_permission_status($this->user_hasnt_affiliation) && $this->simplesaml_auth)
+            || ($this->get_permission_status($this->user_hasnt_entitlement) && $this->simplesaml_auth)) {
             if ($post_type == 'attachment') {
                 $message .= '<h4>' . __("Access to the requested file is denied", 'rrze-ac') . '</h4>';
                 $message .= '<p>' . __("You do not have sufficient permissions to access the file. If you believe you should have access to the file, please get in touch with the contact person of the website.", 'rrze-ac') . '</p>';
