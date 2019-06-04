@@ -290,13 +290,17 @@ class Settings
         $logged_in = ! empty($input['logged_in']) ? 1 : 0;
         $sso_logged_in = ! empty($input['sso_logged_in']) ? 1 : 0;
 
-        $affiliation = $sso_logged_in && !empty(trim($input['affiliation'])) ? array_map('trim', explode(',', trim($input['affiliation']))) : '';
+        $affiliation = $sso_logged_in && !empty(trim($input['affiliation'])) ? array_unique(array_map('trim', explode(PHP_EOL, trim($input['affiliation'])))) : '';
         $permission['affiliation'] = $affiliation;
+
+        $entitlement = $sso_logged_in && !empty(trim($input['entitlement'])) ? array_unique(array_map('trim', explode(PHP_EOL, trim($input['entitlement'])))) : '';
+        $permission['entitlement'] = $entitlement;
 
         if ($this->settings_errors()) {
             $this->add_settings_error('logged_in', $logged_in, '', false);
             $this->add_settings_error('sso_logged_in', $sso_logged_in, '', false);
             $this->add_settings_error('affiliation', $affiliation, '', false);
+            $this->add_settings_error('entitlement', $entitlement, '', false);
             $this->add_settings_error('domain', $domain, '', false);
             $this->add_settings_error('ip_address', $ip_address, '', false);
             $this->add_settings_error('description', $description, '', false);
@@ -454,6 +458,7 @@ class Settings
         add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permission_sso_logged_in_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
         if ($sso_logged_in) {
             add_settings_field('affiliation', '&#8212; ' . __("Person affiliation", 'rrze-ac'), array($this, 'permission_affiliation_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
+            add_settings_field('entitlement', '&#8212; ' . __("Person entitlement", 'rrze-ac'), array($this, 'permission_entitlement_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
         }
         add_settings_field('domain', __("Allow domain", 'rrze-ac'), array($this, 'permission_domain_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
         add_settings_field('ip_address', __("Allow IP address", 'rrze-ac'), array($this, 'permission_ip_address_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
@@ -508,10 +513,22 @@ class Settings
         $settings_errors = $this->settings_errors();
         $permission_key = $this->request_var('permission');
         $permission = $this->main->get_permission($permission_key);
-        $affiliation = !empty($permission['affiliation']) ? implode(', ', (array) $permission['affiliation']) : '';
-        $affiliation = isset($settings_errors['affiliation']['value']) ? implode(', ', (array) $settings_errors['affiliation']['value']) : $affiliation; ?>
-        <input class="regular-text" type="text" value="<?php echo $affiliation; ?>" name="<?php printf('%s[affiliation]', $this->option_name); ?>">
-        <p class="description"><?php _e('Separate person affiliations with commas.', 'rrze-ac'); ?></p>
+        $affiliation = !empty($permission['affiliation']) ? implode(PHP_EOL, (array) $permission['affiliation']) : '';
+        $affiliation = isset($settings_errors['affiliation']['value']) ? implode(PHP_EOL, (array) $settings_errors['affiliation']['value']) : $affiliation; ?>
+        <textarea id="affiliation" cols="50" rows="3" name="<?php printf('%s[affiliation]', $this->option_name); ?>"><?php echo $affiliation; ?></textarea>
+        <p class="description"><?php _e('Enter one person affiliation per line.', 'rrze-ac'); ?></p>
+        <?php
+    }
+
+    public function permission_entitlement_field()
+    {
+        $settings_errors = $this->settings_errors();
+        $permission_key = $this->request_var('permission');
+        $permission = $this->main->get_permission($permission_key);
+        $entitlement = !empty($permission['entitlement']) ? implode(PHP_EOL, (array) $permission['entitlement']) : '';
+        $entitlement = isset($settings_errors['entitlement']['value']) ? implode(PHP_EOL, (array) $settings_errors['entitlement']['value']) : $entitlement; ?>
+        <textarea id="entitlement" cols="50" rows="3" name="<?php printf('%s[entitlement]', $this->option_name); ?>"><?php echo $entitlement; ?></textarea>
+        <p class="description"><?php _e('Enter one person entitlement per line.', 'rrze-ac'); ?></p>
         <?php
     }
 
