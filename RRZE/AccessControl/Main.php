@@ -1179,7 +1179,7 @@ class Main
                 die('rewrite test passed');
             }
 
-            $this->get_file($_GET['protected_file']);
+            $this->get_file(urldecode($_GET['protected_file']));
             exit();
         }
     }
@@ -1730,6 +1730,7 @@ class Main
         } else {
             $permalink = get_permalink($post_id);
         }
+        $permalink = urlencode($permalink);
 
         if ($this->get_permission_status($this->user_isnt_logged_in)) {
             $login_url = wp_login_url($permalink);
