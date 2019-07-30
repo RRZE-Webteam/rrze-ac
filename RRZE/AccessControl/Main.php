@@ -670,7 +670,7 @@ class Main
             return;
         }
 
-        require_once(WP_CONTENT_DIR . $options['simplesaml_include']));
+        require_once(WP_CONTENT_DIR . $options['simplesaml_include']);
         $this->simplesaml_auth = new SimpleSAMLAuthSimple($options['simplesaml_auth_source']);
     }
 
