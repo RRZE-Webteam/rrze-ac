@@ -7,7 +7,7 @@ use RRZE\AccessControl\Core\Settings;
 use RRZE\AccessControl\Main;
 use RRZE\AccessControl\Network\IP;
 use RRZE\AccessControl\Network\RemoteAddress;
-use SimpleSAML_Auth_Simple;
+use SimpleSAML\Auth\Simple as SimpleSAMLAuthSimple;
 use WP_Media_List_Table;
 
 defined('ABSPATH') || exit;
@@ -666,13 +666,12 @@ class Main
             return;
         }
 
-        include_once(WP_CONTENT_DIR . $options['simplesaml_include']);
-
-        if (!class_exists('SimpleSAML_Auth_Simple')) {
+        if (!file_exists(WP_CONTENT_DIR . $options['simplesaml_include'])) {
             return;
         }
 
-        $this->simplesaml_auth = new SimpleSAML_Auth_Simple($options['simplesaml_auth_source']);
+        require_once(WP_CONTENT_DIR . $options['simplesaml_include']));
+        $this->simplesaml_auth = new SimpleSAMLAuthSimple($options['simplesaml_auth_source']);
     }
 
     protected function check_sso_logged_in()
