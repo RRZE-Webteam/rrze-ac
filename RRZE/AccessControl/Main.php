@@ -1179,7 +1179,7 @@ class Main
                 die('rewrite test passed');
             }
 
-            $this->get_file(urldecode($_GET['protected_file']));
+            $this->get_file($_GET['protected_file']);
             exit();
         }
     }
@@ -1730,7 +1730,6 @@ class Main
         } else {
             $permalink = get_permalink($post_id);
         }
-        $permalink = urlencode($permalink);
 
         if ($this->get_permission_status($this->user_isnt_logged_in)) {
             $login_url = wp_login_url($permalink);
@@ -1746,7 +1745,7 @@ class Main
         }
 
         if ($this->get_permission_status($this->user_isnt_sso_logged_in) && $this->simplesaml_auth) {
-            $login_url = $this->simplesaml_auth->getLoginURL($permalink);
+            $login_url = $this->simplesaml_auth->getLoginURL();
             if ($post_type == 'attachment') {
                 $message .= '<h3>' . __("Access to the requested file is denied", 'rrze-ac') . '</h3>';
                 $message .= '<p>' . sprintf(__("Access to this file is only possible for logged in users. <a href=\"%s\">Please login with your IdM username</a> to download the file.", 'rrze-ac'), $login_url) . '</p>';
