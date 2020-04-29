@@ -4,7 +4,6 @@ namespace RRZE\AccessControl;
 
 use RRZE\AccessControl\Core\Options;
 use RRZE\AccessControl\Core\Settings;
-use RRZE\AccessControl\Main;
 use RRZE\AccessControl\Network\IP;
 use RRZE\AccessControl\Network\RemoteAddress;
 use SimpleSAML\Auth\Simple as SimpleSAMLAuthSimple;
@@ -1190,8 +1189,14 @@ class Main
         $upload_dir = wp_upload_dir();
 
         if (empty($upload_dir['basedir'])) {
-            status_header(404);
-            wp_die(__("The requested file was not found.", 'rrze-ac'));
+            wp_die(
+                __('The requested file was not found.', 'rrze-ac'), 
+                __('Not Found', 'rrze-ac'), 
+                [
+                    'response' => '404', 
+                    'back_link' => false
+                ]
+            );            
         }
 
         $file = rtrim($upload_dir['basedir'], '/') . str_replace('..', '', $rel_file);
@@ -1200,8 +1205,14 @@ class Main
             $rel_file = str_replace('_protected', '', rtrim($rel_file, '/'));
             $file = rtrim($upload_dir['basedir'], '/') . str_replace('..', '', $rel_file);
             if (!is_file($file)) {
-                status_header(404);
-                wp_die(__("The requested file was not found.", 'rrze-ac'));
+                wp_die(
+                    __('The requested file was not found.', 'rrze-ac'), 
+                    __('Not Found', 'rrze-ac'), 
+                    [
+                        'response' => '404', 
+                        'back_link' => false
+                    ]
+                );
             }
         }
 
@@ -1210,15 +1221,27 @@ class Main
         if (isset($mime['type']) && $mime['type']) {
             $mimetype = $mime['type'];
         } else {
-            status_header(403);
-            wp_die(__("The request was due lack of client permission not performed.", 'rrze-ac'));
+            wp_die(
+                __('The request was due lack of client permission not performed.', 'rrze-ac'), 
+                __('Forbidden', 'rrze-ac'), 
+                [
+                    'response' => '403', 
+                    'back_link' => false
+                ]
+            );            
         }
 
         $file_info = pathinfo($rel_file);
 
         if (0 !== stripos($file_info['dirname'] . '/', $this->protected_upload_dir('/', true))) {
-            status_header(404);
-            wp_die(__("The requested file was not found.", 'rrze-ac'));
+            wp_die(
+                __('The requested file was not found.', 'rrze-ac'), 
+                __('Not Found', 'rrze-ac'), 
+                [
+                    'response' => '404', 
+                    'back_link' => false
+                ]
+            );
         }
 
         if (!defined('DONOTCACHEPAGE')) {
@@ -1260,15 +1283,27 @@ class Main
         }
 
         if (is_null($attachment)) {
-            status_header(404);
-            wp_die(__("The requested attachment was not found.", 'rrze-ac'));
+            wp_die(
+                __('The requested attachment was not found.', 'rrze-ac'),
+                __('Not Found', 'rrze-ac'), 
+                [
+                    'response' => '404', 
+                    'back_link' => false
+                ]                
+            );
         }
 
         $attachment_id = $attachment->post_id;
 
         if (!$this->check_permission($attachment_id)) {
-            status_header(403);
-            wp_die($this->permission_message($attachment_id));
+            wp_die(
+                $this->permission_message($attachment_id), 
+                __('Forbidden', 'rrze-ac'), 
+                [
+                    'response' => '403', 
+                    'back_link' => false
+                ]
+            );
         }
 
         header('Content-Type: ' . $mimetype);
@@ -1556,7 +1591,14 @@ class Main
 
             case 'access-protect':
                 if (!current_user_can('edit_posts')) {
-                    wp_die(__("You are not allowed to add media files to the protected directory.", 'rrze-ac'));
+                    wp_die(
+                        __('You are not allowed to add media files to the protected directory.', 'rrze-ac'),
+                        __('Forbbiden', 'rrze-ac'), 
+                        [
+                            'response' => '403', 
+                            'back_link' => true
+                        ]                
+                    );                    
                 }
 
                 $protected = 0;
@@ -1572,7 +1614,14 @@ class Main
                     $move_attachment = $this->move_attachment_to_protected($media_id);
 
                     if (is_wp_error($move_attachment)) {
-                        wp_die(__("An error has occurred while moving the media files in the protected directory.", 'rrze-ac') . '<br/>' . $move_attachment->get_error_message());
+                        wp_die(
+                            __('An error has occurred while moving the media files in the protected directory.', 'rrze-ac') . '<br/>' . $move_attachment->get_error_message(),
+                            __('Internal Server Error', 'rrze-ac'), 
+                            [
+                                'response' => '500', 
+                                'back_link' => true
+                            ]                
+                        );
                     }
 
                     $protected++;
@@ -1586,7 +1635,14 @@ class Main
 
             case 'access-unprotect':
                 if (!current_user_can('edit_posts')) {
-                    wp_die(__("You are not allowed to remove media files from the protected directory.", 'rrze-ac'));
+                    wp_die(
+                        __('You are not allowed to remove media files from the protected directory.', 'rrze-ac'),
+                        __('Forbbiden', 'rrze-ac'), 
+                        [
+                            'response' => '403', 
+                            'back_link' => true
+                        ]                
+                    );                    
                 }
 
                 $unprotected = 0;
@@ -1602,7 +1658,14 @@ class Main
                     $move_attachment = $this->move_attachment_from_protected($media_id);
 
                     if (is_wp_error($move_attachment)) {
-                        wp_die(__("An error has occurred while removing the media files from the protected directory.", 'rrze-ac') . '<br/>' . $move_attachment->get_error_message());
+                        wp_die(
+                            __('An error has occurred while removing the media files from the protected directory.', 'rrze-ac') . '<br/>' . $move_attachment->get_error_message(),
+                            __('Internal Server Error', 'rrze-ac'), 
+                            [
+                                'response' => '500', 
+                                'back_link' => true
+                            ]                
+                        );                        
                     }
 
                     delete_post_meta($media_id, $this->access_permission_meta_key);
@@ -1672,8 +1735,14 @@ class Main
         if (is_page() || is_attachment()) {
             global $post;
             if (!$this->check_permission($post->ID)) {
-                status_header(403);
-                wp_die($this->permission_message($post->ID));
+                wp_die(
+                    $this->permission_message($post->ID), 
+                    __('Forbidden', 'rrze-ac'), 
+                    [
+                        'response' => '403', 
+                        'back_link' => false
+                    ]
+                );                
             }
         }
     }
