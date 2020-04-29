@@ -1593,7 +1593,7 @@ class Main
                 if (!current_user_can('edit_posts')) {
                     wp_die(
                         __('You are not allowed to add media files to the protected directory.', 'rrze-ac'),
-                        __('Forbbiden', 'rrze-ac'), 
+                        __('Forbidden', 'rrze-ac'), 
                         [
                             'response' => '403', 
                             'back_link' => true
@@ -1637,7 +1637,7 @@ class Main
                 if (!current_user_can('edit_posts')) {
                     wp_die(
                         __('You are not allowed to remove media files from the protected directory.', 'rrze-ac'),
-                        __('Forbbiden', 'rrze-ac'), 
+                        __('Forbidden', 'rrze-ac'), 
                         [
                             'response' => '403', 
                             'back_link' => true
