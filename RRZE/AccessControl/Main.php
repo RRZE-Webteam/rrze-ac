@@ -43,9 +43,11 @@ class Main
 
     private $simplesaml_auth = null;
 
-    private $person_affiliation = null;
+    protected $person_attributes = null;
 
-    private $person_entitlement = null;
+    protected $person_affiliation = null;
+
+    protected $person_entitlement = null;
 
     public function __construct($plugin_basename = null)
     {
@@ -681,10 +683,10 @@ class Main
             return false;
         }
 
-        $attributes = $this->simplesaml_auth->getAttributes();
+        $this->person_attributes = $this->simplesaml_auth->getAttributes();
 
-        $this->person_affiliation = isset($attributes['urn:mace:dir:attribute-def:eduPersonAffiliation']) ? $attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'] : array();
-        $this->person_entitlement = isset($attributes['urn:mace:dir:attribute-def:eduPersonEntitlement']) ? $attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'] : array();
+        $this->person_affiliation = isset($this->person_attributes['urn:mace:dir:attribute-def:eduPersonAffiliation']) ? $this->person_attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'] : [];
+        $this->person_entitlement = isset($this->person_attributes['urn:mace:dir:attribute-def:eduPersonEntitlement']) ? $this->person_attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'] : [];
 
         return true;
     }
@@ -736,7 +738,15 @@ class Main
         $allow = false;
         $status = [];
 
-        do_action('rrze.log.info', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'postID' => $post_id, 'permission' => $permission]);
+        do_action(
+            'rrze.log.info', 
+            [
+                'plugin' =>'rrze-ac', 
+                'method' => __METHOD__, 
+                'postID' => $post_id, 
+                'permission' => $permission
+            ]
+        );
         $permissions = $this->get_the_permissions();
 
         // set permission to default permission if not exist or not active
@@ -747,31 +757,84 @@ class Main
         // check if permission is set to be logged in
         if (! empty($permissions[$permission]['logged_in']) && ! is_user_logged_in()) {
             $this->set_permission_status($this->user_isnt_logged_in);
-            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_isnt_logged_in', 'message' => 'User is not logged in.']);
+            do_action(
+                'rrze.log.notice', 
+                [
+                    'plugin' =>'rrze-ac', 
+                    'postID' => $post_id, 
+                    'permission' => $permission, 
+                    'status' => 'user_isnt_logged_in', 
+                    'message' => 'User is not logged in.'
+                ]
+            );
             return false;
         }
 
         // check if permission is set to be sso logged in
         if (! empty($permissions[$permission]['sso_logged_in']) && ! $this->check_sso_logged_in()) {
             $this->set_permission_status($this->user_isnt_sso_logged_in);
-            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_isnt_sso_logged_in', 'message' => 'User is not SSO logged in.']);
+            do_action(
+                'rrze.log.notice', 
+                [
+                    'plugin' =>'rrze-ac', 
+                    'postID' => $post_id, 
+                    'permission' => $permission, 
+                    'status' => 'user_isnt_sso_logged_in', 
+                    'message' => 'User is not SSO logged in.'
+                ]
+            );
             return false;
-        }
+        } 
+        
+        if (! is_null($this->person_attributes)) {
+            $allowed_person_affiliation = true;
+            $allowed_person_entitlement = true;
+            
+            // check if permission is set to person affiliation
+            if (! empty($permissions[$permission]['affiliation']) && ! $this->check_person_affiliation($permissions[$permission]['affiliation'])) {
+                $this->set_permission_status($this->user_hasnt_affiliation);
+                $allowed_person_affiliation = false;
+                do_action(
+                    'rrze.log.notice', 
+                    [
+                        'plugin' =>'rrze-ac', 
+                        'postID' => $post_id, 
+                        'permission' => $permission, 
+                        'status' => 'user_hasnt_affiliation', 
+                        'message' => 'User has not affiliation.', 
+                        'allowed_person_affiliation' => $permissions[$permission]['affiliation'], 
+                        'person_atributes' => $this->person_attributes
+                    ]
+                );
+            }
 
-        // check if permission is set to person affiliation
-        if (! empty($permissions[$permission]['affiliation']) && (! $this->check_sso_logged_in() || ! $this->check_person_affiliation($permissions[$permission]['affiliation']))) {
-            $this->set_permission_status($this->user_hasnt_affiliation);
-            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_hasnt_affiliation', 'message' => 'User has not affiliation.']);
-            return false;
-        }
+            if (! empty($permissions[$permission]['entitlement']) && ! $this->check_person_entitlement($permissions[$permission]['entitlement'])) {
+                $this->set_permission_status($this->user_hasnt_entitlement);
+                $allowed_person_entitlement = false;
+                do_action(
+                    'rrze.log.notice', 
+                    [
+                        'plugin' =>'rrze-ac', 
+                        'postID' => $post_id, 
+                        'permission' => $permission, 
+                        'status' => 'user_hasnt_entitlement', 
+                        'message' => 'User has not entitlement.', 
+                        'allowed_person_entitlement' => $permissions[$permission]['entitlement'], 
+                        'person_atributes' => $this->person_attributes
+                    ]
+                );
+            }            
 
-        // check if permission is set to person entitlement
-        if (! empty($permissions[$permission]['entitlement']) && (! $this->check_sso_logged_in() || ! $this->check_person_entitlement($permissions[$permission]['entitlement']))) {
-            $this->set_permission_status($this->user_hasnt_entitlement);
-            do_action('rrze.log.notice', ['plugin' =>'rrze-ac', 'postID' => $post_id, 'permission' => $permission, 'status' => 'user_hasnt_entitlement', 'message' => 'User has not entitlement.']);
-            return false;
-        }
+            if (empty($permissions[$permission]['entitlement']) && ! $allowed_person_affiliation) {
+                $allowed_person_entitlement = false;
+            }
 
+            if (! $allowed_person_affiliation && ! $allowed_person_entitlement) {
+                return false;
+            }
+    
+        }
+        
         // check if permission is set to domain
         if (! empty($permissions[$permission]['domain'])) {
             if (! $this->checkRemoteDomain($permissions[$permission]['domain'])) {
@@ -796,7 +859,16 @@ class Main
             $this->set_permission_status($status[0]);
         }
 
-        do_action('rrze.log.info', ['plugin' =>'rrze-ac', 'method' => __METHOD__, 'postID' => $post_id, 'permission' => $permission, 'status' => $allow ? 'allowed' : 'not allowed']);
+        do_action(
+            'rrze.log.info', 
+            [
+                'plugin' =>'rrze-ac', 
+                'method' => __METHOD__, 
+                'postID' => $post_id, 
+                'permission' => $permission, 
+                'status' => $allow ? 'allowed' : 'not allowed'
+            ]
+        );
         return $allow;
     }
 
