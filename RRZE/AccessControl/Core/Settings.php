@@ -326,9 +326,8 @@ class Settings
                     continue;
                 }
                 $domain_ary[] = $value;
-                $match = preg_match("/^(?=.{4,255}$)([a-zA-Z0-9_]([a-zA-Z0-9_-]{0,61}[a-zA-Z0-9_])?.){1,126}[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]$/i", $value);
-                if (! $match) {
-                    $this->add_settings_error('domain-' . $key, $ip_address, sprintf(__("The domain %s is not valid.", 'rrze-ac'), $value));
+                if (filter_var($value, FILTER_VALIDATE_DOMAIN) === false) {
+                    $this->add_settings_error('domain-' . $key, $domain, sprintf(__('The domain %s is not valid.', 'rrze-ac'), $value));
                 }
             }
         }
