@@ -348,7 +348,7 @@ class Settings
                     $ip_range[] = $sanitized_value;
                 } else {
                     $ip_range[] = $value;
-                    $this->add_settings_error('ip_address-' . $key, $ip_address, sprintf(__("The IP address %s is not valid.", 'rrze-ac'), $value));
+                    $this->add_settings_error('ip_address-' . $key, $ip_address, sprintf(__('The IP address %s is not valid.', 'rrze-ac'), $value));
                 }
             }
         }
