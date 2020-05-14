@@ -198,7 +198,7 @@ class Main
 
     public function enqueue_scripts()
     {
-        wp_register_style('access', plugins_url('css/access.css', $this->plugin_basename));
+        wp_register_style('access', plugins_url('css/access.min.css', $this->plugin_basename));
         wp_register_style('access-att-edit', plugins_url("css/attachment-edit.min.css", $this->plugin_basename));
         wp_register_style('access-media-new', plugins_url("css/media-new.min.css", $this->plugin_basename));
 

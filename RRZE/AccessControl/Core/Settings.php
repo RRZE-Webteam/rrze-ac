@@ -220,11 +220,11 @@ class Settings
             $this->add_settings_error('select', $select, '', false);
         }
 
-        $domain = isset($input['domain']) && is_array($input['domain']) ? array_unique($input['domain']) : '';
+        $domain = isset($input['domain']) && !empty(trim($input['domain'])) ? array_unique(array_map('trim', explode(PHP_EOL, trim($input['domain'])))) : '';
         $domain = $this->get_valid_domains($domain);
         $domain = ! empty($domain) ? $domain : '';
 
-        $ip_address = isset($input['ip_address']) && is_array($input['ip_address']) ? array_unique($input['ip_address']) : '';
+        $ip_address = isset($input['ip_address']) && !empty(trim($input['ip_address'])) ? array_unique(array_map('trim', explode(PHP_EOL, trim($input['ip_address'])))) : '';
         $ip_range = $this->get_ip_range($ip_address);
         $ip_address = ! empty($ip_range) ? $ip_range : '';
 
@@ -279,11 +279,11 @@ class Settings
         $description = ! empty($input['description']) ? sanitize_textarea_field($input['description']) : '';
         $permission['description'] = $description;
 
-        $domain = isset($input['domain']) && is_array($input['domain']) ? array_unique($input['domain']) : '';
+        $domain = isset($input['domain']) && !empty(trim($input['domain'])) ? array_unique(array_map('trim', explode(PHP_EOL, trim($input['domain'])))) : '';
         $domain = $this->get_valid_domains($domain);
         $permission['domain'] = ! empty($domain) ? $domain : '';
 
-        $ip_address = isset($input['ip_address']) && is_array($input['ip_address']) ? array_unique($input['ip_address']) : '';
+        $ip_address = isset($input['ip_address']) && !empty(trim($input['ip_address'])) ? array_unique(array_map('trim', explode(PHP_EOL, trim($input['ip_address'])))) : '';
         $ip_range = $this->get_ip_range($ip_address);
         $permission['ip_address'] = ! empty($ip_range) ? $ip_range : '';
 
@@ -326,9 +326,8 @@ class Settings
                     continue;
                 }
                 $domain_ary[] = $value;
-                $match = preg_match("/^(?=.{4,255}$)([a-zA-Z0-9_]([a-zA-Z0-9_-]{0,61}[a-zA-Z0-9_])?.){1,126}[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]$/i", $value);
-                if (! $match) {
-                    $this->add_settings_error('domain-' . $key, $ip_address, sprintf(__("The domain %s is not valid.", 'rrze-ac'), $value));
+                if (filter_var($value, FILTER_VALIDATE_DOMAIN) === false) {
+                    $this->add_settings_error('domain-' . $key, $domain, sprintf(__('The domain %s is not valid.', 'rrze-ac'), $value));
                 }
             }
         }
@@ -349,7 +348,7 @@ class Settings
                     $ip_range[] = $sanitized_value;
                 } else {
                     $ip_range[] = $value;
-                    $this->add_settings_error('ip_address-' . $key, $ip_address, sprintf(__("The IP address %s is not valid.", 'rrze-ac'), $value));
+                    $this->add_settings_error('ip_address-' . $key, $ip_address, sprintf(__('The IP address %s is not valid.', 'rrze-ac'), $value));
                 }
             }
         }
@@ -551,7 +550,7 @@ class Settings
         $permission = $this->main->get_permission($permission_key);
         $description = isset($permission['description']) ? esc_textarea($permission['description']) : '';
         $description = isset($settings_errors['description']['value']) ? esc_textarea($settings_errors['description']['value']) : $description; ?>
-        <textarea id="description" cols="50" rows="5" name="<?php printf('%s[description]', $this->option_name); ?>"><?php echo $description; ?></textarea>
+        <textarea id="description" cols="50" rows="3" name="<?php printf('%s[description]', $this->option_name); ?>"><?php echo $description; ?></textarea>
         <?php
     }
 
@@ -577,38 +576,10 @@ class Settings
         $settings_errors = $this->settings_errors();
         $permission_key = $this->request_var('permission');
         $permission = $this->main->get_permission($permission_key);
-        $domain = !empty($permission['domain']) ? (array) $permission['domain'] : array('');
-        $domain = isset($settings_errors['domain']['value']) ? (array) $settings_errors['domain']['value'] : $domain;
-        foreach ($domain as $key => $value) {
-            $field_invalid = isset($settings_errors['domain-' . $key]) ? 'field-invalid' : ''; ?>
-            <div id="domainDiv">
-                <?php if ($key == 0) : ?>
-                    <p><input type="text" id="domain" class="regular-text <?php echo $field_invalid; ?>" name="<?php printf('%s[domain][%d]', $this->option_name, $key); ?>" value="<?php echo (isset($domain[$key])) ? $domain[$key] : $value; ?>"> <span class="addDomain dashicons dashicons-plus"> </span></p>
-                <?php else : ?>
-                    <p><input type="text" id="domain-<?php echo $key; ?>" class="regular-text <?php echo $field_invalid; ?>" name="<?php printf('%s[domain][%d]', $this->option_name, $key); ?>" value="<?php echo (isset($domain[$key])) ? $domain[$key] : $value; ?>"> <span class="removeDomain dashicons dashicons-no" onclick="removeDomain(<?php echo $key; ?>)"> </span></p>
-                <?php endif; ?>
-            </div>
-        <?php
-        } ?>
-        <script>
-            jQuery(document).ready(function($) {
-                var i = $('#domainDiv p').size();
-                $('.addDomain').css('cursor', 'pointer');
-                $('.removeDomain').css('cursor', 'pointer');
-                $('.addDomain').click(function() {
-                    $('<p><input type="text" id="domain-' + i +'" class="regular-text" name="<?php echo $this->option_name; ?>[domain][' + i +']" value=""> <span class="removeDomain dashicons dashicons-no" onclick="removeDomain('+ i +')"> </span></p>').appendTo('#domainDiv');
-                    i++;
-                    return false;
-                });
-                removeDomain = function(id) {
-                    if( i > 1 ) {
-                       $('#domain-' + id).parents('p').remove();
-                        i--;
-                    }
-                    return false;
-                }
-            });
-        </script>
+        $domain = !empty($permission['domain']) ? implode(PHP_EOL, (array) $permission['domain']) : '';
+        $domain = isset($settings_errors['domain']['value']) ? implode(PHP_EOL, (array) $settings_errors['domain']['value']) : $domain; ?>
+        <textarea id="domain" cols="50" rows="3" name="<?php printf('%s[domain]', $this->option_name); ?>"><?php echo $domain; ?></textarea>
+        <p class="description"><?php _e('Enter one domain per line.', 'rrze-ac'); ?></p>
         <?php
     }
 
@@ -617,38 +588,10 @@ class Settings
         $settings_errors = $this->settings_errors();
         $permission_key = $this->request_var('permission');
         $permission = $this->main->get_permission($permission_key);
-        $ip_address = !empty($permission['ip_address']) ? (array) $permission['ip_address'] : array('');
-        $ip_address = isset($settings_errors['ip_address']['value']) ? (array) $settings_errors['ip_address']['value'] : $ip_address;
-        foreach ($ip_address as $key => $value) {
-            $field_invalid = isset($settings_errors['ip_address-' . $key]) ? 'field-invalid' : ''; ?>
-            <div id="ipAddressDiv">
-                <?php if ($key == 0) : ?>
-                    <p><input type="text" id="ipAddress" class="regular-text <?php echo $field_invalid; ?>" name="<?php printf('%s[ip_address][%d]', $this->option_name, $key); ?>" value="<?php echo (isset($ip_address[$key])) ? $ip_address[$key] : $value; ?>"> <span class="addIpAddress dashicons dashicons-plus"> </span></p>
-                <?php else : ?>
-                    <p><input type="text" id="ipAddress-<?php echo $key; ?>" class="regular-text <?php echo $field_invalid; ?>" name="<?php printf('%s[ip_address][%d]', $this->option_name, $key); ?>" value="<?php echo (isset($ip_address[$key])) ? $ip_address[$key] : $value; ?>"> <span class="removeIpAddress dashicons dashicons-no" onclick="removeIpAddress(<?php echo $key; ?>)"> </span></p>
-                <?php endif; ?>
-            </div>
-        <?php
-        } ?>
-        <script>
-            jQuery(document).ready(function($) {
-                var i = $('#ipAddressDiv p').size();
-                $('.addIpAddress').css('cursor', 'pointer');
-                $('.removeIpAddress').css('cursor', 'pointer');
-                $('.addIpAddress').click(function() {
-                    $('<p><input type="text" id="ipAddress-' + i +'" class="regular-text" name="<?php echo $this->option_name; ?>[ip_address][' + i +']" value=""> <span class="removeIpAddress dashicons dashicons-no" onclick="removeIpAddress('+ i +')"> </span></p>').appendTo('#ipAddressDiv');
-                    i++;
-                    return false;
-                });
-                removeIpAddress = function(id) {
-                    if( i > 1 ) {
-                       $('#ipAddress-' + id).parents('p').remove();
-                        i--;
-                    }
-                    return false;
-                }
-            });
-        </script>
+        $ip_address = !empty($permission['ip_address']) ? implode(PHP_EOL, (array) $permission['ip_address']) : '';
+        $ip_address = isset($settings_errors['ip_address']['value']) ? implode(PHP_EOL, (array) $settings_errors['ip_address']['value']) : $ip_address; ?>
+        <textarea id="ip_address" cols="50" rows="3" name="<?php printf('%s[ip_address]', $this->option_name); ?>"><?php echo $ip_address; ?></textarea>
+        <p class="description"><?php _e('Enter one IP address per line.', 'rrze-ac'); ?></p>
         <?php
     }
 
