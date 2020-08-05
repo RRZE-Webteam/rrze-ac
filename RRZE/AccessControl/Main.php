@@ -75,6 +75,11 @@ class Main
             // WP-REST-API
             add_filter("rest_page_query", array($this, 'rest_filter'));
             add_filter("rest_attachment_query", array($this, 'rest_filter'));
+            // Pending development
+            add_filter('rest_post_dispatch', function($result, $server, $request) {
+                return $result;
+            }, 10, 3);
+            
 
             // Bezieht sich nur auf den Backend-Bereich
             if (is_admin()) {
@@ -671,7 +676,9 @@ class Main
             return;
         }
 
-        require_once(WP_CONTENT_DIR . $options['simplesaml_include']);
+        if (! class_exists('\SimpleSAML\Auth\Simple')) {
+            require_once(WP_CONTENT_DIR . $options['simplesaml_include']);
+        }
         $this->simplesaml_auth = new SimpleSAMLAuthSimple($options['simplesaml_auth_source']);
     }
 
