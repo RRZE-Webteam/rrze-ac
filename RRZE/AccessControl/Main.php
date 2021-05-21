@@ -1585,7 +1585,7 @@ class Main
         $description = isset($permission['description']) && !empty($permission['description']) ? $permission['description'] : $permission['permission_key'];
         $description = !$error ?
             '<span title="' . esc_attr__($description) . '" class="' . $class . ' dashicons dashicons-shield"></span>' :
-            '<span title="' . sprintf(esc_attr__("An error has occurred: %1$s and has been replaced by the default permission %2$s.", 'rrze-ac'), $error, $description) . '" class="access-error-icon dashicons dashicons-shield"></span>';
+            '<span title="' . sprintf(esc_attr__('An error has occurred: %1$s and has been replaced by the default permission %2$s.', 'rrze-ac'), $error, $description) . '" class="access-error-icon dashicons dashicons-shield"></span>';
 
         echo $description;
     }
@@ -2094,7 +2094,7 @@ class Main
         }
 
         if (!in_array($post_type, ['page'])) {
-            return $views;
+            return $query;
         }
 
         $query->set('post_status', ['publish', 'pending', 'draft', 'future', 'private', 'inherit', 'protected']);
