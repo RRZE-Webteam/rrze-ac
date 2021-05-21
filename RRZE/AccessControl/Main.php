@@ -6,8 +6,9 @@ use RRZE\AccessControl\Core\Options;
 use RRZE\AccessControl\Core\Settings;
 use RRZE\AccessControl\Network\IP;
 use RRZE\AccessControl\Network\RemoteAddress;
+use RRZE\AccessControl\Crawler\Siteimprove;
 use SimpleSAML\Auth\Simple as SimpleSAMLAuthSimple;
-use WP_Media_List_Table;
+use WP_Error;
 
 defined('ABSPATH') || exit;
 
@@ -263,6 +264,7 @@ class Main
                     'entitlement' => $value['entitlement'],
                     'domain' => $value['domain'],
                     'ip_address' => $value['ip_address'],
+                    'siteimprove' => $value['siteimprove'],
                     'core' => $value['core'],
                     'active' => $value['active']
                 );
@@ -598,12 +600,8 @@ class Main
         return false;
     }
 
-    protected function check_ip_address_range($ip_address)
+    protected function check_ip_address_range($ip_address = [])
     {
-        if (empty($ip_address) || !is_array($ip_address)) {
-            return true;
-        }
-
         $remote_addr = $this->getRemoteIpAddress();
 
         if (! $remote_addr) {
@@ -728,22 +726,26 @@ class Main
         return false;
     }
 
-    protected function check_permission($post_id)
+    protected function check_permission($post_id = 0)
     {
         if (empty($post_id)) {
             return false;
-        }
-
-        if ($this->check_author_permission($post_id)) {
-            return true;
         }
 
         if (! $permission = $this->get_the_permission($post_id)) {
             return true;
         }
 
-        $allow = false;
-        $status = [];
+        if ($this->check_author_permission($post_id)) {
+            return true;
+        }
+
+        $permissions = $this->get_the_permissions();
+
+        // set permission to default permission if not exist or not active
+        if (! isset($permissions[$permission]) || ! $permissions[$permission]['active']) {
+            $permission = $this->get_default_permission();
+        }
 
         do_action(
             'rrze.log.info', 
@@ -754,46 +756,105 @@ class Main
                 'permission' => $permission
             ]
         );
-        $permissions = $this->get_the_permissions();
 
-        // set permission to default permission if not exist or not active
-        if (! isset($permissions[$permission]) || ! $permissions[$permission]['active']) {
-            $permission = $this->get_default_permission();
+        $allowed = false;
+
+        // check if permission is set to domain
+        if (! empty($permissions[$permission]['domain'])) {
+            if (! $this->checkRemoteDomain($permissions[$permission]['domain'])) {
+                $this->set_permission_status($this->user_domain_not_allowed);
+                do_action(
+                    'rrze.log.notice', 
+                    [
+                        'plugin' =>'rrze-ac', 
+                        'postID' => $post_id, 
+                        'permission' => $permission, 
+                        'status' => 'user_domain_not_allowed'
+                    ]
+                );                 
+            } else {
+                $allowed = true;
+            }
         }
 
+        // check if permission is set to ip address
+        if (!$allowed && ! empty($permissions[$permission]['ip_address'])) {
+            if (! $this->check_ip_address_range($permissions[$permission]['ip_address'])) {
+                $this->set_permission_status($this->user_ip_isnt_in_range);
+                do_action(
+                    'rrze.log.notice', 
+                    [
+                        'plugin' =>'rrze-ac', 
+                        'postID' => $post_id, 
+                        'permission' => $permission, 
+                        'status' => 'user_ip_isnt_in_range'
+                    ]
+                );                 
+            } else {
+                $allowed = true;
+            }
+        }
+
+        // check if permission is set to siteimprove (crawler)
+        if (! $allowed && ! empty($permissions[$permission]['siteimprove'])) {
+            if (! empty($ipAddresses = Siteimprove::getIpAddresses())) {
+                if (! $this->check_ip_address_range($ipAddresses)) {
+                    $this->set_permission_status($this->user_ip_isnt_in_range);
+                    do_action(
+                        'rrze.log.notice', 
+                        [
+                            'plugin' =>'rrze-ac', 
+                            'postID' => $post_id, 
+                            'permission' => $permission, 
+                            'status' => 'user_ip_isnt_in_range'
+                        ]
+                    );                 
+                } else {
+                    $allowed = true;
+                }
+            }
+        }        
+
         // check if permission is set to be logged in
-        if (! empty($permissions[$permission]['logged_in']) && ! is_user_logged_in()) {
-            $this->set_permission_status($this->user_isnt_logged_in);
-            do_action(
-                'rrze.log.notice', 
-                [
-                    'plugin' =>'rrze-ac', 
-                    'postID' => $post_id, 
-                    'permission' => $permission, 
-                    'status' => 'user_isnt_logged_in', 
-                    'message' => 'User is not logged in.'
-                ]
-            );
-            return false;
+        if (! $allowed && ! empty($permissions[$permission]['logged_in'])) {
+            if (! is_user_logged_in()) {
+                $this->set_permission_status($this->user_isnt_logged_in);
+                do_action(
+                    'rrze.log.notice', 
+                    [
+                        'plugin' =>'rrze-ac', 
+                        'postID' => $post_id, 
+                        'permission' => $permission, 
+                        'status' => 'user_isnt_logged_in'
+                    ]
+                ); 
+            } else {
+                $allowed = true;
+            }
         }
 
         // check if permission is set to be sso logged in
-        if (! empty($permissions[$permission]['sso_logged_in']) && ! $this->check_sso_logged_in()) {
-            $this->set_permission_status($this->user_isnt_sso_logged_in);
-            do_action(
-                'rrze.log.notice', 
-                [
-                    'plugin' =>'rrze-ac', 
-                    'postID' => $post_id, 
-                    'permission' => $permission, 
-                    'status' => 'user_isnt_sso_logged_in', 
-                    'message' => 'User is not SSO logged in.'
-                ]
-            );
-            return false;
-        } 
-        
-        if (! is_null($this->person_attributes)) {
+        $sso_logged_in = false;
+        if (! $allowed && ! empty($permissions[$permission]['sso_logged_in'])) {
+            if (! $this->check_sso_logged_in()) {
+                $this->set_permission_status($this->user_isnt_sso_logged_in);
+                do_action(
+                    'rrze.log.notice', 
+                    [
+                        'plugin' =>'rrze-ac', 
+                        'postID' => $post_id, 
+                        'permission' => $permission, 
+                        'status' => 'user_isnt_sso_logged_in'
+                    ]
+                );
+            } else {
+                $sso_logged_in = true;
+                $allowed = true;
+            }        
+        }
+
+        // require person affiliation OR person entitlement
+        if ($sso_logged_in && ! is_null($this->person_attributes)) {
             $allowed_person_affiliation = true;
             $allowed_person_entitlement = true;
             
@@ -808,13 +869,13 @@ class Main
                         'postID' => $post_id, 
                         'permission' => $permission, 
                         'status' => 'user_hasnt_affiliation', 
-                        'message' => 'User has not affiliation.', 
                         'allowed_person_affiliation' => $permissions[$permission]['affiliation'], 
                         'person_atributes' => $this->person_attributes
                     ]
                 );
             }
 
+            // check if permission is set to person entitlement
             if (! empty($permissions[$permission]['entitlement']) && ! $this->check_person_entitlement($permissions[$permission]['entitlement'])) {
                 $this->set_permission_status($this->user_hasnt_entitlement);
                 $allowed_person_entitlement = false;
@@ -825,7 +886,6 @@ class Main
                         'postID' => $post_id, 
                         'permission' => $permission, 
                         'status' => 'user_hasnt_entitlement', 
-                        'message' => 'User has not entitlement.', 
                         'allowed_person_entitlement' => $permissions[$permission]['entitlement'], 
                         'person_atributes' => $this->person_attributes
                     ]
@@ -837,35 +897,11 @@ class Main
             }
 
             if (! $allowed_person_affiliation && ! $allowed_person_entitlement) {
-                return false;
+                $allowed = false;
             }
     
         }
         
-        // check if permission is set to domain
-        if (! empty($permissions[$permission]['domain'])) {
-            if (! $this->checkRemoteDomain($permissions[$permission]['domain'])) {
-                $status[] = $this->user_domain_do_not_match;
-            } else {
-                $allow = true;
-            }
-        }
-
-        // check if permission is set to ip address
-        if (! empty($permissions[$permission]['ip_address'])) {
-            if (! $this->check_ip_address_range($permissions[$permission]['ip_address'])) {
-                $status[] = $this->user_ip_isnt_in_range;
-            } else {
-                $allow = true;
-            }
-        }
-
-        $allow = empty($status) ? true : $allow;
-
-        if (! $allow) {
-            $this->set_permission_status($status[0]);
-        }
-
         do_action(
             'rrze.log.info', 
             [
@@ -873,10 +909,11 @@ class Main
                 'method' => __METHOD__, 
                 'postID' => $post_id, 
                 'permission' => $permission, 
-                'status' => $allow ? 'allowed' : 'not allowed'
+                'status' => $allowed ? 'allowed' : 'not allowed'
             ]
         );
-        return $allow;
+
+        return $allowed;
     }
 
     public function attachment_edit_meta_box()
@@ -1112,7 +1149,7 @@ class Main
         if (path_is_absolute($new_reldir)) {
             return new WP_Error('new_reldir_not_relative', sprintf(
                 __("The newly specified path %s is absolute. The new path must be a path relative to the WP uploads directory.", 'rrze-ac'),
-                $new_relpath
+                $new_reldir
             ));
         }
 
