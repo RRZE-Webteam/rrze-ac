@@ -233,11 +233,14 @@ class Settings
         $logged_in = ! empty($input['logged_in']) ? 1 : 0;
         $sso_logged_in = ! empty($input['sso_logged_in']) ? 1 : 0;
 
+        $siteimprove = ! empty($input['siteimprove']) ? 1 : 0;
+
         if ($this->settings_errors()) {
             $this->add_settings_error('logged_in', $logged_in, '', false);
             $this->add_settings_error('sso_logged_in', $sso_logged_in, '', false);
             $this->add_settings_error('domain', $domain, '', false);
             $this->add_settings_error('ip_address', $ip_address, '', false);
+            $this->add_settings_error('siteimprove', $siteimprove, '', false);
             $this->add_settings_error('description', $description, '', false);
             return false;
         }
@@ -248,6 +251,7 @@ class Settings
             'sso_logged_in' => $sso_logged_in,
             'domain' => $domain,
             'ip_address' => $ip_address,
+            'siteimprove' => $siteimprove,
             'select' => $select,
             'description' => $description,
             'core' => 0,
@@ -290,6 +294,9 @@ class Settings
         $logged_in = ! empty($input['logged_in']) ? 1 : 0;
         $sso_logged_in = ! empty($input['sso_logged_in']) ? 1 : 0;
 
+        $siteimprove = ! empty($input['siteimprove']) ? 1 : 0;
+        $permission['siteimprove'] = $siteimprove;
+
         $affiliation = $sso_logged_in && !empty(trim($input['affiliation'])) ? array_unique(array_map('trim', explode(PHP_EOL, trim($input['affiliation'])))) : '';
         $permission['affiliation'] = $affiliation;
 
@@ -303,6 +310,7 @@ class Settings
             $this->add_settings_error('entitlement', $entitlement, '', false);
             $this->add_settings_error('domain', $domain, '', false);
             $this->add_settings_error('ip_address', $ip_address, '', false);
+            $this->add_settings_error('siteimprove', $siteimprove, '', false);
             $this->add_settings_error('description', $description, '', false);
             return false;
         }
@@ -312,7 +320,7 @@ class Settings
             $permission['sso_logged_in'] = $sso_logged_in;
         }
 
-        $this->options['permissions'][$permission_key] = $permission;
+        $this->options['permissions'][$permission_key] = $permission;        
         return update_option($this->option_name, $this->options);
     }
 
@@ -448,6 +456,7 @@ class Settings
         add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permission_sso_logged_in_field'), 'rrze-ac-new', 'rrze-ac-new-section');
         add_settings_field('domain', __("Allow domain", 'rrze-ac'), array($this, 'permission_domain_field'), 'rrze-ac-new', 'rrze-ac-new-section');
         add_settings_field('ip_address', __("Allow IP address", 'rrze-ac'), array($this, 'permission_ip_address_field'), 'rrze-ac-new', 'rrze-ac-new-section');
+        add_settings_field('siteimprove', __("Siteimprove", 'rrze-ac'), array($this, 'permission_siteimprove_field'), 'rrze-ac-new', 'rrze-ac-new-section');
         add_settings_field('select', __("Short Description", 'rrze-ac'), array($this, 'permission_select_field'), 'rrze-ac-new', 'rrze-ac-new-section');
         add_settings_field('description', __("Description", 'rrze-ac'), array($this, 'permission_description_field'), 'rrze-ac-new', 'rrze-ac-new-section');
 
@@ -461,6 +470,7 @@ class Settings
         }
         add_settings_field('domain', __("Allow domain", 'rrze-ac'), array($this, 'permission_domain_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
         add_settings_field('ip_address', __("Allow IP address", 'rrze-ac'), array($this, 'permission_ip_address_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
+        add_settings_field('siteimprove', __("Siteimprove", 'rrze-ac'), array($this, 'permission_siteimprove_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');        
         add_settings_field('select', __("Short Description", 'rrze-ac'), array($this, 'permission_select_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
         add_settings_field('description', __("Description", 'rrze-ac'), array($this, 'permission_description_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
 
@@ -592,6 +602,19 @@ class Settings
         $ip_address = isset($settings_errors['ip_address']['value']) ? implode(PHP_EOL, (array) $settings_errors['ip_address']['value']) : $ip_address; ?>
         <textarea id="ip_address" cols="50" rows="3" name="<?php printf('%s[ip_address]', $this->option_name); ?>"><?php echo $ip_address; ?></textarea>
         <p class="description"><?php _e('Enter one IP address per line.', 'rrze-ac'); ?></p>
+        <?php
+    }
+
+    public function permission_siteimprove_field()
+    {
+        $settings_errors = $this->settings_errors();
+        $permission_key = $this->request_var('permission');
+        $permission = $this->main->get_permission($permission_key);
+        $checked = !empty($permission['siteimprove']) ? true : false;
+        $checked = !empty($settings_errors['siteimprove']['value']) ? true : $checked; ?>
+        <label for="permission_siteimprove">
+            <input id="permission_siteimprove" type="checkbox" <?php checked($checked); ?> name="<?php printf('%s[siteimprove]', $this->option_name); ?>" value="1"> <?php _e("Allow Siteimprove crawler", 'rrze-ac'); ?>
+        </label>
         <?php
     }
 
