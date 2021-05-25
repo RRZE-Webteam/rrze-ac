@@ -11,16 +11,16 @@ class Siteimprove
     public static function getIpAddresses(): array
     {
         $ipRange = [];
-        $ary = (array) explode(PHP_EOL, self::ipAddresses());
-        $ary = array_filter($ary, 'strlen');
-        $ipAddress = array_unique(array_filter($ary, 'trim'));
+        $ipAddress = (array) explode(PHP_EOL, self::ipAddresses());
+        $ipAddress = array_filter(array_map('trim', $ipAddress));
+        $ipAddress = array_unique(array_values($ipAddress));
         if (!empty($ipAddress)) {
             $ipRange = self::getIpRange($ipAddress);
         }
         return $ipRange;
     }
 
-    protected static function getIpRange(array $ipAddress): array
+    public static function getIpRange(array $ipAddress): array
     {
         $ipRange = [];
         if (!empty($ipAddress)) {
