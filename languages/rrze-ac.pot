@@ -2,14 +2,14 @@
 # This file is distributed under the GNU General Public License v2.
 msgid ""
 msgstr ""
-"Project-Id-Version: RRZE Access Control 2.6.2\n"
+"Project-Id-Version: RRZE Access Control 2.6.3\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-ac\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2021-08-09T13:55:53+00:00\n"
+"POT-Creation-Date: 2021-08-09T15:03:24+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.5.0\n"
 "X-Domain: rrze-ac\n"
@@ -332,15 +332,18 @@ msgid "The request was due lack of client permission not performed."
 msgstr ""
 
 #: RRZE/AccessControl/Main.php:1345
-#: RRZE/AccessControl/Main.php:1420
 #: RRZE/AccessControl/Main.php:1715
 #: RRZE/AccessControl/Main.php:1759
-#: RRZE/AccessControl/Main.php:1860
 msgid "Forbidden"
 msgstr ""
 
 #: RRZE/AccessControl/Main.php:1406
 msgid "The requested attachment was not found."
+msgstr ""
+
+#: RRZE/AccessControl/Main.php:1420
+#: RRZE/AccessControl/Main.php:1860
+msgid "Login is required"
 msgstr ""
 
 #: RRZE/AccessControl/Main.php:1510
@@ -405,8 +408,7 @@ msgid "New files are protected"
 msgstr ""
 
 #: RRZE/AccessControl/Main.php:1926
-#: RRZE/AccessControl/Main.php:1939
-#: RRZE/AccessControl/Main.php:1942
+#: RRZE/AccessControl/Main.php:1938
 msgid "Log in with your IdM ID"
 msgstr ""
 
@@ -419,7 +421,7 @@ msgid "Access to this page is only available to members of this website."
 msgstr ""
 
 #: RRZE/AccessControl/Main.php:1932
-#: RRZE/AccessControl/Main.php:1945
+#: RRZE/AccessControl/Main.php:1944
 msgid "<a href=\"%s\">Login through Single Sign-On (central login service of the University Erlangen-Nürnberg)</a>."
 msgstr ""
 
@@ -427,47 +429,47 @@ msgstr ""
 msgid "Access to this file is only possible for registered users."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1943
+#: RRZE/AccessControl/Main.php:1942
 msgid "Access to this page is only possible for registered users."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1957
+#: RRZE/AccessControl/Main.php:1956
 msgid "Access to the requested file is denied"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1958
+#: RRZE/AccessControl/Main.php:1957
 msgid "You do not have sufficient permissions to access the file. If you believe you should have access to the file, please get in touch with the contact person of the website."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1960
+#: RRZE/AccessControl/Main.php:1959
 msgid "Access to the requested page is denied."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1961
+#: RRZE/AccessControl/Main.php:1960
 msgid "You do not have sufficient permissions to view this page. If you believe you should have access to the page, please get in touch with the contact person of the website."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1967
+#: RRZE/AccessControl/Main.php:1966
 msgid "Access is denied"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1968
+#: RRZE/AccessControl/Main.php:1967
 msgid "You do not have sufficient permissions to view this area. If you believe you should have access to this area, please get in touch with the contact person of the website."
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1989
+#: RRZE/AccessControl/Main.php:1988
 msgid "Contact persons"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:1994
+#: RRZE/AccessControl/Main.php:1993
 msgid "Email Address:"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:2053
+#: RRZE/AccessControl/Main.php:2052
 msgid "Protected"
 msgstr ""
 
-#: RRZE/AccessControl/Main.php:2058
+#: RRZE/AccessControl/Main.php:2057
 msgid "Protected <span class=\"count\">(%s)</span>"
 msgid_plural "Protected <span class=\"count\">(%s)</span>"
 msgstr[0] ""

@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: RRZE Access Control\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-ac\n"
 "POT-Creation-Date: 2021-05-21T14:07:51+00:00\n"
-"PO-Revision-Date: 2021-08-09 16:02+0200\n"
+"PO-Revision-Date: 2021-08-09 17:06+0200\n"
 "Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
 "Language-Team: Deutsch (Sie)\n"
 "Language: de\n"
@@ -12,8 +12,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Poedit 3.0\n"
-"X-Loco-Version: 2.3.3; wp-5.4.1\n"
-"X-Loco-Template: languages/rrze-ac-de_DE.po\n"
 
 #. Plugin Name of the plugin
 msgid "RRZE Access Control"
@@ -348,15 +346,18 @@ msgstr "Not Found"
 msgid "The request was due lack of client permission not performed."
 msgstr "Die Anfrage wurde mangels Berechtigung des Clients nicht durchgeführt."
 
-#: RRZE/AccessControl/Main.php:1345 RRZE/AccessControl/Main.php:1420
-#: RRZE/AccessControl/Main.php:1715 RRZE/AccessControl/Main.php:1759
-#: RRZE/AccessControl/Main.php:1860
+#: RRZE/AccessControl/Main.php:1345 RRZE/AccessControl/Main.php:1715
+#: RRZE/AccessControl/Main.php:1759
 msgid "Forbidden"
 msgstr "Forbidden"
 
 #: RRZE/AccessControl/Main.php:1406
 msgid "The requested attachment was not found."
 msgstr "Die angeforderte Mediendatei wurde nicht gefunden."
+
+#: RRZE/AccessControl/Main.php:1420 RRZE/AccessControl/Main.php:1860
+msgid "Login is required"
+msgstr "Anmeldung ist erforderlich"
 
 #: RRZE/AccessControl/Main.php:1510
 msgid "You do not have sufficient permissions to access the file."
@@ -434,8 +435,7 @@ msgstr "Aktivieren"
 msgid "New files are protected"
 msgstr "Neue Dateien sind geschützt"
 
-#: RRZE/AccessControl/Main.php:1926 RRZE/AccessControl/Main.php:1939
-#: RRZE/AccessControl/Main.php:1942
+#: RRZE/AccessControl/Main.php:1926 RRZE/AccessControl/Main.php:1938
 msgid "Log in with your IdM ID"
 msgstr "Loggen Sie sich mit Ihrer IdM-Kennung ein"
 
@@ -450,7 +450,7 @@ msgid "Access to this page is only available to members of this website."
 msgstr ""
 "Der Zugang zu dieser Seite ist nur für Mitglieder dieser Website möglich."
 
-#: RRZE/AccessControl/Main.php:1932 RRZE/AccessControl/Main.php:1945
+#: RRZE/AccessControl/Main.php:1932 RRZE/AccessControl/Main.php:1944
 msgid ""
 "<a href=\"%s\">Login through Single Sign-On (central login service of the "
 "University Erlangen-Nürnberg)</a>."
@@ -462,15 +462,15 @@ msgstr ""
 msgid "Access to this file is only possible for registered users."
 msgstr "Der Zugriff auf diese Datei ist nur für angemeldete Benutzer möglich."
 
-#: RRZE/AccessControl/Main.php:1943
+#: RRZE/AccessControl/Main.php:1942
 msgid "Access to this page is only possible for registered users."
 msgstr "Der Zugriff auf diese Seite ist nur für angemeldete Benutzer möglich."
 
-#: RRZE/AccessControl/Main.php:1957
+#: RRZE/AccessControl/Main.php:1956
 msgid "Access to the requested file is denied"
 msgstr "Der Zugriff auf die angeforderte Datei wird verweigert"
 
-#: RRZE/AccessControl/Main.php:1958
+#: RRZE/AccessControl/Main.php:1957
 msgid ""
 "You do not have sufficient permissions to access the file. If you believe "
 "you should have access to the file, please get in touch with the contact "
@@ -480,11 +480,11 @@ msgstr ""
 "zugreifen zu können. Falls Sie glauben, Sie müssten Zugriff auf die Datei "
 "haben, bitte kontaktieren Sie den Ansprechpartner der Website."
 
-#: RRZE/AccessControl/Main.php:1960
+#: RRZE/AccessControl/Main.php:1959
 msgid "Access to the requested page is denied."
 msgstr "Der Zugriff auf die angeforderte Seite wird verweigert."
 
-#: RRZE/AccessControl/Main.php:1961
+#: RRZE/AccessControl/Main.php:1960
 msgid ""
 "You do not have sufficient permissions to view this page. If you believe you "
 "should have access to the page, please get in touch with the contact person "
@@ -494,11 +494,11 @@ msgstr ""
 "Falls Sie glauben, Sie müssten Zugriff auf die Seite haben, bitte "
 "kontaktieren Sie den Ansprechpartner der Website."
 
-#: RRZE/AccessControl/Main.php:1967
+#: RRZE/AccessControl/Main.php:1966
 msgid "Access is denied"
 msgstr "Der Zugang wird verweigert"
 
-#: RRZE/AccessControl/Main.php:1968
+#: RRZE/AccessControl/Main.php:1967
 msgid ""
 "You do not have sufficient permissions to view this area. If you believe you "
 "should have access to this area, please get in touch with the contact person "
@@ -508,19 +508,19 @@ msgstr ""
 "anzusehen. Falls Sie glauben, Sie müssten Zugriff auf diesen Bereich haben, "
 "bitte kontaktieren Sie den Ansprechpartner der Website."
 
-#: RRZE/AccessControl/Main.php:1989
+#: RRZE/AccessControl/Main.php:1988
 msgid "Contact persons"
 msgstr "Ansprechpartner"
 
-#: RRZE/AccessControl/Main.php:1994
+#: RRZE/AccessControl/Main.php:1993
 msgid "Email Address:"
 msgstr "E-Mail-Adresse:"
 
-#: RRZE/AccessControl/Main.php:2053
+#: RRZE/AccessControl/Main.php:2052
 msgid "Protected"
 msgstr "Geschützt"
 
-#: RRZE/AccessControl/Main.php:2058
+#: RRZE/AccessControl/Main.php:2057
 msgid "Protected <span class=\"count\">(%s)</span>"
 msgid_plural "Protected <span class=\"count\">(%s)</span>"
 msgstr[0] "Geschützt <span class=\"count\">(%s)</span>"
