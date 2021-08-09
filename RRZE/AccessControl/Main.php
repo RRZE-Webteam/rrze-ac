@@ -1417,7 +1417,7 @@ class Main
         if (!$this->check_permission($attachment_id)) {
             wp_die(
                 $this->permission_message($attachment_id),
-                __('Forbidden', 'rrze-ac'),
+                __('Login is required', 'rrze-ac'),
                 [
                     'response' => '403',
                     'back_link' => false
@@ -1857,7 +1857,7 @@ class Main
             if (!$this->check_permission($post->ID)) {
                 wp_die(
                     $this->permission_message($post->ID),
-                    __('Forbidden', 'rrze-ac'),
+                    __('Login is required', 'rrze-ac'),
                     [
                         'response' => '403',
                         'back_link' => false
