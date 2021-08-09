@@ -1923,12 +1923,11 @@ class Main
 
         if ($this->get_permission_status($this->user_isnt_logged_in)) {
             $login_url = wp_login_url($permalink);
+            $message .= '<h3>' . __("Log in with your IdM ID", 'rrze-ac') . '</h3>';
             if ($post_type == 'attachment') {
-                $message .= '<h3>' . __("Access to the requested file is denied", 'rrze-ac') . '</h3>';
-                $message .= '<p>' . sprintf(__("Access to this file is only available for members of this website. <a href=\"%s\">Please login with your IdM username</a> to download the file.", 'rrze-ac'), $login_url) . '</p>';
+                $message .= '<p>' . sprintf(__("Access to this file is only available to members of this website.", 'rrze-ac'), $login_url) . '</p>';
             } else {
-                $message .= '<h3>' . __("Access to the requested page is denied", 'rrze-ac') . '</h3>';
-                $message .= '<p>' . sprintf(__("Access to this page is only available to members of this website. <a href=\"%s\">Please login with your IdM username</a> to see the contents of the page.", 'rrze-ac'), $login_url) . '</p>';
+                $message .= '<p>' . sprintf(__("Access to this page is only available to members of this website.", 'rrze-ac'), $login_url) . '</p>';
             }
             $message .= '<p>' . sprintf(__("<a href=\"%s\">Login through Single Sign-On (central login service of the University Erlangen-Nürnberg)</a>.", 'rrze-ac'), $login_url) . '</p>';
             return $message;
@@ -1936,12 +1935,11 @@ class Main
 
         if ($this->get_permission_status($this->user_isnt_sso_logged_in) && $this->simplesaml_auth) {
             $login_url = $this->simplesaml_auth->getLoginURL();
+            $message .= '<h3>' . __("Log in with your IdM ID", 'rrze-ac') . '</h3>';
             if ($post_type == 'attachment') {
-                $message .= '<h3>' . __("Access to the requested file is denied", 'rrze-ac') . '</h3>';
-                $message .= '<p>' . sprintf(__("Access to this file is only possible for logged in users. <a href=\"%s\">Please login with your IdM username</a> to download the file.", 'rrze-ac'), $login_url) . '</p>';
+                $message .= '<p>' . sprintf(__("Access to this file is only possible for registered users.", 'rrze-ac'), $login_url) . '</p>';
             } else {
-                $message .= '<h3>' . __("Access to the requested page is denied", 'rrze-ac') . '</h3>';
-                $message .= '<p>' . sprintf(__("Access to this page is only possible for logged in users. <a href=\"%s\">Please login with your IdM username</a> to see the contents of the page.", 'rrze-ac'), $login_url) . '</p>';
+                $message .= '<p>' . sprintf(__("Access to this page is only possible for registered users.", 'rrze-ac'), $login_url) . '</p>';
             }
             $message .= '<p>' . sprintf(__("<a href=\"%s\">Login through Single Sign-On (central login service of the University Erlangen-Nürnberg)</a>.", 'rrze-ac'), $login_url) . '</p>';
 
