@@ -17,6 +17,8 @@ class Settings
 
     protected $options;
 
+    protected $list_table;
+
     protected $settings_error_transient = 'rrze-ac-settings-error-';
     protected $settings_error_transient_expiration = 30;
 
@@ -29,7 +31,7 @@ class Settings
     {
         $this->main = $main;
         $this->option_name = $this->main->option_name;
-        $this->options = $this->main->options;
+        $this->options = $this->main->options;        
 
         $this->access_permission_meta_key = $this->main->access_permission_meta_key;
 
@@ -41,7 +43,7 @@ class Settings
 
     public function access_menu()
     {
-        $this->validate_actions();
+        $this->validate_actions();        
 
         $access_page = add_menu_page(__("Access Protection", 'rrze-ac'), __("Access Protection", 'rrze-ac'), 'manage_options', 'rrze-ac', array($this, 'access_permissions_page'), 'dashicons-shield');
         add_submenu_page('rrze-ac', __("Permissions", 'rrze-ac'), __("Permissions", 'rrze-ac'), 'manage_options', 'rrze-ac', array($this, 'access_permissions_page'));
@@ -53,7 +55,8 @@ class Settings
 
     public function load_access_page()
     {
-        new ListTable($this->main);
+        $this->list_table = new ListTable($this->main);
+        $this->list_table->prepare_items(); 
     }
 
     public function access_screen_options()
@@ -404,17 +407,16 @@ class Settings
 
     private function set_default_page()
     {
-        $list_table = new ListTable($this->main);
-        $list_table->prepare_items(); ?>
+        ?>
         <form method="get">
         <input type="hidden" name="page" value="rrze-ac">
         <?php
-        $list_table->search_box(__("Search", 'rrze-ac'), 'search_id'); ?>
+        $this->list_table->search_box(__("Search", 'rrze-ac'), 'search_id'); ?>
         </form>
         <form method="post">
         <?php
-        $list_table->views();
-        $list_table->display(); ?>
+        $this->list_table->views();
+        $this->list_table->display(); ?>
         </form>
         <?php
     }

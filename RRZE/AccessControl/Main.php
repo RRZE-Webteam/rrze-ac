@@ -761,6 +761,14 @@ class Main
 
         $allowed = false;
 
+        if ($permission == 'all') {
+            $allowed = true;
+        }        
+
+        if ($permission == 'logged-in' && is_user_logged_in()) {
+            $allowed = true;
+        }         
+
         // check if permission is set to domain
         if (!empty($permissions[$permission]['domain'])) {
             if (!$this->checkRemoteDomain($permissions[$permission]['domain'])) {
