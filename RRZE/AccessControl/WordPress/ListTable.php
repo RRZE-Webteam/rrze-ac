@@ -162,7 +162,7 @@ class ListTable extends WP_List_Table {
                 $description = mb_stripos($data['description'], $search) === FALSE ? TRUE : FALSE;
 
                 $domain = !empty($data['domain']) ? $data['domain'] : array();
-                $ip = TRUE;
+                $dom = TRUE;
                 foreach ($domain as $value) {
                     if (isset($value) && mb_stripos($value, $search) !== FALSE) {
                         $dom = FALSE;
