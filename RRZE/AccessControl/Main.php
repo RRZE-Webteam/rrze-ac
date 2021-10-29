@@ -38,8 +38,12 @@ class Main
 
     private $permission_status = null;
 
+    private $sso_plugin = 'rrze-sso/rrze-sso.php';
+    // Backward compatibility
     private $websso_plugin = 'fau-websso/fau-websso.php';
 
+    private $sso_option_name = 'rrze_sso';
+    // Backward compatibility
     private $websso_option_name = '_fau_websso';
 
     private $simplesaml_auth = null;
@@ -658,14 +662,21 @@ class Main
 
     protected function simplesaml_auth()
     {
-        if (!$this->is_plugin_active($this->websso_plugin)) {
-            return;
-        }
-
-        if (is_multisite()) {
-            $options = get_site_option($this->websso_option_name);
+        if ($this->is_plugin_active($this->sso_plugin)) {
+            if (is_multisite()) {
+                $options = get_site_option($this->sso_option_name);
+            } else {
+                $options = get_option($this->sso_option_name);
+            }
+        // Backward compatibility
+        } elseif ($this->is_plugin_active($this->websso_plugin)) {
+            if (is_multisite()) {
+                $options = get_site_option($this->websso_option_name);
+            } else {
+                $options = get_option($this->websso_option_name);
+            }            
         } else {
-            $options = get_option($this->websso_option_name);
+            return;
         }
 
         if (!isset($options['simplesaml_include']) || !isset($options['simplesaml_auth_source'])) {
