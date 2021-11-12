@@ -703,8 +703,16 @@ class Main
 
         $this->person_attributes = $this->simplesaml_auth->getAttributes();
 
-        $this->person_affiliation = isset($this->person_attributes['urn:mace:dir:attribute-def:eduPersonAffiliation']) ? $this->person_attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'] : [];
-        $this->person_entitlement = isset($this->person_attributes['urn:mace:dir:attribute-def:eduPersonEntitlement']) ? $this->person_attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'] : [];
+        if ($this->is_plugin_active($this->sso_plugin)) {
+            $this->person_affiliation = $this->person_attributes['eduPersonAffiliation'] ?? [];
+            $this->person_entitlement = $this->person_attributes['eduPersonEntitlement'] ?? [];
+        // Backward compatibility
+        } elseif ($this->is_plugin_active($this->websso_plugin)) {
+            $this->person_affiliation = isset($this->person_attributes['urn:mace:dir:attribute-def:eduPersonAffiliation']) ? $this->person_attributes['urn:mace:dir:attribute-def:eduPersonAffiliation'] : [];
+            $this->person_entitlement = isset($this->person_attributes['urn:mace:dir:attribute-def:eduPersonEntitlement']) ? $this->person_attributes['urn:mace:dir:attribute-def:eduPersonEntitlement'] : [];    
+        } else {
+            return false;
+        }     
 
         return true;
     }
