@@ -223,13 +223,16 @@ class Settings
             $this->add_settings_error('select', $select, '', false);
         }
 
-        $domain = isset($input['domain']) && !empty(trim($input['domain'])) ? array_unique(array_map('trim', explode(PHP_EOL, trim($input['domain'])))) : '';
+        $domain = isset($input['domain']) && !empty(trim($input['domain'])) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['domain'])))) : '';
         $domain = $this->get_valid_domains($domain);
         $domain = ! empty($domain) ? $domain : '';
 
-        $ip_address = isset($input['ip_address']) && !empty(trim($input['ip_address'])) ? array_unique(array_map('trim', explode(PHP_EOL, trim($input['ip_address'])))) : '';
+        $ip_address = isset($input['ip_address']) && !empty(trim($input['ip_address'])) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['ip_address'])))) : '';
         $ip_range = $this->get_ip_range($ip_address);
         $ip_address = ! empty($ip_range) ? $ip_range : '';
+
+        $password = ! empty($input['password']) ? sanitize_text_field($input['password']) : '';
+        $password = preg_match('/^[a-z0-9]{8,32}$/i', $password) ? $password : '';        
 
         $description = ! empty($input['description']) ? sanitize_textarea_field($input['description']) : '';
 
@@ -243,6 +246,7 @@ class Settings
             $this->add_settings_error('sso_logged_in', $sso_logged_in, '', false);
             $this->add_settings_error('domain', $domain, '', false);
             $this->add_settings_error('ip_address', $ip_address, '', false);
+            $this->add_settings_error('password', $password, '', false);
             $this->add_settings_error('siteimprove', $siteimprove, '', false);
             $this->add_settings_error('description', $description, '', false);
             return false;
@@ -254,6 +258,7 @@ class Settings
             'sso_logged_in' => $sso_logged_in,
             'domain' => $domain,
             'ip_address' => $ip_address,
+            'password' => $password,
             'siteimprove' => $siteimprove,
             'select' => $select,
             'description' => $description,
@@ -286,13 +291,16 @@ class Settings
         $description = ! empty($input['description']) ? sanitize_textarea_field($input['description']) : '';
         $permission['description'] = $description;
 
-        $domain = isset($input['domain']) && !empty(trim($input['domain'])) ? array_unique(array_map('trim', explode(PHP_EOL, trim($input['domain'])))) : '';
+        $domain = isset($input['domain']) && !empty(trim($input['domain'])) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['domain'])))) : '';
         $domain = $this->get_valid_domains($domain);
         $permission['domain'] = ! empty($domain) ? $domain : '';
 
-        $ip_address = isset($input['ip_address']) && !empty(trim($input['ip_address'])) ? array_unique(array_map('trim', explode(PHP_EOL, trim($input['ip_address'])))) : '';
+        $ip_address = isset($input['ip_address']) && !empty(trim($input['ip_address'])) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['ip_address'])))) : '';
         $ip_range = $this->get_ip_range($ip_address);
         $permission['ip_address'] = ! empty($ip_range) ? $ip_range : '';
+
+        $password = ! empty($input['password']) ? sanitize_text_field($input['password']) : '';
+        $permission['password'] = preg_match('/^[a-z0-9]{8,32}$/i', $password) ? $password : '';
 
         $logged_in = ! empty($input['logged_in']) ? 1 : 0;
         $sso_logged_in = ! empty($input['sso_logged_in']) ? 1 : 0;
@@ -300,10 +308,10 @@ class Settings
         $siteimprove = ! empty($input['siteimprove']) ? 1 : 0;
         $permission['siteimprove'] = $siteimprove;
 
-        $affiliation = $sso_logged_in && !empty(trim($input['affiliation'])) ? array_unique(array_map('trim', explode(PHP_EOL, trim($input['affiliation'])))) : '';
+        $affiliation = $sso_logged_in && !empty(trim($input['affiliation'])) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['affiliation'])))) : '';
         $permission['affiliation'] = $affiliation;
 
-        $entitlement = $sso_logged_in && !empty(trim($input['entitlement'])) ? array_unique(array_map('trim', explode(PHP_EOL, trim($input['entitlement'])))) : '';
+        $entitlement = $sso_logged_in && !empty(trim($input['entitlement'])) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['entitlement'])))) : '';
         $permission['entitlement'] = $entitlement;
 
         if ($this->settings_errors()) {
@@ -313,6 +321,7 @@ class Settings
             $this->add_settings_error('entitlement', $entitlement, '', false);
             $this->add_settings_error('domain', $domain, '', false);
             $this->add_settings_error('ip_address', $ip_address, '', false);
+            $this->add_settings_error('password', $password, '', false);
             $this->add_settings_error('siteimprove', $siteimprove, '', false);
             $this->add_settings_error('description', $description, '', false);
             return false;
@@ -458,6 +467,7 @@ class Settings
         add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permission_sso_logged_in_field'), 'rrze-ac-new', 'rrze-ac-new-section');
         add_settings_field('domain', __("Allow domain", 'rrze-ac'), array($this, 'permission_domain_field'), 'rrze-ac-new', 'rrze-ac-new-section');
         add_settings_field('ip_address', __("Allow IP address", 'rrze-ac'), array($this, 'permission_ip_address_field'), 'rrze-ac-new', 'rrze-ac-new-section');
+        add_settings_field('password', __("Password", 'rrze-ac'), array($this, 'permission_password_field'), 'rrze-ac-new', 'rrze-ac-new-section');        
         add_settings_field('siteimprove', __("Siteimprove", 'rrze-ac'), array($this, 'permission_siteimprove_field'), 'rrze-ac-new', 'rrze-ac-new-section');
         add_settings_field('select', __("Short Description", 'rrze-ac'), array($this, 'permission_select_field'), 'rrze-ac-new', 'rrze-ac-new-section');
         add_settings_field('description', __("Description", 'rrze-ac'), array($this, 'permission_description_field'), 'rrze-ac-new', 'rrze-ac-new-section');
@@ -472,6 +482,7 @@ class Settings
         }
         add_settings_field('domain', __("Allow domain", 'rrze-ac'), array($this, 'permission_domain_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
         add_settings_field('ip_address', __("Allow IP address", 'rrze-ac'), array($this, 'permission_ip_address_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
+        add_settings_field('password', __("Password", 'rrze-ac'), array($this, 'permission_password_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
         add_settings_field('siteimprove', __("Siteimprove", 'rrze-ac'), array($this, 'permission_siteimprove_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');        
         add_settings_field('select', __("Short Description", 'rrze-ac'), array($this, 'permission_select_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
         add_settings_field('description', __("Description", 'rrze-ac'), array($this, 'permission_description_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
@@ -604,6 +615,18 @@ class Settings
         $ip_address = isset($settings_errors['ip_address']['value']) ? implode(PHP_EOL, (array) $settings_errors['ip_address']['value']) : $ip_address; ?>
         <textarea id="ip_address" cols="50" rows="3" name="<?php printf('%s[ip_address]', $this->option_name); ?>"><?php echo $ip_address; ?></textarea>
         <p class="description"><?php _e('Enter one IP address per line.', 'rrze-ac'); ?></p>
+        <?php
+    }
+
+    public function permission_password_field()
+    {
+        $settings_errors = $this->settings_errors();
+        $permission_key = $this->request_var('permission');
+        $permission = $this->main->get_permission($permission_key);
+        $password = !empty($permission['password']) ? esc_html($permission['password']) : '';
+        $password = isset($settings_errors['password']['value']) ? esc_html($settings_errors['password']['value']) : $password; ?>
+        <input type="text" id="password" class="regular-text" name="<?php printf('%s[password]', $this->option_name); ?>" value="<?php echo $password; ?>">
+            <p class="description"><?php _e('Allows access using a password (alphanumeric value between 8 and 32 characters).', 'rrze-ac'); ?></p>
         <?php
     }
 
