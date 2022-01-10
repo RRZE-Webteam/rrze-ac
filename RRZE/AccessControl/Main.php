@@ -671,7 +671,7 @@ class Main
         if (isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'rrze_ac_submit_password_wpnonce')) {
             $password = isset($_POST[$cookieName]) ? sanitize_text_field($_POST[$cookieName]) : '';
             if (preg_match('/^[a-z0-9]{8,32}$/i', $password) && $password == $allowedPassword) {
-                setcookie($cookieName, $this->crypt($password), strtotime('+1 day'), COOKIEPATH, COOKIE_DOMAIN, true);
+                setcookie($cookieName, $this->crypt($password), strtotime('+1 hour'), COOKIEPATH, COOKIE_DOMAIN, true);
                 $location = !empty($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : site_url();
                 wp_safe_redirect($location);
                 exit;
