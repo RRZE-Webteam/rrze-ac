@@ -32,6 +32,7 @@ class Options
                     'entitlement'    => '',
                     'domain'         => '',
                     'ip_address'     => '',
+                    'password'       => '',
                     'siteimprove'    => 0,
                     'core'           => 1,
                     'active'         => 1
@@ -46,6 +47,7 @@ class Options
                     'entitlement'    => '',
                     'domain'         => '',
                     'ip_address'     => '',
+                    'password'       => '',
                     'siteimprove'    => 0,
                     'core'           => 1,
                     'active'         => 1
@@ -73,6 +75,7 @@ class Options
             'entitlement'    => '',
             'domain'         => '',
             'ip_address'     => '',
+            'password'       => '',
             'siteimprove'    => 0,
             'core'           => 0,
             'active'         => 0

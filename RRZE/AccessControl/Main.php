@@ -35,6 +35,7 @@ class Main
     private $user_hasnt_affiliation = 8;
     private $user_hasnt_entitlement = 16;
     private $user_domain_not_allowed = 32;
+    private $wrong_password = 32;
 
     private $permission_status = null;
 
@@ -268,6 +269,7 @@ class Main
                     'entitlement' => $value['entitlement'],
                     'domain' => $value['domain'],
                     'ip_address' => $value['ip_address'],
+                    'password' => $value['password'],
                     'siteimprove' => $value['siteimprove'],
                     'core' => $value['core'],
                     'active' => $value['active']
@@ -660,6 +662,53 @@ class Main
         return $remoteAddress->getIpAddress();
     }
 
+    protected function checkPassword($post_id, $allowedPassword = '')
+    {
+        if ('publish' != get_post_status($post_id) || $allowedPassword === '') {
+            return true;
+        }
+        $cookieName = 'rrze_ac_password_' . $post_id;
+        if (isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'rrze_ac_submit_password_wpnonce')) {
+            $password = isset($_POST[$cookieName]) ? sanitize_text_field($_POST[$cookieName]) : '';
+            if (preg_match('/^[a-z0-9]{8,32}$/i', $password) && $password == $allowedPassword) {
+                setcookie($cookieName, $this->crypt($password), strtotime('+1 hour'), COOKIEPATH, COOKIE_DOMAIN, true);
+                $location = !empty($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : site_url();
+                wp_safe_redirect($location);
+                exit;
+            }
+            return false;
+        }
+
+        if (isset($_COOKIE[$cookieName])) {
+            $password = $this->crypt($_COOKIE[$cookieName], 'decrypt');
+            if (preg_match('/^[a-z0-9]{8,32}$/i', $password) && $password == $allowedPassword) {
+                return true;
+            }
+        }
+
+        unset($_COOKIE[$cookieName]);
+        return false;
+    }
+
+    protected function crypt($string, $action = 'encrypt')
+    {
+        $secretKey = AUTH_KEY;
+        $secretSalt = AUTH_SALT;
+
+        $output = false;
+        $encryptMethod = 'AES-256-CBC';
+        $key = hash('sha256', $secretKey);
+        $salt = substr(hash('sha256', $secretSalt), 0, 16);
+
+        if ($action == 'encrypt') {
+            $output = base64_encode(openssl_encrypt($string, $encryptMethod, $key, 0, $salt));
+        } else if ($action == 'decrypt') {
+            $output = openssl_decrypt(base64_decode($string), $encryptMethod, $key, 0, $salt);
+        }
+
+        return $output;
+    }
+
     protected function simplesaml_auth()
     {
         if ($this->is_plugin_active($this->sso_plugin)) {
@@ -789,7 +838,7 @@ class Main
         }         
 
         // check if permission is set to domain
-        if (!empty($permissions[$permission]['domain'])) {
+        if (!$allowed && !empty($permissions[$permission]['domain'])) {
             if (!$this->checkRemoteDomain($permissions[$permission]['domain'])) {
                 $this->set_permission_status($this->user_domain_not_allowed);
                 do_action(
@@ -817,6 +866,24 @@ class Main
                         'postID' => $post_id,
                         'permission' => $permission,
                         'status' => 'user_ip_isnt_in_range'
+                    ]
+                );
+            } else {
+                $allowed = true;
+            }
+        }
+
+        // check if permission is set to password
+        if (!$allowed && !empty($permissions[$permission]['password'])) {
+            if (!$this->checkPassword($post_id, $permissions[$permission]['password'])) {
+                $this->set_permission_status($this->wrong_password);
+                do_action(
+                    'rrze.log.notice',
+                    [
+                        'plugin' => 'rrze-ac',
+                        'postID' => $post_id,
+                        'permission' => $permission,
+                        'status' => 'wrong_password'
                     ]
                 );
             } else {
@@ -1976,6 +2043,7 @@ class Main
         if (
             $this->get_permission_status($this->user_domain_not_allowed)
             || $this->get_permission_status($this->user_ip_isnt_in_range)
+            || $this->get_permission_status($this->wrong_password)
             || ($this->get_permission_status($this->user_hasnt_affiliation) && $this->simplesaml_auth)
             || ($this->get_permission_status($this->user_hasnt_entitlement) && $this->simplesaml_auth)
         ) {
@@ -1986,6 +2054,20 @@ class Main
                 $message .= '<p>' . __("Access to the requested page is denied.", 'rrze-ac') . '</p>';
                 $message .= '<p>' . __("You do not have sufficient permissions to view this page. If you believe you should have access to the page, please get in touch with the contact person of the website.", 'rrze-ac') . '</p>';
             }
+
+            if ($this->get_permission_status($this->wrong_password)) {
+                if ($post_type == 'attachment') {
+                    $message .= '<p>' . __('If you have a password to access the requested file, please enter it in the following field.', 'rrze-ac') . '<br>' . PHP_EOL;
+                } else {
+                    $message .= '<p>' . __('If you have a password to access the requested page, please enter it in the following field.', 'rrze-ac') . '<br>' . PHP_EOL;
+                }
+                $fieldName = 'rrze_ac_password_' . $post_id;
+                $message .= '<form method="post">' . PHP_EOL;
+                $message .= wp_nonce_field('rrze_ac_submit_password_wpnonce', '_wpnonce', true, false) . PHP_EOL;
+                $message .= '<input type="password" name="' . $fieldName . '" value="" style="padding: 0 8px; min-height: 23px;">' . PHP_EOL;
+                $message .= '<input type="submit" name="rrze_ac_submit_password" id="submit" class="button button-primary" value="' . __('Send password', 'rrze-ac') . '"></p>' . PHP_EOL;
+                $message .= '</form>' . PHP_EOL;
+            }            
 
             return $message;
         }
