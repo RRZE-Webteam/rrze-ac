@@ -1,0 +1,115 @@
+.default-permission .check-column {
+    background-color: #d3e4ed !important;
+}
+
+span {
+    &.access-icon:before {
+        color: #0073aa;
+    }
+
+    &.access-all-icon:before {
+        color: #82878c;
+    }
+
+    &.access-error-icon:before {
+        color: #d64e07;
+    }
+}
+
+/* Fields */
+
+input.field-invalid,
+select.field-invalid {
+    border-color: #dc3232 !important;
+    box-shadow: 0 0 2px rgba(204, 0, 0, 0.8);
+
+    &:focus {
+        border-color: #dc3232 !important;
+        box-shadow: 0 0 2px rgba(204, 0, 0, 0.8);
+    }
+}
+
+/* Columns */
+
+.fixed .column-access_info {
+    width: 2.5em;
+}
+
+/* List Table */
+
+.rrzeacs {
+    .inactive th.check-column,
+    tfoot td.check-column,
+    thead td.check-column {
+        padding-left: 6px;
+    }
+}
+
+.rrzeac-update-tr.active td {
+    border-left: 4px solid #00a0d2;
+}
+
+.rrzeacs .active {
+    th.check-column {
+        border-left: 4px solid #00a0d2;
+    }
+
+    td,
+    th {
+        background-color: #f7fcfe;
+    }
+}
+
+.rrzeac-install #the-list td {
+    box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.1) inset;
+}
+
+.rrzeacs {
+    .active {
+        td,
+        th {
+            box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.1) inset;
+        }
+    }
+
+    .inactive {
+        td,
+        th {
+            box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.1) inset;
+        }
+    }
+}
+
+.upgrade .rrzeacs {
+    td,
+    th {
+        box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.1) inset;
+    }
+}
+
+.rrzeacs {
+    tr.active {
+        + tr.inactive {
+            td,
+            th {
+                border-top: 1px solid rgba(0, 0, 0, 0.03);
+                box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02) inset,
+                    0 -1px 0 #e1e1e1 inset;
+            }
+        }
+
+        &.rrzeac-update-tr + tr.inactive {
+            td,
+            th {
+                border-top: 1px solid rgba(0, 0, 0, 0.03);
+                box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02) inset,
+                    0 -1px 0 #e1e1e1 inset;
+            }
+        }
+    }
+
+    th,
+    td {
+        background: #fff none repeat scroll 0 0;
+    }
+}
