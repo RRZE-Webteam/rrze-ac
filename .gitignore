@@ -1,5 +1,15 @@
-# General
+### vscode ###
+.vscode/
+### NetBeans ###
+**/nbproject/
+### PhpStorm ###
+.idea/
+### macOS ###
 .DS_Store
-
-# Custom
-_dev
+### Node ###
+node_modules/
+package-lock.json
+### WordPress ###
+*.pot
+### Tmp ###
+_tmp/
