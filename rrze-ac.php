@@ -1,113 +1,163 @@
 <?php
 
-/**
- * Plugin Name:     RRZE Access Control
- * Plugin URI:      https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
- * Description:     Allows protection of files/documents through user and network related functions.
- * Version:         2.8.0
- * Author:          RRZE Webteam
- * Author URI:      https://blogs.fau.de/webworking/
- * License:         GNU General Public License v2
- * License URI:     http://www.gnu.org/licenses/gpl-2.0.html
- * Domain Path:     /languages
- * Text Domain:     rrze-ac
- */
+/*
+Plugin Name:     RRZE Access Control
+Plugin URI:      https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
+Description:     Allows protection of files/documents through user and network related functions.
+Version:         2.9.0
+Author:          RRZE Webteam
+Author URI:      https://blogs.fau.de/webworking/
+License:         GNU General Public License v2
+License URI:     http://www.gnu.org/licenses/gpl-2.0.html
+Domain Path:     /languages
+Text Domain:     rrze-ac
+*/
 
 namespace RRZE\AccessControl;
-
-use RRZE\AccessControl\Main;
 
 defined('ABSPATH') || exit;
 
 const RRZE_PHP_VERSION = '7.4';
-const RRZE_WP_VERSION = '5.8';
+const RRZE_WP_VERSION = '6.0';
 
-register_activation_hook(__FILE__, 'RRZE\AccessControl\activation');
-
-add_action('plugins_loaded', 'RRZE\AccessControl\loaded');
-
-/*
- * Einbindung der Sprachdateien.
+/**
+ * SPL Autoloader (PSR-4).
+ * @param string $class The fully-qualified class name.
  * @return void
  */
-function load_textdomain() {
-    load_plugin_textdomain('rrze-ac', FALSE, sprintf('%s/languages/', dirname(plugin_basename(__FILE__))));
+spl_autoload_register(function ($class) {
+    $prefix = __NAMESPACE__;
+    $baseDir = __DIR__ . '/includes/';
+
+    $len = strlen($prefix);
+    if (strncmp($prefix, $class, $len) !== 0) {
+        return;
+    }
+
+    $relativeClass = substr($class, $len);
+    $file = $baseDir . str_replace('\\', '/', $relativeClass) . '.php';
+
+    if (file_exists($file)) {
+        require $file;
+    }
+});
+
+// Register plugin hooks.
+register_activation_hook(__FILE__, __NAMESPACE__ . '\activation');
+register_deactivation_hook(__FILE__, __NAMESPACE__ . '\deactivation');
+
+add_action('plugins_loaded', __NAMESPACE__ . '\loaded');
+
+/**
+ * Loads a plugin’s translated strings.
+ */
+function loadTextdomain()
+{
+    load_plugin_textdomain('rrze-ac', false, dirname(plugin_basename(__FILE__)) . '/languages');
 }
 
-/*
-* Wird durchgeführt, nachdem das Plugin aktiviert wurde.
-* @return void
-*/
-function activation() {
-    // Sprachdateien werden eingebunden.
-    load_textdomain();
-
-    // Überprüft die minimal erforderliche PHP- u. WP-Version.
-    system_requirements();
- }
-
- /*
-  * Überprüft die minimal erforderliche PHP- u. WP-Version.
-  * @return void
-  */
-function system_requirements() {
-    global $is_apache;
-
+/**
+ * System requirements verification.
+ * @return string Return an error message.
+ */
+function systemRequirements(): string
+{
+    global $wp_version, $is_apache;
+    // Strip off any -alpha, -RC, -beta, -src suffixes.
+    list($wpVersion) = explode('-', $wp_version);
+    $phpVersion = phpversion();
     $error = '';
-
-    // Überprüft die minimal erforderliche PHP-Version.
-    if (version_compare(PHP_VERSION, RRZE_PHP_VERSION, '<')) {
-        $error = sprintf(__("Your server is running PHP version %s. Please upgrade at least to PHP version %s.", 'rrze-ac'), PHP_VERSION, RRZE_PHP_VERSION);
+    if (!is_php_version_compatible(RRZE_PHP_VERSION)) {
+        $error = sprintf(
+            /* translators: 1: Server PHP version number, 2: Required PHP version number. */
+            __('The server is running PHP version %1$s. The Plugin requires at least PHP version %2$s.', 'rrze-ac'),
+            $phpVersion,
+            RRZE_PHP_VERSION
+        );
+    } elseif (!is_wp_version_compatible(RRZE_WP_VERSION)) {
+        $error = sprintf(
+            /* translators: 1: Server WordPress version number, 2: Required WordPress version number. */
+            __('The server is running WordPress version %1$s. The Plugin requires at least WordPress version %2$s.', 'rrze-ac'),
+            $wpVersion,
+            RRZE_WP_VERSION
+        );
+    } elseif (!$is_apache) {
+        $error = __('The Web server software is not compatible. Please use instead the Apache Web server software.', 'rrze-ac');
+    } elseif (!apache_mod_loaded('mod_rewrite', true)) {
+        $error = __('The Web server software does not support the Rewrite module.', 'rrze-ac');
+    } elseif (!is_multisite()) {
+        $error = __('The WordPress instance is not a MultiSite.', 'rrze-ac');
     }
-
-    // Überprüft die minimal erforderliche WP-Version.
-    elseif (version_compare($GLOBALS['wp_version'], RRZE_WP_VERSION, '<')) {
-        $error = sprintf(__("Your Wordpress version is %s. Please upgrade at least to Wordpress version %s.", 'rrze-ac'), $GLOBALS['wp_version'], RRZE_WP_VERSION);
-    }
-
-    // Überprüft das Webserver-Software.
-    elseif (!$is_apache) {
-        $error = __("The Web server software is not compatible. Please use instead the Apache Web server software.", 'rrze-ac');
-    }
-
-    // Überprüft Multisite-Einstellung.
-    elseif (!is_multisite()) {
-        $error = __("The WordPress instance is not a MultiSite.", 'rrze-ac');
-    }
-
-    // Überprüft Rewrite-Modul.
-    elseif (!got_mod_rewrite()) {
-        $error = __("The Web server software does not support the Rewrite module.", 'rrze-ac');
-    }
-
-    // Wenn die Überprüfung fehlschlägt, dann wird das Plugin automatisch deaktiviert.
-    if (!empty($error)) {
-        deactivate_plugins(plugin_basename(__FILE__), FALSE, TRUE);
-        wp_die($error);
-    }
- }
-
-/*
-* Wird durchgeführt, nachdem das WP-Grundsystem hochgefahren
-* und alle Plugins eingebunden wurden.
-* @return void
-*/
-function loaded() {
-    // Sprachdateien werden eingebunden.
-    load_textdomain();
-
-    // Erforderliche WP-Dateien.
-    require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
-
-    // Automatische Laden von Klassen.
-    autoload();
+    return $error;
 }
 
-/*
- * Automatische Laden von Klassen.
+/**
+ * Activation callback function.
+ */
+function activation()
+{
+    loadTextdomain();
+    if ($error = systemRequirements()) {
+        deactivate_plugins(plugin_basename(__FILE__));
+        wp_die(
+            sprintf(
+                /* translators: 1: The plugin name, 2: The error string. */
+                __('Plugins: %1$s: %2$s', 'rrze-ac'),
+                plugin_basename(__FILE__),
+                $error
+            )
+        );
+    }
+}
+
+/**
+ * Deactivation callback function.
+ */
+function deactivation()
+{
+    // Nothing to do here.
+}
+
+/**
+ * Instantiate Plugin class.
+ * @return object Plugin
+ */
+function plugin()
+{
+    static $instance;
+    if (null === $instance) {
+        $instance = new Plugin(__FILE__);
+    }
+    return $instance;
+}
+
+/**
+ * Execute on 'plugins_loaded' API/action.
  * @return void
  */
-function autoload() {
-    require 'autoload.php';
-    $main = new Main(plugin_basename(__FILE__));
+function loaded()
+{
+    loadTextdomain();
+    plugin()->loaded();
+    if ($error = systemRequirements()) {
+        add_action('admin_init', function () use ($error) {
+            if (current_user_can('activate_plugins')) {
+                $pluginData = get_plugin_data(plugin()->getFile());
+                $pluginName = $pluginData['Name'];
+                $tag = is_plugin_active_for_network(plugin()->getBaseName()) ? 'network_admin_notices' : 'admin_notices';
+                add_action($tag, function () use ($pluginName, $error) {
+                    printf(
+                        '<div class="notice notice-error"><p>' .
+                            /* translators: 1: The plugin name, 2: The error string. */
+                            __('Plugins: %1$s: %2$s', 'rrze-ac') .
+                            '</p></div>',
+                        esc_html($pluginName),
+                        esc_html($error)
+                    );
+                });
+            }
+        });
+        return;
+    }
+    new Main;
 }
