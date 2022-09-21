@@ -6,26 +6,22 @@ defined('ABSPATH') || exit;
 
 class Options
 {
-    protected $option_name = 'rrze_ac';
-    protected $version_option_name = 'rrze_ac_version';
-    protected $enabled_option_name = 'rrze_ac_enabled';
+    private static $optionName = 'rrze_ac';
 
-    public function __construct()
-    {
-    }
+    private static $enabledOptionName = 'rrze_ac_enabled';
 
     /*
-     * Standard Einstellungen werden definiert
+     * Default options.
      * @return array
      */
-    private function default_options()
+    private static function defaultOptions()
     {
-        $options = array(
-            'permissions' => array(
-                'logged-in' =>  array(
+        $options = [
+            'permissions' => [
+                'logged-in' => [
                     'permission_key' => 'logged-in',
-                    'description'    => __("Logged-in user", 'rrze-ac'),
-                    'select'         => __("Logged-in user", 'rrze-ac'),
+                    'description'    => __('Logged-in user', 'rrze-ac'),
+                    'select'         => __('Logged-in user', 'rrze-ac'),
                     'logged_in'      => 1,
                     'sso_logged_in'  => 0,
                     'affiliation'    => '',
@@ -36,8 +32,8 @@ class Options
                     'siteimprove'    => 0,
                     'core'           => 1,
                     'active'         => 1
-                ),
-                'all' =>  array(
+                ],
+                'all' =>  [
                     'permission_key' => 'all',
                     'description'    => __('All', 'rrze-ac'),
                     'select'         => __('All', 'rrze-ac'),
@@ -51,21 +47,21 @@ class Options
                     'siteimprove'    => 0,
                     'core'           => 1,
                     'active'         => 1
-                )
-            ),
+                ]
+            ],
             'default_permission' => 'logged-in'
-        );
+        ];
 
         return $options;
     }
 
     /*
-     * Standard Berechtigung wird definiert.
+     * Default permission.
      * @return array
      */
-    private function default_permission()
+    private static function defaultPermission()
     {
-        $permission = array(
+        $permission = [
             'permission_key' => '',
             'description'    => '',
             'select'         => '',
@@ -79,52 +75,52 @@ class Options
             'siteimprove'    => 0,
             'core'           => 0,
             'active'         => 0
-        );
+        ];
 
         return $permission;
     }
 
     /*
-     * Gibt die Einstellungen zurück.
-     * @return object
+     * Get options.
+     * @return array
      */
-    public function get_options()
+    public static function getOptions()
     {
-        $defaults = $this->default_options();
-        $default_permission = $this->default_permission();
-        $options = (array) get_option($this->option_name);
+        $defaults = self::defaultOptions();
+        $defaultPermission = self::defaultPermission();
+        $options = (array) get_option(self::$optionName);
 
         $options = wp_parse_args($options, $defaults);
         $options['permissions'] = wp_parse_args($options['permissions'], $defaults['permissions']);
         foreach ($options['permissions'] as $key => $permission) {
-            $options['permissions'][$key] = $this->combine_atts($default_permission, $permission);
+            $options['permissions'][$key] = self::combineAtts($defaultPermission, $permission);
         }
 
         return $options;
     }
 
-    private function combine_atts($default_atts, $atts)
+    private static function combineAtts($defaultAtts, $atts)
     {
-        $atts = (array)$atts;
-        $combine_atts = array();
-        foreach ($default_atts as $key => $default) {
+        $atts = (array) $atts;
+        $combineAtts = [];
+        foreach ($defaultAtts as $key => $default) {
             if (array_key_exists($key, $atts)) {
-                $combine_atts[$key] = $atts[$key];
+                $combineAtts[$key] = $atts[$key];
             } else {
-                $combine_atts[$key] = $default;
+                $combineAtts[$key] = $default;
             }
         }
 
-        return $combine_atts;
+        return $combineAtts;
     }
 
-    public function get_option_name()
+    public static function getOptionName()
     {
-        return $this->option_name;
+        return self::$optionName;
     }
 
-    public function get_enabled_option_name()
+    public static function getEnabledOptionName()
     {
-        return $this->enabled_option_name;
+        return self::$enabledOptionName;
     }
 }
