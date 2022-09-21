@@ -11,7 +11,6 @@ defined('ABSPATH') || exit;
 
 class Main
 {
-    public $ops;
     public $options;
     public $option_name;
     public $enabled_option_name;
@@ -51,10 +50,9 @@ class Main
 
     public function __construct()
     {
-        $this->ops = new Options();
-        $this->options = $this->ops->get_options();
-        $this->option_name = $this->ops->get_option_name();
-        $this->enabled_option_name = $this->ops->get_enabled_option_name();
+        $this->options = Options::getOptions();
+        $this->option_name = Options::getOptionName();
+        $this->enabled_option_name = Options::getEnabledOptionName();
 
         $this->settings = new Settings($this);
 
