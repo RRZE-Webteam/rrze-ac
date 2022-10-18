@@ -22,13 +22,13 @@ class Main
     public $protected_dirname = '_protected';
     public $access_permission_meta_key = '_access_permission';
 
-    private $user_isnt_logged_in = 1;
-    private $user_ip_isnt_in_range = 2;
-    private $user_isnt_sso_logged_in = 4;
-    private $user_hasnt_affiliation = 8;
-    private $user_hasnt_entitlement = 16;
-    private $user_domain_not_allowed = 32;
-    private $wrong_password = 64;
+    private $user_isnt_logged_in = 0;
+    private $user_ip_isnt_in_range = 1;
+    private $user_isnt_sso_logged_in = 2;
+    private $user_hasnt_affiliation = 4;
+    private $user_hasnt_entitlement = 8;
+    private $user_domain_not_allowed = 16;
+    private $wrong_password = 32;
 
     private $permission_status = null;
 
@@ -697,7 +697,7 @@ class Main
             $password = isset($_POST[$cookieName]) ? sanitize_text_field($_POST[$cookieName]) : '';
             if (preg_match('/^[a-z0-9]{8,32}$/i', $password) && $password == $allowedPassword) {
                 setcookie($cookieName, $this->crypt($password), strtotime('+1 hour'), COOKIEPATH, COOKIE_DOMAIN, true);
-                $location = !empty($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : site_url();
+                $location = site_url(add_query_arg([], (string) wp_get_raw_referer()));
                 wp_safe_redirect($location);
                 exit;
             }
@@ -2142,9 +2142,9 @@ class Main
         return ($this->permission_status & (1 << $bitmask)) != 0;
     }
 
-    protected function set_permission_status($bitmask, $new = true)
+    protected function set_permission_status($bitmask, $newBit = true)
     {
-        $this->permission_status = ($this->permission_status & ~(1 << $bitmask)) | ($new << $bitmask);
+        $this->permission_status = ($this->permission_status & ~(1 << $bitmask)) | ($newBit << $bitmask);
     }
 
     protected function is_plugin_active($plugin)
