@@ -49,7 +49,21 @@ class Options
                     'active'         => 1
                 ]
             ],
-            'default_permission' => 'logged-in'
+            'default_permission' => 'logged-in',
+            'automatic_sso_authentication' => 1,
+            // user_isnt_logged_in
+            'user_isnt_logged_in_title' => __('Log in with your IdM ID', 'rrze-ac'),
+            'user_isnt_logged_in_msg' => __('Access to this resource is only available to members of this website.', 'rrze-ac'),
+            'user_isnt_logged_in_link_txt' => __('Login through Single Sign-On (central login service of the University Erlangen-Nürnberg)', 'rrze-ac'),
+            // user_isnt_sso_logged_in
+            'user_isnt_sso_logged_in_title' => __("Log in with your IdM ID", 'rrze-ac'),
+            'user_isnt_sso_logged_in_msg' => __('Access to this resource is only possible for registered users.', 'rrze-ac'),
+            'user_isnt_sso_logged_in_link_txt' => __('Login through Single Sign-On (central login service of the University Erlangen-Nürnberg)', 'rrze-ac'),
+            // access_denied_default
+            'access_denied_default_title' => __('Access Denied', 'rrze-ac'),
+            'access_denied_default_msg' => __('You do not have sufficient permissions to access this resource. If you believe you should have access to this resource, please get in touch with the contact person of the website.', 'rrze-ac'),
+            // access_denied_password
+            'access_denied_password_msg' => __('If you have a password to access this resource, please enter it in the following field.', 'rrze-ac')
         ];
 
         return $options;
