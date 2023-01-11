@@ -487,6 +487,26 @@ class Settings
 
         add_settings_section('rrze-ac-settings-section', false, '__return_false', 'rrze-ac-settings');
         add_settings_field('default_permission', __("Standard Permission", 'rrze-ac'), array($this, 'default_permission_field'), 'rrze-ac-settings', 'rrze-ac-settings-section');
+        if ($this->main->simplesaml_auth() !== false) {
+            add_settings_field('automatic_sso_authentication', __("Automatic SSO Authentication", 'rrze-ac'), array($this, 'automatic_sso_authentication_field'), 'rrze-ac-settings', 'rrze-ac-settings-section');
+        }
+
+        add_settings_section('rrze-ac-settings-msg-section', false, [$this, 'settings_msg_section'], 'rrze-ac-settings');
+        add_settings_field('user_isnt_logged_in_title', __("User Is Not Logged In (Title)", 'rrze-ac'), [$this, 'user_isnt_logged_in_title_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
+        add_settings_field('user_isnt_logged_in_msg', __("User Is Not Logged In (Message)", 'rrze-ac'), [$this, 'user_isnt_logged_in_msg_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
+        add_settings_field('user_isnt_logged_in_link_txt', __("User Is Not Logged In (Link Text)", 'rrze-ac'), [$this, 'user_isnt_logged_in_link_txt_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
+        if ($this->main->simplesaml_auth() !== false) {
+            add_settings_field('user_isnt_sso_logged_in_title', __("User Is Not SSO Logged In (Title)", 'rrze-ac'), [$this, 'user_isnt_sso_logged_in_title_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
+            add_settings_field('user_isnt_sso_logged_in_msg', __("User Is Not SSO Logged In (Message)", 'rrze-ac'), [$this, 'user_isnt_sso_logged_in_msg_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
+            add_settings_field('user_isnt_sso_logged_in_link_txt', __("User Is Not SSO Logged In (Link Text)", 'rrze-ac'), [$this, 'user_isnt_sso_logged_in_link_txt_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
+        }
+        add_settings_field('access_denied_default_title', __("Access Denied Default (Title)", 'rrze-ac'), [$this, 'access_denied_default_title_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
+        add_settings_field('access_denied_default_msg', __("Access Denied Default (Message)", 'rrze-ac'), [$this, 'access_denied_default_msg_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
+        add_settings_field('access_denied_password_msg', __("Access Denied Password (Message)", 'rrze-ac'), [$this, 'access_denied_password_msg_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
+    }
+
+    public function settings_msg_section() {
+        echo '<h2>', __('Messages', 'rrze-ac'), '</h2>';
     }
 
     public function permission_key_field()
@@ -591,6 +611,79 @@ class Settings
         </select>
         <?php
     }
+
+    public function automatic_sso_authentication_field()
+    {
+        $sso_auth_process = $this->options['automatic_sso_authentication'];
+        $checked = !empty($sso_auth_process) ? true : false; ?>
+        <label for="automatic_sso_authentication">
+            <input id="automatic_sso_authentication" type="checkbox" <?php checked($checked); ?> name="<?php printf('%s[automatic_sso_authentication]', $this->option_name); ?>" value="1"> <?php _e("Enable automatic SSO authentication process", 'rrze-ac'); ?>
+        </label>
+        <?php
+    }
+        
+    public function user_isnt_logged_in_title_field()
+    {
+        $title = $this->options['user_isnt_logged_in_title']; ?>
+        <input type="text" id="user_isnt_logged_in_title" class="regular-text" name="<?php printf('%s[user_isnt_logged_in_title]', $this->option_name); ?>" value="<?php echo $title; ?>">
+        <?php
+    }
+
+    public function user_isnt_logged_in_msg_field()
+    {
+        $msg = $this->options['user_isnt_logged_in_msg']; ?>
+        <textarea id="user_isnt_logged_in_msg" cols="50" rows="3" name="<?php printf('%s[user_isnt_logged_in_msg]', $this->option_name); ?>"><?php echo $msg; ?></textarea>
+        <?php
+    }
+
+    public function user_isnt_logged_in_link_txt_field()
+    {
+        $link_txt = $this->options['user_isnt_logged_in_link_txt']; ?>
+        <input type="text" id="user_isnt_logged_in_link_txt" class="regular-text" name="<?php printf('%s[user_isnt_logged_in_link_txt]', $this->option_name); ?>" value="<?php echo $link_txt; ?>">
+        <?php
+    }
+
+    public function user_isnt_sso_logged_in_title_field()
+    {
+        $title = $this->options['user_isnt_sso_logged_in_title']; ?>
+        <input type="text" id="user_isnt_sso_logged_in_title" class="regular-text" name="<?php printf('%s[user_isnt_sso_logged_in_title]', $this->option_name); ?>" value="<?php echo $title; ?>">
+        <?php
+    }    
+
+    public function user_isnt_sso_logged_in_msg_field()
+    {
+        $msg = $this->options['user_isnt_sso_logged_in_msg']; ?>
+        <textarea id="user_isnt_sso_logged_in_msg" cols="50" rows="3" name="<?php printf('%s[user_isnt_sso_logged_in_msg]', $this->option_name); ?>"><?php echo $msg; ?></textarea>
+        <?php
+    }
+
+    public function user_isnt_sso_logged_in_link_txt_field()
+    {
+        $link_txt = $this->options['user_isnt_sso_logged_in_link_txt']; ?>
+        <input type="text" id="user_isnt_sso_logged_in_link_txt" class="regular-text" name="<?php printf('%s[user_isnt_sso_logged_in_link_txt]', $this->option_name); ?>" value="<?php echo $link_txt; ?>">
+        <?php
+    }
+
+    public function access_denied_default_title_field()
+    {
+        $title = $this->options['access_denied_default_title']; ?>
+        <input type="text" id="access_denied_default_title" class="regular-text" name="<?php printf('%s[access_denied_default_title]', $this->option_name); ?>" value="<?php echo $title; ?>">
+        <?php
+    }
+
+    public function access_denied_default_msg_field()
+    {
+        $msg = $this->options['access_denied_default_msg']; ?>
+        <textarea id="access_denied_default_msg" cols="50" rows="5" name="<?php printf('%s[access_denied_default_msg]', $this->option_name); ?>"><?php echo $msg; ?></textarea>
+        <?php
+    }
+    
+    public function access_denied_password_msg_field()
+    {
+        $msg = $this->options['access_denied_password_msg']; ?>
+        <textarea id="access_denied_password_msg" cols="50" rows="3" name="<?php printf('%s[access_denied_password_msg]', $this->option_name); ?>"><?php echo $msg; ?></textarea>
+        <?php
+    }   
 
     public function permission_domain_field()
     {
@@ -718,6 +811,30 @@ class Settings
             && $this->options['permissions'][$input['default_permission']]['active']) {
             $this->options['default_permission'] = $input['default_permission'];
         }
+
+        $this->options['automatic_sso_authentication'] = isset($input['automatic_sso_authentication']) ? 1 : 0;
+
+        $title = esc_html(sanitize_text_field($input['user_isnt_logged_in_title']));
+        $this->options['user_isnt_logged_in_title'] = $title ?: $this->options['user_isnt_logged_in_title'];
+        $msg = esc_html(sanitize_textarea_field($input['user_isnt_logged_in_msg']));
+        $this->options['user_isnt_logged_in_msg'] = $msg ?: $this->options['user_isnt_logged_in_msg'];
+        $link_txt = esc_html(sanitize_textarea_field($input['user_isnt_logged_in_link_txt']));
+        $this->options['user_isnt_logged_in_link_txt'] = $link_txt ?: $this->options['user_isnt_logged_in_link_txt'];
+
+        $title = esc_html(sanitize_text_field($input['user_isnt_sso_logged_in_title']));
+        $this->options['user_isnt_sso_logged_in_title'] = $title ?: $this->options['user_isnt_sso_logged_in_title'];
+        $msg = esc_html(sanitize_textarea_field($input['user_isnt_sso_logged_in_msg']));
+        $this->options['user_isnt_sso_logged_in_msg'] = $msg ?: $this->options['user_isnt_sso_logged_in_msg'];
+        $link_txt = esc_html(sanitize_textarea_field($input['user_isnt_sso_logged_in_link_txt']));
+        $this->options['user_isnt_sso_logged_in_link_txt'] = $link_txt ?: $this->options['user_isnt_sso_logged_in_link_txt'];
+        
+        $title = esc_html(sanitize_text_field($input['access_denied_default_title']));
+        $this->options['access_denied_default_title'] = $title ?: $this->options['access_denied_default_title'];
+        $msg = esc_html(sanitize_textarea_field($input['access_denied_default_msg']));
+        $this->options['access_denied_default_msg'] = $msg ?: $this->options['access_denied_default_msg'];
+        
+        $msg = esc_html(sanitize_textarea_field($input['access_denied_password_msg']));
+        $this->options['access_denied_password_msg'] = $msg ?: $this->options['access_denied_password_msg'];
 
         return update_option($this->option_name, $this->options);
     }

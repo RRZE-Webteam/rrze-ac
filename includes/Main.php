@@ -734,7 +734,7 @@ class Main
         return $output;
     }
 
-    protected function simplesaml_auth()
+    public function simplesaml_auth()
     {
         if ($this->is_plugin_active($this->sso_plugin)) {
             if (is_multisite()) {
@@ -776,8 +776,10 @@ class Main
             return false;
         } elseif (!$this->simplesaml_auth->isAuthenticated()) {
             \SimpleSAML\Session::getSessionFromRequest()->cleanup();
-            $this->simplesaml_auth->requireAuth();
-            \SimpleSAML\Session::getSessionFromRequest()->cleanup();
+            if ($this->options['automatic_sso_authentication']) {
+                $this->simplesaml_auth->requireAuth();
+                \SimpleSAML\Session::getSessionFromRequest()->cleanup();
+            }
             return false;
         }
 
@@ -982,46 +984,52 @@ class Main
         }
 
         // require person affiliation OR person entitlement
-        if ($sso_logged_in && !is_null($this->person_attributes)) {
-            $allowed_person_affiliation = true;
-            $allowed_person_entitlement = true;
+        if (
+            $sso_logged_in
+            && !is_null($this->person_attributes)
+            && (!empty($permissions[$permission]['affiliation']) || !empty($permissions[$permission]['entitlement']))
+        ) {
+            $allowed_person_affiliation = false;
+            $allowed_person_entitlement = false;
 
             // check if permission is set to person affiliation
-            if (!empty($permissions[$permission]['affiliation']) && !$this->check_person_affiliation($permissions[$permission]['affiliation'])) {
-                $this->set_permission_status($this->user_hasnt_affiliation);
-                $allowed_person_affiliation = false;
-                do_action(
-                    'rrze.log.notice',
-                    [
-                        'plugin' => 'rrze-ac',
-                        'postID' => $post_id,
-                        'permission' => $permission,
-                        'status' => 'user_hasnt_affiliation',
-                        'allowed_person_affiliation' => $permissions[$permission]['affiliation'],
-                        'person_atributes' => $this->person_attributes
-                    ]
-                );
+            if (!empty($permissions[$permission]['affiliation'])) {
+                if (!$this->check_person_affiliation($permissions[$permission]['affiliation'])) {
+                    $this->set_permission_status($this->user_hasnt_affiliation);
+                    do_action(
+                        'rrze.log.notice',
+                        [
+                            'plugin' => 'rrze-ac',
+                            'postID' => $post_id,
+                            'permission' => $permission,
+                            'status' => 'user_hasnt_affiliation',
+                            'allowed_person_affiliation' => $permissions[$permission]['affiliation'],
+                            'person_atributes' => $this->person_attributes
+                        ]
+                    );
+                } else {
+                    $allowed_person_affiliation = true;
+                }
             }
 
             // check if permission is set to person entitlement
-            if (!empty($permissions[$permission]['entitlement']) && !$this->check_person_entitlement($permissions[$permission]['entitlement'])) {
-                $this->set_permission_status($this->user_hasnt_entitlement);
-                $allowed_person_entitlement = false;
-                do_action(
-                    'rrze.log.notice',
-                    [
-                        'plugin' => 'rrze-ac',
-                        'postID' => $post_id,
-                        'permission' => $permission,
-                        'status' => 'user_hasnt_entitlement',
-                        'allowed_person_entitlement' => $permissions[$permission]['entitlement'],
-                        'person_atributes' => $this->person_attributes
-                    ]
-                );
-            }
-
-            if (empty($permissions[$permission]['entitlement']) && !$allowed_person_affiliation) {
-                $allowed_person_entitlement = false;
+            if (!empty($permissions[$permission]['entitlement'])) {
+                if (!$this->check_person_entitlement($permissions[$permission]['entitlement'])) {
+                    $this->set_permission_status($this->user_hasnt_entitlement);
+                    do_action(
+                        'rrze.log.notice',
+                        [
+                            'plugin' => 'rrze-ac',
+                            'postID' => $post_id,
+                            'permission' => $permission,
+                            'status' => 'user_hasnt_entitlement',
+                            'allowed_person_entitlement' => $permissions[$permission]['entitlement'],
+                            'person_atributes' => $this->person_attributes
+                        ]
+                    );
+                } else {
+                    $allowed_person_entitlement = true;
+                }
             }
 
             if (!$allowed_person_affiliation && !$allowed_person_entitlement) {
@@ -1673,7 +1681,12 @@ class Main
         $description = isset($permission['description']) && !empty($permission['description']) ? $permission['description'] : $permission['permission_key'];
         $description = !$error ?
             '<span title="' . esc_attr__($description) . '" class="' . $class . ' dashicons dashicons-shield"></span>' :
-            '<span title="' . sprintf(esc_attr__('An error has occurred: %1$s and has been replaced by the default permission %2$s.', 'rrze-ac'), $error, $description) . '" class="access-error-icon dashicons dashicons-shield"></span>';
+            '<span title="' . sprintf(
+                /* translators: 1: Error message, 2: Default permission. */
+                esc_attr__('An error has occurred: %1$s and has been replaced by the default permission %2$s.', 'rrze-ac'),
+                $error,
+                $description
+            ) . '" class="access-error-icon dashicons dashicons-shield"></span>';
 
         echo $description;
     }
@@ -2034,7 +2047,7 @@ class Main
         return $query;
     }
 
-    protected function permission_message($post_id = null)
+    protected function permission_message($post_id)
     {
         $message = '';
 
@@ -2048,64 +2061,36 @@ class Main
 
         if ($this->get_permission_status($this->user_isnt_logged_in)) {
             $login_url = wp_login_url($permalink);
-            $message .= '<h3>' . __("Log in with your IdM ID", 'rrze-ac') . '</h3>';
-            if ($post_type == 'attachment') {
-                $message .= '<p>' . sprintf(__("Access to this file is only available to members of this website.", 'rrze-ac'), $login_url) . '</p>';
-            } else {
-                $message .= '<p>' . sprintf(__("Access to this page is only available to members of this website.", 'rrze-ac'), $login_url) . '</p>';
-            }
-            $message .= '<p>' . sprintf(__("<a href=\"%s\">Login through Single Sign-On (central login service of the University Erlangen-Nürnberg)</a>.", 'rrze-ac'), $login_url) . '</p>';
+            $message .= '<h3>' . esc_html($this->options['user_isnt_logged_in_title']) . '</h3>';
+            $message .= '<p>' . esc_html($this->options['user_isnt_logged_in_msg']) . '</p>';
+            $message .= '<p><a href="' . $login_url . '">' . esc_html($this->options['user_isnt_logged_in_link_txt']) . '</a></p>';
             return $message;
         }
 
         if ($this->get_permission_status($this->user_isnt_sso_logged_in) && $this->simplesaml_auth) {
             $login_url = $this->simplesaml_auth->getLoginURL();
-            $message .= '<h3>' . __("Log in with your IdM ID", 'rrze-ac') . '</h3>';
-            if ($post_type == 'attachment') {
-                $message .= '<p>' . sprintf(__("Access to this file is only possible for registered users.", 'rrze-ac'), $login_url) . '</p>';
-            } else {
-                $message .= '<p>' . sprintf(__("Access to this page is only possible for registered users.", 'rrze-ac'), $login_url) . '</p>';
-            }
-            $message .= '<p>' . sprintf(__("<a href=\"%s\">Login through Single Sign-On (central login service of the University Erlangen-Nürnberg)</a>.", 'rrze-ac'), $login_url) . '</p>';
-
+            $message .= '<h3>' . esc_html($this->options['user_isnt_sso_logged_in_title']) . '</h3>';
+            $message .= '<p>' . esc_html($this->options['user_isnt_sso_logged_in_msg']) . '</p>';
+            $message .= '<p><a href="' . $login_url . '">' . esc_html($this->options['user_isnt_sso_logged_in_link_txt']) . '</a></p>';
             return $message;
         }
 
-        if (
-            $this->get_permission_status($this->user_domain_not_allowed)
-            || $this->get_permission_status($this->user_ip_isnt_in_range)
-            || $this->get_permission_status($this->wrong_password)
-            || ($this->get_permission_status($this->user_hasnt_affiliation) && $this->simplesaml_auth)
-            || ($this->get_permission_status($this->user_hasnt_entitlement) && $this->simplesaml_auth)
-        ) {
-            if ($post_type == 'attachment') {
-                $message .= '<h4>' . __("Access to the requested file is denied", 'rrze-ac') . '</h4>';
-                $message .= '<p>' . __("You do not have sufficient permissions to access the file. If you believe you should have access to the file, please get in touch with the contact person of the website.", 'rrze-ac') . '</p>';
-            } else {
-                $message .= '<p>' . __("Access to the requested page is denied.", 'rrze-ac') . '</p>';
-                $message .= '<p>' . __("You do not have sufficient permissions to view this page. If you believe you should have access to the page, please get in touch with the contact person of the website.", 'rrze-ac') . '</p>';
-            }
+        $message .= '<h3>' . esc_html($this->options['access_denied_default_title']) . '</h3>';
 
-            if ($this->get_permission_status($this->wrong_password)) {
-                if ($post_type == 'attachment') {
-                    $message .= '<p>' . __('If you have a password to access the requested file, please enter it in the following field.', 'rrze-ac') . '<br>' . PHP_EOL;
-                } else {
-                    $message .= '<p>' . __('If you have a password to access the requested page, please enter it in the following field.', 'rrze-ac') . '<br>' . PHP_EOL;
-                }
-                $fieldName = 'rrze_ac_password_' . $post_id;
-                $message .= '<form method="post">' . PHP_EOL;
-                $message .= wp_nonce_field('rrze_ac_submit_password_wpnonce', '_wpnonce', true, false) . PHP_EOL;
-                $message .= '<input type="password" name="' . $fieldName . '" value="" style="padding: 0 8px; min-height: 23px;">' . PHP_EOL;
-                $message .= '<input type="submit" name="rrze_ac_submit_password" id="submit" class="button button-primary" value="' . __('Send password', 'rrze-ac') . '"></p>' . PHP_EOL;
-                $message .= '</form>' . PHP_EOL;
-            }
+        if ($this->get_permission_status($this->wrong_password)) {
+            $message .= '<p>' . esc_html($this->options['access_denied_password_msg']) . '</p>' . PHP_EOL;
 
-            return $message;
+            $fieldName = 'rrze_ac_password_' . $post_id;
+            $message .= '<form method="post">' . PHP_EOL;
+            $message .= wp_nonce_field('rrze_ac_submit_password_wpnonce', '_wpnonce', true, false) . PHP_EOL;
+            $message .= '<input type="password" name="' . $fieldName . '" value="" style="padding: 0 8px; min-height: 23px;">' . PHP_EOL;
+            $message .= '<input type="submit" name="rrze_ac_submit_password" id="submit" class="button button-primary" value="' . __('Send password', 'rrze-ac') . '"></p>' . PHP_EOL;
+            $message .= '</form>' . PHP_EOL;
         }
 
-        $message .= '<h3>' . __("Access is denied", 'rrze-ac') . '</h3>';
-        $message .= '<p>' . __("You do not have sufficient permissions to view this area. If you believe you should have access to this area, please get in touch with the contact person of the website.", 'rrze-ac') . '</p>';
+        $message .= '<p>' . esc_html($this->options['access_denied_default_msg']) . '</p>';
         $message .= $this->get_contact();
+
         return $message;
     }
 
