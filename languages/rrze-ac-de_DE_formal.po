@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: RRZE Access Control\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-ac\n"
 "POT-Creation-Date: 2023-01-11T08:29:52+00:00\n"
-"PO-Revision-Date: 2024-02-22 12:23+0100\n"
+"PO-Revision-Date: 2024-02-22 12:51+0100\n"
 "Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
 "Language-Team: Deutsch (Sie)\n"
 "Language: de\n"
@@ -433,7 +433,7 @@ msgstr "Automatische SSO-Authentifizierung"
 
 #: includes/Settings.php:509
 msgid "Contact"
-msgstr "Ansprechpartner"
+msgstr "Kontakt"
 
 #: includes/Settings.php:512
 msgid "User Is Not Logged In (Title)"
