@@ -1277,6 +1277,7 @@ class Main
     {
         if ('attachment' != get_post_type($attachment_id)) {
             return new WP_Error('not_attachment', sprintf(
+                /* translators: %d is the attachment id */
                 __("The post %d is not a Media Post-Type.", 'rrze-ac'),
                 $attachment_id
             ));
@@ -1284,6 +1285,7 @@ class Main
 
         if (path_is_absolute($new_reldir)) {
             return new WP_Error('new_reldir_not_relative', sprintf(
+                /* translators: %s is the path to the WP uploads directory */
                 __("The newly specified path %s is absolute. The new path must be a path relative to the WP uploads directory.", 'rrze-ac'),
                 $new_reldir
             ));
@@ -1311,6 +1313,7 @@ class Main
 
         if (!wp_mkdir_p($new_fulldir)) {
             return new WP_Error('wp_mkdir_p_error', sprintf(
+                /* translators: %s is the path to a directory */
                 __("An error has occurred while creating the directory %s.", 'rrze-ac'),
                 $new_fulldir
             ));
@@ -1375,7 +1378,8 @@ class Main
 
             if (!is_file($new_fullpath)) {
                 return new WP_Error('rename_failed', sprintf(
-                    __("The file can not be moved from %s to %s.", 'rrze-ac'),
+                    /* translators: 1: old file path, 2: new file path */
+                    __('The file can not be moved from %1$s to %2$s.', 'rrze-ac'),
                     $old_fullpath,
                     $new_fullpath
                 ));
@@ -1779,8 +1783,9 @@ class Main
             if (isset($_REQUEST['access-protected']) && (int) $_REQUEST['access-protected']) {
                 $message = sprintf(
                     _n(
-                        "Media file is now protected.", //singular
-                        "%s media files are now protected.", //plural
+                        /* translators: %s: number of media files */
+                        "%s media file is now protected.",
+                        "%s media files are now protected.",
                         $_REQUEST['access-protected'],
                         'rrze-ac'
                     ),
@@ -1793,8 +1798,9 @@ class Main
             if (isset($_REQUEST['access-unprotected']) && (int) $_REQUEST['access-unprotected']) {
                 $message = sprintf(
                     _n(
-                        "Data protection on Media file has been removed.", //singular
-                        "Data protection on %s Media files has been removed.", //plural
+                        /* translators: %s: number of media files */
+                        "Data protection on %s Media file has been removed.",
+                        "Data protection on %s Media files has been removed.",
                         $_REQUEST['access-unprotected'],
                         'rrze-ac'
                     ),
@@ -2096,27 +2102,28 @@ class Main
 
     protected function get_contact()
     {
-        global $wpdb;
+        $output = '';
+        $contact = [];
 
-        $blog_prefix = $wpdb->get_blog_prefix(get_current_blog_id());
-        $users = $wpdb->get_results(
-            "SELECT user_id, user_id AS ID, user_login, display_name, user_email, meta_value
-             FROM $wpdb->users, $wpdb->usermeta
-             WHERE {$wpdb->users}.ID = {$wpdb->usermeta}.user_id AND meta_key = '{$blog_prefix}capabilities'
-             ORDER BY {$wpdb->usermeta}.user_id"
-        );
-
-        if (empty($users)) {
-            return '';
+        if (!$siteAdminName =  $this->options['contact_admin_name']) {
+            $blogId = get_current_blog_id();
+            $admins = get_users([
+                'role' => 'administrator',
+                'blog_id' => $blogId
+            ]);
+            if (!empty($admins)) {
+                foreach ($admins as $user) {
+                    $contact[] = sprintf('%s <%s>', $user->data->display_name, make_clickable($user->data->user_email));
+                }
+            }
+        } else {
+            $siteAdminEmail = get_option('admin_email');
+            $contact[] = sprintf('%s <%s>', $siteAdminName, make_clickable($siteAdminEmail));
         }
 
-        $output = '<h4>' . __("Contact persons", 'rrze-ac') . '</h4>';
-
-        foreach ($users as $user) {
-            $roles = unserialize($user->meta_value);
-            if (isset($roles['administrator'])) {
-                $output .= sprintf('<p>%1$s<br/>%2$s %3$s</p>' . "\n", $user->display_name, __("Email Address:", 'rrze-ac'), make_clickable($user->user_email));
-            }
+        if ($contact) {
+            $output .= '<p>' . __('Contact:', 'rrze-ac') . '<br>';
+            $output .= implode('<br>', $contact) . '</p>';
         }
 
         return $output;
@@ -2179,7 +2186,11 @@ class Main
             'exclude_from_search'       => true,
             'show_in_admin_all_list'    => false,
             'show_in_admin_status_list' => false,
-            'label_count'               => _n_noop('Protected <span class="count">(%s)</span>', 'Protected <span class="count">(%s)</span>', 'rrze-ac'),
+            'label_count'               => _n_noop(
+                /* translators: %s: label count */
+                'Protected <span class="count">(%s)</span>', 
+                'Protected <span class="count">(%s)</span>', 'rrze-ac'
+            ),
         ]);
     }
 
