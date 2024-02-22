@@ -28,7 +28,7 @@ class Settings
     {
         $this->main = $main;
         $this->option_name = $this->main->option_name;
-        $this->options = $this->main->options;        
+        $this->options = $this->main->options;
 
         $this->access_permission_meta_key = $this->main->access_permission_meta_key;
 
@@ -40,7 +40,7 @@ class Settings
 
     public function access_menu()
     {
-        $this->validate_actions();        
+        $this->validate_actions();
 
         $access_page = add_menu_page(__("Access Protection", 'rrze-ac'), __("Access Protection", 'rrze-ac'), 'manage_options', 'rrze-ac', array($this, 'access_permissions_page'), 'dashicons-shield');
         add_submenu_page('rrze-ac', __("Permissions", 'rrze-ac'), __("Permissions", 'rrze-ac'), 'manage_options', 'rrze-ac', array($this, 'access_permissions_page'));
@@ -54,7 +54,7 @@ class Settings
     {
         require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
         $this->list_table = new ListTable($this->main);
-        $this->list_table->prepare_items(); 
+        $this->list_table->prepare_items();
     }
 
     public function access_screen_options()
@@ -76,8 +76,8 @@ class Settings
         <div class="wrap">
             <h2>
                 <?php echo esc_html(__("Permissions", 'rrze-ac')); ?>
-                <?php if (empty($action)): ?>
-                <a href="<?php echo $this->main->action_url(array('action' => 'new')); ?>" class="add-new-h2"><?php _e("Add New Permission", 'rrze-ac'); ?></a>
+                <?php if (empty($action)) : ?>
+                    <a href="<?php echo $this->main->action_url(array('action' => 'new')); ?>" class="add-new-h2"><?php _e("Add New Permission", 'rrze-ac'); ?></a>
                 <?php endif; ?>
             </h2>
             <?php
@@ -89,7 +89,7 @@ class Settings
                 $this->set_default_page();
             } ?>
         </div>
-        <?php
+    <?php
         $this->delete_settings_errors();
     }
 
@@ -206,7 +206,7 @@ class Settings
 
         $permission_key = !empty($input['permission_key']) ? sanitize_title($input['permission_key']) : '';
 
-        if (! $permission_key) {
+        if (!$permission_key) {
             $this->add_settings_error('permission_key', '', __("Permission required.", 'rrze-ac'));
         } elseif (isset($this->options['permissions'][$permission_key])) {
             $this->add_settings_error('permission_key', $permission_key, __("Permission already exists.", 'rrze-ac'));
@@ -215,7 +215,7 @@ class Settings
         }
 
         $select = isset($input['select']) ? wp_trim_words(sanitize_text_field($input['select']), 3, '') : '';
-        if (! $select) {
+        if (!$select) {
             $this->add_settings_error('select', '', __("Short description required.", 'rrze-ac'));
         } else {
             $this->add_settings_error('select', $select, '', false);
@@ -223,21 +223,21 @@ class Settings
 
         $domain = isset($input['domain']) && !empty(trim($input['domain'])) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['domain'])))) : '';
         $domain = $this->get_valid_domains($domain);
-        $domain = ! empty($domain) ? $domain : '';
+        $domain = !empty($domain) ? $domain : '';
 
         $ip_address = isset($input['ip_address']) && !empty(trim($input['ip_address'])) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['ip_address'])))) : '';
         $ip_range = $this->get_ip_range($ip_address);
-        $ip_address = ! empty($ip_range) ? $ip_range : '';
+        $ip_address = !empty($ip_range) ? $ip_range : '';
 
-        $password = ! empty($input['password']) ? sanitize_text_field($input['password']) : '';
-        $password = preg_match('/^[a-z0-9]{8,32}$/i', $password) ? $password : '';        
+        $password = !empty($input['password']) ? sanitize_text_field($input['password']) : '';
+        $password = preg_match('/^[a-z0-9]{8,32}$/i', $password) ? $password : '';
 
-        $description = ! empty($input['description']) ? sanitize_textarea_field($input['description']) : '';
+        $description = !empty($input['description']) ? sanitize_textarea_field($input['description']) : '';
 
-        $logged_in = ! empty($input['logged_in']) ? 1 : 0;
-        $sso_logged_in = ! empty($input['sso_logged_in']) ? 1 : 0;
+        $logged_in = !empty($input['logged_in']) ? 1 : 0;
+        $sso_logged_in = !empty($input['sso_logged_in']) ? 1 : 0;
 
-        $siteimprove = ! empty($input['siteimprove']) ? 1 : 0;
+        $siteimprove = !empty($input['siteimprove']) ? 1 : 0;
 
         if ($this->settings_errors()) {
             $this->add_settings_error('logged_in', $logged_in, '', false);
@@ -278,7 +278,7 @@ class Settings
         $permission_key = $permission['permission_key'];
 
         $select = isset($input['select']) ? wp_trim_words(sanitize_text_field($input['select']), 3, '') : '';
-        if (! $select) {
+        if (!$select) {
             $this->add_settings_error('select', '', __("Short description required.", 'rrze-ac'));
         } else {
             $this->add_settings_error('select', $select, '', false);
@@ -286,24 +286,24 @@ class Settings
 
         $permission['select'] = $select;
 
-        $description = ! empty($input['description']) ? sanitize_textarea_field($input['description']) : '';
+        $description = !empty($input['description']) ? sanitize_textarea_field($input['description']) : '';
         $permission['description'] = $description;
 
         $domain = isset($input['domain']) && !empty(trim($input['domain'])) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['domain'])))) : '';
         $domain = $this->get_valid_domains($domain);
-        $permission['domain'] = ! empty($domain) ? $domain : '';
+        $permission['domain'] = !empty($domain) ? $domain : '';
 
         $ip_address = isset($input['ip_address']) && !empty(trim($input['ip_address'])) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['ip_address'])))) : '';
         $ip_range = $this->get_ip_range($ip_address);
-        $permission['ip_address'] = ! empty($ip_range) ? $ip_range : '';
+        $permission['ip_address'] = !empty($ip_range) ? $ip_range : '';
 
-        $password = ! empty($input['password']) ? sanitize_text_field($input['password']) : '';
+        $password = !empty($input['password']) ? sanitize_text_field($input['password']) : '';
         $permission['password'] = preg_match('/^[a-z0-9]{8,32}$/i', $password) ? $password : '';
 
-        $logged_in = ! empty($input['logged_in']) ? 1 : 0;
-        $sso_logged_in = ! empty($input['sso_logged_in']) ? 1 : 0;
+        $logged_in = !empty($input['logged_in']) ? 1 : 0;
+        $sso_logged_in = !empty($input['sso_logged_in']) ? 1 : 0;
 
-        $siteimprove = ! empty($input['siteimprove']) ? 1 : 0;
+        $siteimprove = !empty($input['siteimprove']) ? 1 : 0;
         $permission['siteimprove'] = $siteimprove;
 
         $affiliation = $sso_logged_in && !empty(trim($input['affiliation'])) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['affiliation'])))) : '';
@@ -330,7 +330,7 @@ class Settings
             $permission['sso_logged_in'] = $sso_logged_in;
         }
 
-        $this->options['permissions'][$permission_key] = $permission;        
+        $this->options['permissions'][$permission_key] = $permission;
         return update_option($this->option_name, $this->options);
     }
 
@@ -345,7 +345,15 @@ class Settings
                 }
                 $domain_ary[] = $value;
                 if (filter_var($value, FILTER_VALIDATE_DOMAIN) === false) {
-                    $this->add_settings_error('domain-' . $key, $domain, sprintf(__('The domain %s is not valid.', 'rrze-ac'), $value));
+                    $this->add_settings_error(
+                        'domain-' . $key,
+                        $domain,
+                        sprintf(
+                            /* translators: %s: domain name */
+                            __('The domain %s is not valid.', 'rrze-ac'),
+                            $value
+                        )
+                    );
                 }
             }
         }
@@ -366,7 +374,15 @@ class Settings
                     $ip_range[] = $sanitized_value;
                 } else {
                     $ip_range[] = $value;
-                    $this->add_settings_error('ip_address-' . $key, $ip_address, sprintf(__('The IP address %s is not valid.', 'rrze-ac'), $value));
+                    $this->add_settings_error(
+                        'ip_address-' . $key,
+                        $ip_address,
+                        sprintf(
+                            /* translators: %s: IP address */
+                            __('The IP address %s is not valid.', 'rrze-ac'),
+                            $value
+                        )
+                    );
                 }
             }
         }
@@ -388,69 +404,69 @@ class Settings
 
     private function set_new_page()
     {
-        ?>
+    ?>
         <h2><?php echo esc_html(__("Add New Permission", 'rrze-ac')); ?></h2>
         <form action="<?php echo $this->main->action_url(array('action' => 'new')); ?>" method="post">
-        <?php
-        settings_fields('rrze-ac-new');
-        do_settings_sections('rrze-ac-new');
-        submit_button(__("Add New Permission", 'rrze-ac')); ?>
+            <?php
+            settings_fields('rrze-ac-new');
+            do_settings_sections('rrze-ac-new');
+            submit_button(__("Add New Permission", 'rrze-ac')); ?>
         </form>
-        <?php
+    <?php
     }
 
     private function set_edit_page()
     {
-        ?>
+    ?>
         <h2><?php echo esc_html(__("Edit permission", 'rrze-ac')); ?></h2>
         <form action="<?php echo $this->main->action_url(array('action' => 'edit')) ?>" method="post">
-        <?php
-        settings_fields('rrze-ac-edit');
-        do_settings_sections('rrze-ac-edit');
-        submit_button(__("Save Changes", 'rrze-ac')); ?>
+            <?php
+            settings_fields('rrze-ac-edit');
+            do_settings_sections('rrze-ac-edit');
+            submit_button(__("Save Changes", 'rrze-ac')); ?>
         </form>
-        <?php
+    <?php
     }
 
     private function set_default_page()
     {
-        ?>
+    ?>
         <form method="get">
-        <input type="hidden" name="page" value="rrze-ac">
-        <?php
-        $this->list_table->search_box(__("Search", 'rrze-ac'), 'search_id'); ?>
+            <input type="hidden" name="page" value="rrze-ac">
+            <?php
+            $this->list_table->search_box(__("Search", 'rrze-ac'), 'search_id'); ?>
         </form>
         <form method="post">
-        <?php
-        $this->list_table->views();
-        $this->list_table->display(); ?>
+            <?php
+            $this->list_table->views();
+            $this->list_table->display(); ?>
         </form>
-        <?php
+    <?php
     }
 
     public function access_settings_page()
     {
-        ?>
+    ?>
         <div class="wrap">
             <h2>
                 <?php echo esc_html(__("Settings", 'rrze-ac')); ?>
             </h2>
             <?php $this->settings_page(); ?>
         </div>
-        <?php
+    <?php
         $this->delete_settings_errors();
     }
 
     public function settings_page()
     {
-        ?>
+    ?>
         <form method="post">
-        <?php
-        settings_fields('rrze-ac-settings');
-        do_settings_sections('rrze-ac-settings');
-        submit_button(); ?>
+            <?php
+            settings_fields('rrze-ac-settings');
+            do_settings_sections('rrze-ac-settings');
+            submit_button(); ?>
         </form>
-        <?php
+    <?php
     }
 
     public function admin_settings()
@@ -465,7 +481,7 @@ class Settings
         add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permission_sso_logged_in_field'), 'rrze-ac-new', 'rrze-ac-new-section');
         add_settings_field('domain', __("Allow domain", 'rrze-ac'), array($this, 'permission_domain_field'), 'rrze-ac-new', 'rrze-ac-new-section');
         add_settings_field('ip_address', __("Allow IP address", 'rrze-ac'), array($this, 'permission_ip_address_field'), 'rrze-ac-new', 'rrze-ac-new-section');
-        add_settings_field('password', __("Password", 'rrze-ac'), array($this, 'permission_password_field'), 'rrze-ac-new', 'rrze-ac-new-section');        
+        add_settings_field('password', __("Password", 'rrze-ac'), array($this, 'permission_password_field'), 'rrze-ac-new', 'rrze-ac-new-section');
         add_settings_field('siteimprove', __("Siteimprove", 'rrze-ac'), array($this, 'permission_siteimprove_field'), 'rrze-ac-new', 'rrze-ac-new-section');
         add_settings_field('select', __("Short Description", 'rrze-ac'), array($this, 'permission_select_field'), 'rrze-ac-new', 'rrze-ac-new-section');
         add_settings_field('description', __("Description", 'rrze-ac'), array($this, 'permission_description_field'), 'rrze-ac-new', 'rrze-ac-new-section');
@@ -481,7 +497,7 @@ class Settings
         add_settings_field('domain', __("Allow domain", 'rrze-ac'), array($this, 'permission_domain_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
         add_settings_field('ip_address', __("Allow IP address", 'rrze-ac'), array($this, 'permission_ip_address_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
         add_settings_field('password', __("Password", 'rrze-ac'), array($this, 'permission_password_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
-        add_settings_field('siteimprove', __("Siteimprove", 'rrze-ac'), array($this, 'permission_siteimprove_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');        
+        add_settings_field('siteimprove', __("Siteimprove", 'rrze-ac'), array($this, 'permission_siteimprove_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
         add_settings_field('select', __("Short Description", 'rrze-ac'), array($this, 'permission_select_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
         add_settings_field('description', __("Description", 'rrze-ac'), array($this, 'permission_description_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
 
@@ -490,6 +506,7 @@ class Settings
         if ($this->main->simplesaml_auth() !== false) {
             add_settings_field('automatic_sso_authentication', __("Automatic SSO Authentication", 'rrze-ac'), array($this, 'automatic_sso_authentication_field'), 'rrze-ac-settings', 'rrze-ac-settings-section');
         }
+        add_settings_field('contact_admin_name', __("Contact", 'rrze-ac'), [$this, 'contact_admin_name_field'], 'rrze-ac-settings', 'rrze-ac-settings-section');
 
         add_settings_section('rrze-ac-settings-msg-section', false, [$this, 'settings_msg_section'], 'rrze-ac-settings');
         add_settings_field('user_isnt_logged_in_title', __("User Is Not Logged In (Title)", 'rrze-ac'), [$this, 'user_isnt_logged_in_title_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
@@ -505,7 +522,8 @@ class Settings
         add_settings_field('access_denied_password_msg', __("Access Denied Password (Message)", 'rrze-ac'), [$this, 'access_denied_password_msg_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
     }
 
-    public function settings_msg_section() {
+    public function settings_msg_section()
+    {
         echo '<h2>', __('Messages', 'rrze-ac'), '</h2>';
     }
 
@@ -518,8 +536,8 @@ class Settings
         $permission_key = isset($settings_errors['permission_key']['value']) && !$readonly ? $settings_errors['permission_key']['value'] : $permission_key;
         $field_invalid = !empty($settings_errors['permission_key']['error']) ? 'field-invalid' : ''; ?>
         <input type="hidden" value="<?php echo !empty($permission['active']) ? 1 : 0; ?>" name="<?php printf('%s[active]', $this->option_name); ?>">
-        <input class="regular-text <?php echo $field_invalid; ?>" type="text" value="<?php echo $permission_key; ?>" name="<?php printf('%s[permission_key]', $this->option_name); ?>"<?php echo $readonly; ?>>
-        <?php
+        <input class="regular-text <?php echo $field_invalid; ?>" type="text" value="<?php echo $permission_key; ?>" name="<?php printf('%s[permission_key]', $this->option_name); ?>" <?php echo $readonly; ?>>
+    <?php
     }
 
     public function permission_logged_in_field()
@@ -532,7 +550,7 @@ class Settings
         <label for="permission_logged_in">
             <input id="permission_logged_in" type="checkbox" <?php checked($checked); ?> name="<?php printf('%s[logged_in]', $this->option_name); ?>" value="1"> <?php _e("The user must be logged-in and a member of the website.", 'rrze-ac'); ?>
         </label>
-        <?php
+    <?php
     }
 
     public function permission_sso_logged_in_field()
@@ -545,7 +563,7 @@ class Settings
         <label for="permission_sso_logged_in">
             <input id="permission_sso_logged_in" type="checkbox" <?php checked($checked); ?> name="<?php printf('%s[sso_logged_in]', $this->option_name); ?>" value="1"> <?php _e("The user must be SSO logged-in.", 'rrze-ac'); ?>
         </label>
-        <?php
+    <?php
     }
 
     public function permission_affiliation_field()
@@ -557,7 +575,7 @@ class Settings
         $affiliation = isset($settings_errors['affiliation']['value']) ? implode(PHP_EOL, (array) $settings_errors['affiliation']['value']) : $affiliation; ?>
         <textarea id="affiliation" cols="50" rows="3" name="<?php printf('%s[affiliation]', $this->option_name); ?>"><?php echo $affiliation; ?></textarea>
         <p class="description"><?php _e('Enter one person affiliation per line.', 'rrze-ac'); ?></p>
-        <?php
+    <?php
     }
 
     public function permission_entitlement_field()
@@ -569,7 +587,7 @@ class Settings
         $entitlement = isset($settings_errors['entitlement']['value']) ? implode(PHP_EOL, (array) $settings_errors['entitlement']['value']) : $entitlement; ?>
         <textarea id="entitlement" cols="50" rows="3" name="<?php printf('%s[entitlement]', $this->option_name); ?>"><?php echo $entitlement; ?></textarea>
         <p class="description"><?php _e('Enter one person entitlement per line.', 'rrze-ac'); ?></p>
-        <?php
+    <?php
     }
 
     public function permission_select_field()
@@ -581,7 +599,7 @@ class Settings
         $select = isset($settings_errors['select']['value']) ? sanitize_text_field($settings_errors['select']['value']) : $select;
         $field_invalid = !empty($settings_errors['select']['error']) ? 'field-invalid' : ''; ?>
         <input class="regular-text <?php echo $field_invalid; ?>" type="text" value="<?php echo $select; ?>" name="<?php printf('%s[select]', $this->option_name); ?>">
-        <?php
+    <?php
     }
 
     public function permission_description_field()
@@ -592,7 +610,7 @@ class Settings
         $description = isset($permission['description']) ? esc_textarea($permission['description']) : '';
         $description = isset($settings_errors['description']['value']) ? esc_textarea($settings_errors['description']['value']) : $description; ?>
         <textarea id="description" cols="50" rows="3" name="<?php printf('%s[description]', $this->option_name); ?>"><?php echo $description; ?></textarea>
-        <?php
+    <?php
     }
 
     public function default_permission_field()
@@ -601,15 +619,15 @@ class Settings
         $permissions = $this->main->get_the_permissions(); ?>
         <select id="access-permission-select" name="<?php printf('%s[default_permission]', $this->option_name); ?>">
             <?php foreach ($permissions as $key => $data) : ?>
-            <?php if (!$data['active']) {
-            continue;
-            } ?>
-            <option value="<?php echo esc_attr($key); ?>" <?php selected($default_permission, $key); ?>>
-                <?php echo sanitize_text_field($data['select']); ?>
-            </option>
-        <?php endforeach; ?>
+                <?php if (!$data['active']) {
+                    continue;
+                } ?>
+                <option value="<?php echo esc_attr($key); ?>" <?php selected($default_permission, $key); ?>>
+                    <?php echo sanitize_text_field($data['select']); ?>
+                </option>
+            <?php endforeach; ?>
         </select>
-        <?php
+    <?php
     }
 
     public function automatic_sso_authentication_field()
@@ -619,71 +637,87 @@ class Settings
         <label for="automatic_sso_authentication">
             <input id="automatic_sso_authentication" type="checkbox" <?php checked($checked); ?> name="<?php printf('%s[automatic_sso_authentication]', $this->option_name); ?>" value="1"> <?php _e("Enable automatic SSO authentication process", 'rrze-ac'); ?>
         </label>
-        <?php
+    <?php
     }
-        
+
+    public function contact_admin_name_field()
+    {
+        $admin_contact = $this->options['contact_admin_name']; ?>
+        <input type="text" id="contact_admin_name" class="regular-text" name="<?php printf('%s[contact_admin_name]', $this->option_name); ?>" value="<?php echo $admin_contact; ?>">
+        <p class="description">
+            <?php printf(
+                '%s <strong><i>%s</strong><br>%s<br>%s',
+                __('The name of the contact that corresponds to the website administration email address', 'rrze-ac'),
+                get_option('admin_email'),
+                __('The contact will be displayed in all access denied messages.', 'rrze-ac'),
+                __('If this field is left empty, all users with the administrator role will be listed as contacts in all access denied messages.', 'rrze-ac')
+            ); ?>
+        </p>
+    <?php
+    }
+
     public function user_isnt_logged_in_title_field()
     {
         $title = $this->options['user_isnt_logged_in_title']; ?>
         <input type="text" id="user_isnt_logged_in_title" class="regular-text" name="<?php printf('%s[user_isnt_logged_in_title]', $this->option_name); ?>" value="<?php echo $title; ?>">
-        <?php
+    <?php
     }
 
     public function user_isnt_logged_in_msg_field()
     {
         $msg = $this->options['user_isnt_logged_in_msg']; ?>
         <textarea id="user_isnt_logged_in_msg" cols="50" rows="3" name="<?php printf('%s[user_isnt_logged_in_msg]', $this->option_name); ?>"><?php echo $msg; ?></textarea>
-        <?php
+    <?php
     }
 
     public function user_isnt_logged_in_link_txt_field()
     {
         $link_txt = $this->options['user_isnt_logged_in_link_txt']; ?>
         <input type="text" id="user_isnt_logged_in_link_txt" class="regular-text" name="<?php printf('%s[user_isnt_logged_in_link_txt]', $this->option_name); ?>" value="<?php echo $link_txt; ?>">
-        <?php
+    <?php
     }
 
     public function user_isnt_sso_logged_in_title_field()
     {
         $title = $this->options['user_isnt_sso_logged_in_title']; ?>
         <input type="text" id="user_isnt_sso_logged_in_title" class="regular-text" name="<?php printf('%s[user_isnt_sso_logged_in_title]', $this->option_name); ?>" value="<?php echo $title; ?>">
-        <?php
-    }    
+    <?php
+    }
 
     public function user_isnt_sso_logged_in_msg_field()
     {
         $msg = $this->options['user_isnt_sso_logged_in_msg']; ?>
         <textarea id="user_isnt_sso_logged_in_msg" cols="50" rows="3" name="<?php printf('%s[user_isnt_sso_logged_in_msg]', $this->option_name); ?>"><?php echo $msg; ?></textarea>
-        <?php
+    <?php
     }
 
     public function user_isnt_sso_logged_in_link_txt_field()
     {
         $link_txt = $this->options['user_isnt_sso_logged_in_link_txt']; ?>
         <input type="text" id="user_isnt_sso_logged_in_link_txt" class="regular-text" name="<?php printf('%s[user_isnt_sso_logged_in_link_txt]', $this->option_name); ?>" value="<?php echo $link_txt; ?>">
-        <?php
+    <?php
     }
 
     public function access_denied_default_title_field()
     {
         $title = $this->options['access_denied_default_title']; ?>
         <input type="text" id="access_denied_default_title" class="regular-text" name="<?php printf('%s[access_denied_default_title]', $this->option_name); ?>" value="<?php echo $title; ?>">
-        <?php
+    <?php
     }
 
     public function access_denied_default_msg_field()
     {
         $msg = $this->options['access_denied_default_msg']; ?>
         <textarea id="access_denied_default_msg" cols="50" rows="5" name="<?php printf('%s[access_denied_default_msg]', $this->option_name); ?>"><?php echo $msg; ?></textarea>
-        <?php
+    <?php
     }
-    
+
     public function access_denied_password_msg_field()
     {
         $msg = $this->options['access_denied_password_msg']; ?>
         <textarea id="access_denied_password_msg" cols="50" rows="3" name="<?php printf('%s[access_denied_password_msg]', $this->option_name); ?>"><?php echo $msg; ?></textarea>
-        <?php
-    }   
+    <?php
+    }
 
     public function permission_domain_field()
     {
@@ -694,7 +728,7 @@ class Settings
         $domain = isset($settings_errors['domain']['value']) ? implode(PHP_EOL, (array) $settings_errors['domain']['value']) : $domain; ?>
         <textarea id="domain" cols="50" rows="3" name="<?php printf('%s[domain]', $this->option_name); ?>"><?php echo $domain; ?></textarea>
         <p class="description"><?php _e('Enter one domain per line.', 'rrze-ac'); ?></p>
-        <?php
+    <?php
     }
 
     public function permission_ip_address_field()
@@ -706,7 +740,7 @@ class Settings
         $ip_address = isset($settings_errors['ip_address']['value']) ? implode(PHP_EOL, (array) $settings_errors['ip_address']['value']) : $ip_address; ?>
         <textarea id="ip_address" cols="50" rows="3" name="<?php printf('%s[ip_address]', $this->option_name); ?>"><?php echo $ip_address; ?></textarea>
         <p class="description"><?php _e('Enter one IP address per line.', 'rrze-ac'); ?></p>
-        <?php
+    <?php
     }
 
     public function permission_password_field()
@@ -717,8 +751,8 @@ class Settings
         $password = !empty($permission['password']) ? esc_html($permission['password']) : '';
         $password = isset($settings_errors['password']['value']) ? esc_html($settings_errors['password']['value']) : $password; ?>
         <input type="text" id="password" class="regular-text" name="<?php printf('%s[password]', $this->option_name); ?>" value="<?php echo $password; ?>">
-            <p class="description"><?php _e('Allows access using a password (alphanumeric value between 8 and 32 characters).', 'rrze-ac'); ?></p>
-        <?php
+        <p class="description"><?php _e('Allows access using a password (alphanumeric value between 8 and 32 characters).', 'rrze-ac'); ?></p>
+    <?php
     }
 
     public function permission_siteimprove_field()
@@ -793,10 +827,12 @@ class Settings
 
     public function action_delete($permission)
     {
-        if (!isset($permission['permission_key'])
-                || $permission['core']
-                || $permission['permission_key'] == $this->main->get_default_permission()
-                || !empty($this->main->count_meta_keys($permission['permission_key']))) {
+        if (
+            !isset($permission['permission_key'])
+            || $permission['core']
+            || $permission['permission_key'] == $this->main->get_default_permission()
+            || !empty($this->main->count_meta_keys($permission['permission_key']))
+        ) {
             return false;
         }
         $permission_key = $permission['permission_key'];
@@ -806,13 +842,17 @@ class Settings
 
     private function validate_settings($input)
     {
-        if (isset($input['default_permission'])
+        if (
+            isset($input['default_permission'])
             && isset($this->options['permissions'][$input['default_permission']])
-            && $this->options['permissions'][$input['default_permission']]['active']) {
+            && $this->options['permissions'][$input['default_permission']]['active']
+        ) {
             $this->options['default_permission'] = $input['default_permission'];
         }
 
         $this->options['automatic_sso_authentication'] = isset($input['automatic_sso_authentication']) ? 1 : 0;
+
+        $this->options['contact_admin_name'] = esc_html(sanitize_text_field($input['contact_admin_name']));
 
         $title = esc_html(sanitize_text_field($input['user_isnt_logged_in_title']));
         $this->options['user_isnt_logged_in_title'] = $title ?: $this->options['user_isnt_logged_in_title'];
@@ -827,12 +867,12 @@ class Settings
         $this->options['user_isnt_sso_logged_in_msg'] = $msg ?: $this->options['user_isnt_sso_logged_in_msg'];
         $link_txt = esc_html(sanitize_textarea_field($input['user_isnt_sso_logged_in_link_txt']));
         $this->options['user_isnt_sso_logged_in_link_txt'] = $link_txt ?: $this->options['user_isnt_sso_logged_in_link_txt'];
-        
+
         $title = esc_html(sanitize_text_field($input['access_denied_default_title']));
         $this->options['access_denied_default_title'] = $title ?: $this->options['access_denied_default_title'];
         $msg = esc_html(sanitize_textarea_field($input['access_denied_default_msg']));
         $this->options['access_denied_default_msg'] = $msg ?: $this->options['access_denied_default_msg'];
-        
+
         $msg = esc_html(sanitize_textarea_field($input['access_denied_password_msg']));
         $this->options['access_denied_password_msg'] = $msg ?: $this->options['access_denied_password_msg'];
 
@@ -868,11 +908,11 @@ class Settings
         if (is_array($notices)) {
             foreach ($notices as $class => $messages) {
                 foreach ($messages as $message) :
-                    ?>
+        ?>
                     <div class="<?php echo $class; ?>">
                         <p><?php echo $message; ?></p>
                     </div>
-                    <?php
+<?php
                 endforeach;
             }
         }

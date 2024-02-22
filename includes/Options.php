@@ -51,6 +51,7 @@ class Options
             ],
             'default_permission' => 'logged-in',
             'automatic_sso_authentication' => 1,
+            'contact_admin_name' => '',
             // user_isnt_logged_in
             'user_isnt_logged_in_title' => __('Log in with your IdM ID', 'rrze-ac'),
             'user_isnt_logged_in_msg' => __('Access to this resource is only available to members of this website.', 'rrze-ac'),
