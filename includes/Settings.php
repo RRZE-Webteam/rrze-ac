@@ -646,7 +646,7 @@ class Settings
         <input type="text" id="contact_admin_name" class="regular-text" name="<?php printf('%s[contact_admin_name]', $this->option_name); ?>" value="<?php echo $admin_contact; ?>">
         <p class="description">
             <?php printf(
-                '%s <strong><i>%s</strong><br>%s<br>%s',
+                '%s: <strong><i>%s</strong><br>%s<br>%s',
                 __('The name of the contact that corresponds to the website administration email address', 'rrze-ac'),
                 get_option('admin_email'),
                 __('The contact will be displayed in all access denied messages.', 'rrze-ac'),
