@@ -2113,12 +2113,20 @@ class Main
             ]);
             if (!empty($admins)) {
                 foreach ($admins as $user) {
-                    $contact[] = sprintf('%s <%s>', $user->data->display_name, make_clickable($user->data->user_email));
+                    $contact[] = sprintf(
+                        '<a href="mailto:%1$s">%2$s</a>',
+                        Utils::encodeEmail($user->data->user_email),
+                        $user->data->display_name
+                    );                    
                 }
             }
         } else {
             $siteAdminEmail = get_option('admin_email');
-            $contact[] = sprintf('%s <%s>', $siteAdminName, make_clickable($siteAdminEmail));
+            $contact[] = sprintf(
+                '<a href="mailto:%1$s">%2$s</a>',
+                Utils::encodeEmail($siteAdminEmail),
+                $siteAdminName
+            );            
         }
 
         if ($contact) {
