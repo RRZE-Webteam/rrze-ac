@@ -306,10 +306,10 @@ class Settings
         $siteimprove = !empty($input['siteimprove']) ? 1 : 0;
         $permission['siteimprove'] = $siteimprove;
 
-        $affiliation = $sso_logged_in && !empty(trim($input['affiliation'])) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['affiliation'])))) : '';
+        $affiliation = $sso_logged_in && !empty($input['affiliation']) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['affiliation'])))) : '';
         $permission['affiliation'] = $affiliation;
 
-        $entitlement = $sso_logged_in && !empty(trim($input['entitlement'])) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['entitlement'])))) : '';
+        $entitlement = $sso_logged_in && !empty($input['entitlement']) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['entitlement'])))) : '';
         $permission['entitlement'] = $entitlement;
 
         if ($this->settings_errors()) {
