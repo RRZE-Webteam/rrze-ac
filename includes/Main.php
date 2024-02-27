@@ -2068,7 +2068,7 @@ class Main
         if ($this->get_permission_status($this->user_isnt_logged_in)) {
             $login_url = wp_login_url($permalink);
             $message .= '<h3>' . esc_html($this->options['user_isnt_logged_in_title']) . '</h3>';
-            $message .= '<p>' . esc_html($this->options['user_isnt_logged_in_msg']) . '</p>';
+            $message .= wpautop(esc_html($this->options['user_isnt_logged_in_msg']));
             $message .= '<p><a href="' . $login_url . '">' . esc_html($this->options['user_isnt_logged_in_link_txt']) . '</a></p>';
             return $message;
         }
@@ -2076,7 +2076,7 @@ class Main
         if ($this->get_permission_status($this->user_isnt_sso_logged_in) && $this->simplesaml_auth) {
             $login_url = $this->simplesaml_auth->getLoginURL();
             $message .= '<h3>' . esc_html($this->options['user_isnt_sso_logged_in_title']) . '</h3>';
-            $message .= '<p>' . esc_html($this->options['user_isnt_sso_logged_in_msg']) . '</p>';
+            $message .= wpautop(esc_html($this->options['user_isnt_sso_logged_in_msg']));
             $message .= '<p><a href="' . $login_url . '">' . esc_html($this->options['user_isnt_sso_logged_in_link_txt']) . '</a></p>';
             return $message;
         }
@@ -2084,7 +2084,7 @@ class Main
         $message .= '<h3>' . esc_html($this->options['access_denied_default_title']) . '</h3>';
 
         if ($this->get_permission_status($this->wrong_password)) {
-            $message .= '<p>' . esc_html($this->options['access_denied_password_msg']) . '</p>' . PHP_EOL;
+            $message .= wpautop(esc_html($this->options['access_denied_password_msg'])) . PHP_EOL;
 
             $fieldName = 'rrze_ac_password_' . $post_id;
             $message .= '<form method="post">' . PHP_EOL;
@@ -2094,7 +2094,7 @@ class Main
             $message .= '</form>' . PHP_EOL;
         }
 
-        $message .= '<p>' . esc_html($this->options['access_denied_default_msg']) . '</p>';
+        $message .= wpautop(esc_html($this->options['access_denied_default_msg']));
         $message .= $this->get_contact();
 
         return $message;
@@ -2117,7 +2117,7 @@ class Main
                         '<a href="mailto:%1$s">%2$s</a>',
                         Utils::encodeEmail($user->data->user_email),
                         $user->data->display_name
-                    );                    
+                    );
                 }
             }
         } else {
@@ -2126,7 +2126,7 @@ class Main
                 '<a href="mailto:%1$s">%2$s</a>',
                 Utils::encodeEmail($siteAdminEmail),
                 $siteAdminName
-            );            
+            );
         }
 
         if ($contact) {
@@ -2196,8 +2196,9 @@ class Main
             'show_in_admin_status_list' => false,
             'label_count'               => _n_noop(
                 /* translators: %s: label count */
-                'Protected <span class="count">(%s)</span>', 
-                'Protected <span class="count">(%s)</span>', 'rrze-ac'
+                'Protected <span class="count">(%s)</span>',
+                'Protected <span class="count">(%s)</span>',
+                'rrze-ac'
             ),
         ]);
     }
