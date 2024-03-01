@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Access Control\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-ac\n"
-"POT-Creation-Date: 2024-03-01T16:19:27+00:00\n"
-"PO-Revision-Date: 2024-03-01 17:28+0100\n"
+"POT-Creation-Date: 2024-03-01T16:50:11+00:00\n"
+"PO-Revision-Date: 2024-03-01 17:51+0100\n"
 "Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
 "Language-Team: Deutsch (Sie)\n"
 "Language: de\n"
@@ -61,7 +61,7 @@ msgstr "Berechtigung entfernen"
 
 #: includes/Attachment.php:53 includes/Attachment.php:184
 #: includes/ListTable.php:90 includes/Settings.php:475
-#: includes/Settings.php:486
+#: includes/Settings.php:486 src/blockeditor/script.js:47
 msgid "Permission"
 msgstr "Berechtigung"
 
@@ -190,11 +190,11 @@ msgstr "Domäne zulassen"
 msgid "Allow IP address"
 msgstr "IP-Adresse zulassen"
 
-#: includes/Main.php:45 includes/Settings.php:46 includes/Settings.php:448
+#: includes/Main.php:46 includes/Settings.php:46 includes/Settings.php:448
 msgid "Settings"
 msgstr "Einstellungen"
 
-#: includes/Main.php:104
+#: includes/Main.php:105
 msgid ""
 "The RRZE Access Control Plugin is not configured properly. The files and "
 "documents can not be protected."
@@ -202,7 +202,7 @@ msgstr ""
 "Das RRZE Access-Control-Plugin wurde nicht richtig konfiguriert. Die Dateien "
 "und Dokumente können nicht geschützt werden."
 
-#: includes/Main.php:107
+#: includes/Main.php:108
 msgid ""
 "The following rewrite commands must be added in the .htaccess file after the "
 "WordPress command &#8222;RewriteRule ^index\\.php$ - [L]&#8220;."
@@ -210,20 +210,20 @@ msgstr ""
 "Die folgende Rewrite-Befehle müssen in der htaccess-Datei nach der WordPress-"
 "Befehl &#8222;RewriteRule ^index\\.php$ - [L]&#8220; hinzugefügt werden."
 
-#: includes/Main.php:110
+#: includes/Main.php:111
 msgid "Please contact your system administrator."
 msgstr "Bitte wenden Sie sich an den Systemadministrator."
 
-#: includes/Main.php:317 includes/Media/Files.php:362
+#: includes/Main.php:318 includes/Media/Files.php:362
 msgid "Login is required"
 msgstr "Anmeldung ist erforderlich"
 
-#: includes/Main.php:392
+#: includes/Main.php:393
 msgid "Protected"
 msgstr "Geschützt"
 
 #. translators: %s: label count
-#: includes/Main.php:397
+#: includes/Main.php:398
 msgid "Protected <span class=\"count\">(%s)</span>"
 msgid_plural "Protected <span class=\"count\">(%s)</span>"
 msgstr[0] "Geschützt <span class=\"count\">(%s)</span>"
