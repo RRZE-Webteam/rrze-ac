@@ -22,15 +22,11 @@ class Settings
     protected $notice_transient = 'rrze-ac-notice-';
     protected $notice_transient_expiration = 30;
 
-    protected $access_permission_meta_key;
-
     public function __construct(Main $main)
     {
         $this->main = $main;
         $this->option_name = $this->main->option_name;
         $this->options = $this->main->options;
-
-        $this->access_permission_meta_key = $this->main->access_permission_meta_key;
 
         add_action('admin_menu', array($this, 'access_menu'));
 
@@ -42,7 +38,7 @@ class Settings
     {
         $this->validate_actions();
 
-        $access_page = add_menu_page(__("Access Protection", 'rrze-ac'), __("Access Protection", 'rrze-ac'), 'manage_options', 'rrze-ac', array($this, 'access_permissions_page'), 'dashicons-shield');
+        $access_page = add_menu_page(__("Access Restriction", 'rrze-ac'), __("Access Restriction", 'rrze-ac'), 'manage_options', 'rrze-ac', array($this, 'access_permissions_page'), 'dashicons-shield');
         add_submenu_page('rrze-ac', __("Permissions", 'rrze-ac'), __("Permissions", 'rrze-ac'), 'manage_options', 'rrze-ac', array($this, 'access_permissions_page'));
         add_action("load-{$access_page}", array($this, 'load_access_page'));
         add_action("load-{$access_page}", array($this, 'access_screen_options'));
@@ -146,7 +142,7 @@ class Settings
         }
 
         $permission_key = $input['permission_key'];
-        $permission = $this->main->get_permission($permission_key);
+        $permission = permissions()->get_permission($permission_key);
         if (!$permission) {
             wp_die(__("Permission does not exist.", 'rrze-ac'));
         }
@@ -472,7 +468,7 @@ class Settings
     public function admin_settings()
     {
         $permission_key = $this->request_var('permission');
-        $permission = $this->main->get_permission($permission_key);
+        $permission = permissions()->get_permission($permission_key);
         $sso_logged_in = !empty($permission['sso_logged_in']) ? true : false;
 
         add_settings_section('rrze-ac-new-section', false, '__return_false', 'rrze-ac-new');
@@ -503,7 +499,7 @@ class Settings
 
         add_settings_section('rrze-ac-settings-section', false, '__return_false', 'rrze-ac-settings');
         add_settings_field('default_permission', __("Standard Permission", 'rrze-ac'), array($this, 'default_permission_field'), 'rrze-ac-settings', 'rrze-ac-settings-section');
-        if ($this->main->simplesaml_auth() !== false) {
+        if (permissions()->simplesamlAuth() !== false) {
             add_settings_field('automatic_sso_authentication', __("Automatic SSO Authentication", 'rrze-ac'), array($this, 'automatic_sso_authentication_field'), 'rrze-ac-settings', 'rrze-ac-settings-section');
         }
         add_settings_field('contact_admin_name', __("Contact", 'rrze-ac'), [$this, 'contact_admin_name_field'], 'rrze-ac-settings', 'rrze-ac-settings-section');
@@ -512,7 +508,7 @@ class Settings
         add_settings_field('user_isnt_logged_in_title', __("User Is Not Logged In (Title)", 'rrze-ac'), [$this, 'user_isnt_logged_in_title_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
         add_settings_field('user_isnt_logged_in_msg', __("User Is Not Logged In (Message)", 'rrze-ac'), [$this, 'user_isnt_logged_in_msg_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
         add_settings_field('user_isnt_logged_in_link_txt', __("User Is Not Logged In (Link Text)", 'rrze-ac'), [$this, 'user_isnt_logged_in_link_txt_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
-        if ($this->main->simplesaml_auth() !== false) {
+        if (permissions()->simplesamlAuth() !== false) {
             add_settings_field('user_isnt_sso_logged_in_title', __("User Is Not SSO Logged In (Title)", 'rrze-ac'), [$this, 'user_isnt_sso_logged_in_title_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
             add_settings_field('user_isnt_sso_logged_in_msg', __("User Is Not SSO Logged In (Message)", 'rrze-ac'), [$this, 'user_isnt_sso_logged_in_msg_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
             add_settings_field('user_isnt_sso_logged_in_link_txt', __("User Is Not SSO Logged In (Link Text)", 'rrze-ac'), [$this, 'user_isnt_sso_logged_in_link_txt_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
@@ -531,7 +527,7 @@ class Settings
     {
         $settings_errors = $this->settings_errors();
         $permission_key = $this->request_var('permission');
-        $permission = $this->main->get_permission($permission_key);
+        $permission = permissions()->get_permission($permission_key);
         $readonly = $permission_key ? ' readonly="readonly"' : '';
         $permission_key = isset($settings_errors['permission_key']['value']) && !$readonly ? $settings_errors['permission_key']['value'] : $permission_key;
         $field_invalid = !empty($settings_errors['permission_key']['error']) ? 'field-invalid' : ''; ?>
@@ -544,7 +540,7 @@ class Settings
     {
         $settings_errors = $this->settings_errors();
         $permission_key = $this->request_var('permission');
-        $permission = $this->main->get_permission($permission_key);
+        $permission = permissions()->get_permission($permission_key);
         $checked = !empty($permission['logged_in']) ? true : false;
         $checked = !empty($settings_errors['logged_in']['value']) ? true : $checked; ?>
         <label for="permission_logged_in">
@@ -557,7 +553,7 @@ class Settings
     {
         $settings_errors = $this->settings_errors();
         $permission_key = $this->request_var('permission');
-        $permission = $this->main->get_permission($permission_key);
+        $permission = permissions()->get_permission($permission_key);
         $checked = !empty($permission['sso_logged_in']) ? true : false;
         $checked = !empty($settings_errors['sso_logged_in']['value']) ? true : $checked; ?>
         <label for="permission_sso_logged_in">
@@ -570,7 +566,7 @@ class Settings
     {
         $settings_errors = $this->settings_errors();
         $permission_key = $this->request_var('permission');
-        $permission = $this->main->get_permission($permission_key);
+        $permission = permissions()->get_permission($permission_key);
         $affiliation = !empty($permission['affiliation']) ? implode(PHP_EOL, (array) $permission['affiliation']) : '';
         $affiliation = isset($settings_errors['affiliation']['value']) ? implode(PHP_EOL, (array) $settings_errors['affiliation']['value']) : $affiliation; ?>
         <textarea id="affiliation" cols="50" rows="3" name="<?php printf('%s[affiliation]', $this->option_name); ?>"><?php echo $affiliation; ?></textarea>
@@ -582,7 +578,7 @@ class Settings
     {
         $settings_errors = $this->settings_errors();
         $permission_key = $this->request_var('permission');
-        $permission = $this->main->get_permission($permission_key);
+        $permission = permissions()->get_permission($permission_key);
         $entitlement = !empty($permission['entitlement']) ? implode(PHP_EOL, (array) $permission['entitlement']) : '';
         $entitlement = isset($settings_errors['entitlement']['value']) ? implode(PHP_EOL, (array) $settings_errors['entitlement']['value']) : $entitlement; ?>
         <textarea id="entitlement" cols="50" rows="3" name="<?php printf('%s[entitlement]', $this->option_name); ?>"><?php echo $entitlement; ?></textarea>
@@ -594,7 +590,7 @@ class Settings
     {
         $settings_errors = $this->settings_errors();
         $permission_key = $this->request_var('permission');
-        $permission = $this->main->get_permission($permission_key);
+        $permission = permissions()->get_permission($permission_key);
         $select = isset($permission['select']) ? sanitize_text_field($permission['select']) : '';
         $select = isset($settings_errors['select']['value']) ? sanitize_text_field($settings_errors['select']['value']) : $select;
         $field_invalid = !empty($settings_errors['select']['error']) ? 'field-invalid' : ''; ?>
@@ -606,7 +602,7 @@ class Settings
     {
         $settings_errors = $this->settings_errors();
         $permission_key = $this->request_var('permission');
-        $permission = $this->main->get_permission($permission_key);
+        $permission = permissions()->get_permission($permission_key);
         $description = isset($permission['description']) ? esc_textarea($permission['description']) : '';
         $description = isset($settings_errors['description']['value']) ? esc_textarea($settings_errors['description']['value']) : $description; ?>
         <textarea id="description" cols="50" rows="3" name="<?php printf('%s[description]', $this->option_name); ?>"><?php echo $description; ?></textarea>
@@ -615,8 +611,8 @@ class Settings
 
     public function default_permission_field()
     {
-        $default_permission = $this->main->get_default_permission();
-        $permissions = $this->main->get_the_permissions(); ?>
+        $default_permission = permissions()->get_default_permission();
+        $permissions = permissions()->get_the_permissions(); ?>
         <select id="access-permission-select" name="<?php printf('%s[default_permission]', $this->option_name); ?>">
             <?php foreach ($permissions as $key => $data) : ?>
                 <?php if (!$data['active']) {
@@ -723,7 +719,7 @@ class Settings
     {
         $settings_errors = $this->settings_errors();
         $permission_key = $this->request_var('permission');
-        $permission = $this->main->get_permission($permission_key);
+        $permission = permissions()->get_permission($permission_key);
         $domain = !empty($permission['domain']) ? implode(PHP_EOL, (array) $permission['domain']) : '';
         $domain = isset($settings_errors['domain']['value']) ? implode(PHP_EOL, (array) $settings_errors['domain']['value']) : $domain; ?>
         <textarea id="domain" cols="50" rows="3" name="<?php printf('%s[domain]', $this->option_name); ?>"><?php echo $domain; ?></textarea>
@@ -735,7 +731,7 @@ class Settings
     {
         $settings_errors = $this->settings_errors();
         $permission_key = $this->request_var('permission');
-        $permission = $this->main->get_permission($permission_key);
+        $permission = permissions()->get_permission($permission_key);
         $ip_address = !empty($permission['ip_address']) ? implode(PHP_EOL, (array) $permission['ip_address']) : '';
         $ip_address = isset($settings_errors['ip_address']['value']) ? implode(PHP_EOL, (array) $settings_errors['ip_address']['value']) : $ip_address; ?>
         <textarea id="ip_address" cols="50" rows="3" name="<?php printf('%s[ip_address]', $this->option_name); ?>"><?php echo $ip_address; ?></textarea>
@@ -747,7 +743,7 @@ class Settings
     {
         $settings_errors = $this->settings_errors();
         $permission_key = $this->request_var('permission');
-        $permission = $this->main->get_permission($permission_key);
+        $permission = permissions()->get_permission($permission_key);
         $password = !empty($permission['password']) ? esc_html($permission['password']) : '';
         $password = isset($settings_errors['password']['value']) ? esc_html($settings_errors['password']['value']) : $password; ?>
         <input type="text" id="password" class="regular-text" name="<?php printf('%s[password]', $this->option_name); ?>" value="<?php echo $password; ?>">
@@ -759,7 +755,7 @@ class Settings
     {
         $settings_errors = $this->settings_errors();
         $permission_key = $this->request_var('permission');
-        $permission = $this->main->get_permission($permission_key);
+        $permission = permissions()->get_permission($permission_key);
         $checked = !empty($permission['siteimprove']) ? true : false;
         $checked = !empty($settings_errors['siteimprove']['value']) ? true : $checked; ?>
         <label for="permission_siteimprove">
@@ -775,7 +771,7 @@ class Settings
         $permission_key = $this->request_var('permission');
         $nonce = $this->request_var('nonce');
 
-        $permission = $this->main->get_permission($permission_key);
+        $permission = permissions()->get_permission($permission_key);
 
         if ($page == 'rrze-ac' && !empty($permission)) {
             switch ($action) {
@@ -817,7 +813,7 @@ class Settings
 
     public function action_activate($permission, $activate = 1)
     {
-        if (!isset($permission['permission_key']) || !$activate && $permission['permission_key'] == $this->main->get_default_permission()) {
+        if (!isset($permission['permission_key']) || !$activate && $permission['permission_key'] == permissions()->get_default_permission()) {
             return false;
         }
         $permission_key = $permission['permission_key'];
@@ -830,7 +826,7 @@ class Settings
         if (
             !isset($permission['permission_key'])
             || $permission['core']
-            || $permission['permission_key'] == $this->main->get_default_permission()
+            || $permission['permission_key'] == permissions()->get_default_permission()
             || !empty($this->main->count_meta_keys($permission['permission_key']))
         ) {
             return false;
