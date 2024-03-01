@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: RRZE Access Control\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-ac\n"
 "POT-Creation-Date: 2024-02-22T11:49:59+00:00\n"
-"PO-Revision-Date: 2024-02-22 12:51+0100\n"
+"PO-Revision-Date: 2024-03-01 17:28+0100\n"
 "Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
 "Language-Team: Deutsch\n"
 "Language: de_DE\n"
@@ -37,62 +37,164 @@ msgstr "RRZE Webteam"
 msgid "https://blogs.fau.de/webworking/"
 msgstr "https://blogs.fau.de/webworking/"
 
-#: includes/ListTable.php:63 includes/Main.php:1128
-msgid "Edit"
-msgstr "Bearbeiten"
+#: includes/Access.php:194
+msgid "Send password"
+msgstr "Passwort senden"
 
-#: includes/ListTable.php:67 includes/ListTable.php:109
-msgid "Deactivate"
-msgstr "Deaktivieren"
+#: includes/Access.php:235
+msgid "Contact:"
+msgstr "Kontakt:"
 
-#: includes/ListTable.php:69 includes/ListTable.php:108 includes/Main.php:1973
-msgid "Activate"
-msgstr "Aktivieren"
+#: includes/Attachment.php:26 includes/Attachment.php:129
+#: includes/Attachment.php:176 includes/Attachment.php:337 includes/Post.php:99
+#: includes/Settings.php:41 src/blockeditor/script.js:43
+msgid "Access Restriction"
+msgstr "Zugriffsbeschränkung"
 
-#: includes/ListTable.php:71 includes/ListTable.php:110
-msgid "Delete"
-msgstr "Löschen"
+#: includes/Attachment.php:48 includes/Attachment.php:396
+msgid "Enable permission"
+msgstr "Berechtigung aktivieren"
 
-#: includes/ListTable.php:85 includes/Main.php:438 includes/Settings.php:479
-#: includes/Settings.php:490
+#: includes/Attachment.php:49 includes/Attachment.php:399
+msgid "Remove permission"
+msgstr "Berechtigung entfernen"
+
+#: includes/Attachment.php:53 includes/Attachment.php:184
+#: includes/ListTable.php:90 includes/Settings.php:475
+#: includes/Settings.php:486
 msgid "Permission"
 msgstr "Berechtigung"
 
-#: includes/ListTable.php:86 includes/Settings.php:486
-#: includes/Settings.php:501
+#: includes/Attachment.php:136 includes/ListTable.php:72
+#: includes/ListTable.php:115
+msgid "Activate"
+msgstr "Aktivieren"
+
+#: includes/Attachment.php:153
+msgid "New files are protected"
+msgstr "Neue Dateien sind geschützt"
+
+#: includes/Attachment.php:329
+msgid "You do not have sufficient permissions to access the file."
+msgstr ""
+"Sie verfügen nicht über ausreichende Berechtigungen, um auf die Datei "
+"zugreifen zu können."
+
+#: includes/Attachment.php:356 includes/Post.php:118
+msgid "Permission does not exist or has been removed."
+msgstr "Die Berechtigung ist nicht vorhanden oder wurde entfernt."
+
+#: includes/Attachment.php:360 includes/Settings.php:793
+msgid "The permission has been disabled."
+msgstr "Die Berechtigung wurde deaktiviert."
+
+#. translators: 1: Error message, 2: Default permission.
+#: includes/Attachment.php:370 includes/Post.php:134
+msgid ""
+"An error has occurred: %1$s and has been replaced by the default permission "
+"%2$s."
+msgstr ""
+"Ein Fehler ist aufgetreten: %1$s und ist durch die Standardberechtigung "
+"&bdquo;%2$s&ldquo; ersetzt worden."
+
+#. translators: %s: number of media files
+#: includes/Attachment.php:422
+msgid "%s media file is now protected."
+msgid_plural "%s media files are now protected."
+msgstr[0] "%s Mediendatei ist nun geschützt."
+msgstr[1] "%s Mediendateien sind nun geschützt."
+
+#. translators: %s: number of media files
+#: includes/Attachment.php:437
+msgid "Data protection on %s Media file has been removed."
+msgid_plural "Data protection on %s Media files has been removed."
+msgstr[0] "Dateischutz auf %s Mediendatei entfernt."
+msgstr[1] "Dateischutz auf %s Mediendateien entfernt."
+
+#: includes/Attachment.php:495
+msgid "You are not allowed to add media files to the protected directory."
+msgstr ""
+"Sie sind nicht erlaubt, Mediendateien zu dem geschützten Verzeichnis "
+"hinzuzufügen."
+
+#: includes/Attachment.php:496 includes/Attachment.php:540
+#: includes/Media/Files.php:286
+msgid "Forbidden"
+msgstr "Forbidden"
+
+#: includes/Attachment.php:518
+msgid ""
+"An error has occurred while moving the media files in the protected "
+"directory."
+msgstr ""
+"Beim Verschieben der Mediendateien in das geschützte Verzeichnis ist ein "
+"Fehler aufgetreten."
+
+#: includes/Attachment.php:519 includes/Attachment.php:563
+msgid "Internal Server Error"
+msgstr "Internal Server Error"
+
+#: includes/Attachment.php:539
+msgid "You are not allowed to remove media files from the protected directory."
+msgstr ""
+"Sie sind nicht erlaubt, Mediendateien von dem geschützten Verzeichnis zu "
+"entfernen."
+
+#: includes/Attachment.php:562
+msgid ""
+"An error has occurred while removing the media files from the protected "
+"directory."
+msgstr ""
+"Beim Entfernen der Mediendateien aus dem geschützten Verzeichnis ist ein "
+"Fehler aufgetreten."
+
+#: includes/ListTable.php:66
+msgid "Edit"
+msgstr "Bearbeiten"
+
+#: includes/ListTable.php:70 includes/ListTable.php:116
+msgid "Deactivate"
+msgstr "Deaktivieren"
+
+#: includes/ListTable.php:74 includes/ListTable.php:117
+msgid "Delete"
+msgstr "Löschen"
+
+#: includes/ListTable.php:91 includes/Settings.php:482
+#: includes/Settings.php:497
 msgid "Short Description"
 msgstr "Kurzbeschreibung"
 
-#: includes/ListTable.php:87 includes/Settings.php:487
-#: includes/Settings.php:502
+#: includes/ListTable.php:92 includes/Settings.php:483
+#: includes/Settings.php:498
 msgid "Description"
 msgstr "Beschreibung"
 
-#: includes/ListTable.php:88 includes/Settings.php:480
-#: includes/Settings.php:491
+#: includes/ListTable.php:93 includes/Settings.php:476
+#: includes/Settings.php:487
 msgid "Logged-in"
 msgstr "Angemeldet"
 
-#: includes/ListTable.php:89 includes/Settings.php:481
-#: includes/Settings.php:492
+#: includes/ListTable.php:94 includes/Settings.php:477
+#: includes/Settings.php:488
 msgid "SSO"
 msgstr "SSO"
 
-#: includes/ListTable.php:90 includes/Settings.php:482
-#: includes/Settings.php:497
+#: includes/ListTable.php:95 includes/Settings.php:478
+#: includes/Settings.php:493
 msgid "Allow domain"
 msgstr "Domäne zulassen"
 
-#: includes/ListTable.php:91 includes/Settings.php:483
-#: includes/Settings.php:498
+#: includes/ListTable.php:96 includes/Settings.php:479
+#: includes/Settings.php:494
 msgid "Allow IP address"
 msgstr "IP-Adresse zulassen"
 
-#: includes/Main.php:103 includes/Settings.php:50 includes/Settings.php:452
+#: includes/Main.php:45 includes/Settings.php:46 includes/Settings.php:448
 msgid "Settings"
 msgstr "Einstellungen"
 
-#: includes/Main.php:147
+#: includes/Main.php:104
 msgid ""
 "The RRZE Access Control Plugin is not configured properly. The files and "
 "documents can not be protected."
@@ -100,7 +202,7 @@ msgstr ""
 "Das RRZE Access-Control-Plugin wurde nicht richtig konfiguriert. Die Dateien "
 "und Dokumente können nicht geschützt werden."
 
-#: includes/Main.php:150
+#: includes/Main.php:107
 msgid ""
 "The following rewrite commands must be added in the .htaccess file after the "
 "WordPress command &#8222;RewriteRule ^index\\.php$ - [L]&#8220;."
@@ -108,46 +210,32 @@ msgstr ""
 "Die folgende Rewrite-Befehle müssen in der htaccess-Datei nach der WordPress-"
 "Befehl &#8222;RewriteRule ^index\\.php$ - [L]&#8220; hinzugefügt werden."
 
-#: includes/Main.php:153
+#: includes/Main.php:110
 msgid "Please contact your system administrator."
 msgstr "Bitte wenden Sie sich an den Systemadministrator."
 
-#: includes/Main.php:430 includes/Main.php:1058 includes/Main.php:1655
-#: includes/Main.php:1700 includes/Main.php:1965
-msgid "Access Restriction"
-msgstr "Zugriffsschutz"
+#: includes/Main.php:317 includes/Media/Files.php:362
+msgid "Login is required"
+msgstr "Anmeldung ist erforderlich"
 
-#: includes/Main.php:1079 includes/Main.php:1759
-msgid "Enable permission"
-msgstr "Berechtigung aktivieren"
+#: includes/Main.php:392
+msgid "Protected"
+msgstr "Geschützt"
 
-#: includes/Main.php:1080 includes/Main.php:1762
-msgid "Remove permission"
-msgstr "Berechtigung entfernen"
-
-#: includes/Main.php:1084 includes/Main.php:1124
-msgid "Permission:"
-msgstr "Berechtigung:"
-
-#: includes/Main.php:1129 includes/Settings.php:421
-msgid "Edit permission"
-msgstr "Berechtigung bearbeiten"
-
-#: includes/Main.php:1142
-msgid "OK"
-msgstr "OK"
-
-#: includes/Main.php:1143
-msgid "Cancel"
-msgstr "Abbrechen"
+#. translators: %s: label count
+#: includes/Main.php:397
+msgid "Protected <span class=\"count\">(%s)</span>"
+msgid_plural "Protected <span class=\"count\">(%s)</span>"
+msgstr[0] "Geschützt <span class=\"count\">(%s)</span>"
+msgstr[1] "Geschützt <span class=\"count\">(%s)</span>"
 
 #. translators: %d is the attachment id
-#: includes/Main.php:1281
+#: includes/Media/Files.php:85
 msgid "The post %d is not a Media Post-Type."
 msgstr "Der Beitrag %d is kein Medienposttyp."
 
 #. translators: %s is the path to the WP uploads directory
-#: includes/Main.php:1289
+#: includes/Media/Files.php:93
 msgid ""
 "The newly specified path %s is absolute. The new path must be a path "
 "relative to the WP uploads directory."
@@ -156,143 +244,40 @@ msgstr ""
 "zum WP-Uploads-Verzeichnis sein."
 
 #. translators: %s is the path to a directory
-#: includes/Main.php:1317
+#: includes/Media/Files.php:121
 msgid "An error has occurred while creating the directory %s."
 msgstr "Ein Fehler ist aufgetreten bei der Erstellung des Verzeichnis %s."
 
 #. translators: 1: old file path, 2: new file path
-#: includes/Main.php:1382
+#: includes/Media/Files.php:186
 msgid "The file can not be moved from %1$s to %2$s."
 msgstr "Die Datei kann nicht von %1$s nach %2$s verschoben werden."
 
-#: includes/Main.php:1449 includes/Main.php:1465 includes/Main.php:1494
+#: includes/Media/Files.php:253 includes/Media/Files.php:269
+#: includes/Media/Files.php:298
 msgid "The requested file was not found."
 msgstr "Die angeforderte Datei wurde nicht gefunden."
 
-#: includes/Main.php:1450 includes/Main.php:1466 includes/Main.php:1495
-#: includes/Main.php:1544
+#: includes/Media/Files.php:254 includes/Media/Files.php:270
+#: includes/Media/Files.php:299 includes/Media/Files.php:348
 msgid "Not Found"
 msgstr "Not Found"
 
-#: includes/Main.php:1481
+#: includes/Media/Files.php:285
 msgid "The request was due lack of client permission not performed."
 msgstr "Die Anfrage wurde mangels Berechtigung des Clients nicht durchgeführt."
 
-#: includes/Main.php:1482 includes/Main.php:1859 includes/Main.php:1903
-msgid "Forbidden"
-msgstr "Forbidden"
-
-#: includes/Main.php:1543
+#: includes/Media/Files.php:347
 msgid "The requested attachment was not found."
 msgstr "Die angeforderte Mediendatei wurde nicht gefunden."
 
-#: includes/Main.php:1557 includes/Main.php:2004
-msgid "Login is required"
-msgstr "Anmeldung ist erforderlich"
-
-#: includes/Main.php:1647
-msgid "You do not have sufficient permissions to access the file."
-msgstr ""
-"Sie verfügen nicht über ausreichende Berechtigungen, um auf die Datei "
-"zugreifen zu können."
-
-#: includes/Main.php:1674 includes/Main.php:1719
-msgid "Permission does not exist or has been removed."
-msgstr "Die Berechtigung ist nicht vorhanden oder wurde entfernt."
-
-#: includes/Main.php:1678
-msgid "Permission has been disabled."
-msgstr "Berechtigung wurde deaktiviert."
-
-#. translators: 1: Error message, 2: Default permission.
-#: includes/Main.php:1690 includes/Main.php:1733
-msgid ""
-"An error has occurred: %1$s and has been replaced by the default permission "
-"%2$s."
-msgstr ""
-"Ein Fehler ist aufgetreten: %1$s und ist durch die Standardberechtigung "
-"&bdquo;%2$s&ldquo; ersetzt worden."
-
-#: includes/Main.php:1723 includes/Settings.php:797
-msgid "The permission has been disabled."
-msgstr "Die Berechtigung wurde deaktiviert."
-
-#. translators: %s: number of media files
-#: includes/Main.php:1785
-msgid "%s media file is now protected."
-msgid_plural "%s media files are now protected."
-msgstr[0] "%s Mediendatei ist nun geschützt."
-msgstr[1] "%s Mediendateien sind nun geschützt."
-
-#. translators: %s: number of media files
-#: includes/Main.php:1800
-msgid "Data protection on %s Media file has been removed."
-msgid_plural "Data protection on %s Media files has been removed."
-msgstr[0] "Dateischutz auf %s Mediendatei entfernt."
-msgstr[1] "Dateischutz auf %s Mediendateien entfernt."
-
-#: includes/Main.php:1858
-msgid "You are not allowed to add media files to the protected directory."
-msgstr ""
-"Sie sind nicht erlaubt, Mediendateien zu dem geschützten Verzeichnis "
-"hinzuzufügen."
-
-#: includes/Main.php:1881
-msgid ""
-"An error has occurred while moving the media files in the protected "
-"directory."
-msgstr ""
-"Beim Verschieben der Mediendateien in das geschützte Verzeichnis ist ein "
-"Fehler aufgetreten."
-
-#: includes/Main.php:1882 includes/Main.php:1926
-msgid "Internal Server Error"
-msgstr "Internal Server Error"
-
-#: includes/Main.php:1902
-msgid "You are not allowed to remove media files from the protected directory."
-msgstr ""
-"Sie sind nicht erlaubt, Mediendateien von dem geschützten Verzeichnis zu "
-"entfernen."
-
-#: includes/Main.php:1925
-msgid ""
-"An error has occurred while removing the media files from the protected "
-"directory."
-msgstr ""
-"Beim Entfernen der Mediendateien aus dem geschützten Verzeichnis ist ein "
-"Fehler aufgetreten."
-
-#: includes/Main.php:1991
-msgid "New files are protected"
-msgstr "Neue Dateien sind geschützt"
-
-#: includes/Main.php:2093
-msgid "Send password"
-msgstr "Passwort senden"
-
-#: includes/Main.php:2125
-msgid "Contact:"
-msgstr "Kontakt:"
-
-#: includes/Main.php:2184
-msgid "Protected"
-msgstr "Geschützt"
-
-#. translators: %s: label count
-#: includes/Main.php:2189
-msgid "Protected <span class=\"count\">(%s)</span>"
-msgid_plural "Protected <span class=\"count\">(%s)</span>"
-msgstr[0] "Geschützt <span class=\"count\">(%s)</span>"
-msgstr[1] "Geschützt <span class=\"count\">(%s)</span>"
-
 #: includes/Options.php:23 includes/Options.php:24
-msgid "Logged-in user"
-msgstr "Angemeldeten Benutzer"
+msgid "Public"
+msgstr "Öffentlich"
 
 #: includes/Options.php:38 includes/Options.php:39
-msgid "All"
-msgstr "Alle"
+msgid "Logged-in user"
+msgstr "Angemeldeten Benutzer"
 
 #: includes/Options.php:56 includes/Options.php:60
 msgid "Log in with your IdM ID"
@@ -304,18 +289,18 @@ msgstr ""
 "Der Zugriff auf diese Ressource ist nur für Mitglieder dieser Website "
 "verfügbar."
 
-#: includes/Options.php:58 includes/Options.php:62
-msgid ""
-"Login through Single Sign-On (central login service of the University "
-"Erlangen-Nürnberg)"
-msgstr ""
-"Anmeldung über Single Sign-On (zentraler Anmeldedienst der Universität "
-"Erlangen-Nürnberg)"
+#: includes/Options.php:58
+msgid "Login"
+msgstr "Anmeldung"
 
 #: includes/Options.php:61
 msgid "Access to this resource is only possible for registered users."
 msgstr ""
 "Der Zugriff auf diese Ressource ist nur registrierten Benutzern möglich."
+
+#: includes/Options.php:62
+msgid "Login through Single Sign-On"
+msgstr "Melden Sie sich über Single Sign-On an"
 
 #: includes/Options.php:64
 msgid "Access Denied"
@@ -339,163 +324,175 @@ msgstr ""
 "Wenn Sie ein Passwort für den Zugriff auf diese Ressource haben, geben Sie "
 "es bitte in das folgende Feld ein."
 
-#: includes/Settings.php:45
-msgid "Access Protection"
-msgstr "Zugriffsschutz"
+#: includes/Permissions.php:77
+msgid "Unauthorized access to the REST API."
+msgstr "Unbefugter Zugriff auf die REST-API."
 
-#: includes/Settings.php:46 includes/Settings.php:78
+#: includes/Post.php:50 includes/Post.php:170
+msgid "--NONE--"
+msgstr "—KEINER—"
+
+#: includes/Post.php:122
+msgid "Permission has been disabled."
+msgstr "Berechtigung wurde deaktiviert."
+
+#: includes/Settings.php:42 includes/Settings.php:74
 msgid "Permissions"
 msgstr "Berechtigungen"
 
-#: includes/Settings.php:64
+#: includes/Settings.php:60
 msgid "Items per page:"
 msgstr "Einträge pro Seite:"
 
-#: includes/Settings.php:80 includes/Settings.php:408 includes/Settings.php:413
+#: includes/Settings.php:76 includes/Settings.php:404 includes/Settings.php:409
 msgid "Add New Permission"
 msgstr "Neue Berechtigung hinzufügen"
 
-#: includes/Settings.php:116 includes/Settings.php:141
-#: includes/Settings.php:180 includes/Settings.php:784
-#: includes/Settings.php:794 includes/Settings.php:804
+#: includes/Settings.php:112 includes/Settings.php:137
+#: includes/Settings.php:176 includes/Settings.php:780
+#: includes/Settings.php:790 includes/Settings.php:800
 msgid "Something went wrong."
 msgstr "Etwas ging schief."
 
-#: includes/Settings.php:130
+#: includes/Settings.php:126
 msgid "The permission has been added."
 msgstr "Die Berechtigung wurde hinzugefügt."
 
-#: includes/Settings.php:145 includes/Settings.php:151
+#: includes/Settings.php:141 includes/Settings.php:147
 msgid "Permission does not exist."
 msgstr "Berechtigung existiert nicht."
 
-#: includes/Settings.php:167
+#: includes/Settings.php:163
 msgid "The permission has been updated."
 msgstr "Die Berechtigung wurde aktualisiert."
 
-#: includes/Settings.php:196
+#: includes/Settings.php:192
 msgid "The settings have been updated."
 msgstr "Die Einstellungen wurden aktualisiert."
 
-#: includes/Settings.php:210
+#: includes/Settings.php:206
 msgid "Permission required."
 msgstr "Berechtigung erforderlich."
 
-#: includes/Settings.php:212
+#: includes/Settings.php:208
 msgid "Permission already exists."
 msgstr "Berechtigung existiert bereits."
 
-#: includes/Settings.php:219 includes/Settings.php:282
+#: includes/Settings.php:215 includes/Settings.php:278
 msgid "Short description required."
 msgstr "Kurzbeschreibung erforderlich."
 
 #. translators: %s: domain name
-#: includes/Settings.php:353
+#: includes/Settings.php:349
 msgid "The domain %s is not valid."
 msgstr "Die Domain %s ist nicht gültig."
 
 #. translators: %s: IP address
-#: includes/Settings.php:382
+#: includes/Settings.php:378
 msgid "The IP address %s is not valid."
 msgstr "Die IP-Adresse %s ist nicht gültig."
 
-#: includes/Settings.php:426
+#: includes/Settings.php:417
+msgid "Edit permission"
+msgstr "Berechtigung bearbeiten"
+
+#: includes/Settings.php:422
 msgid "Save Changes"
 msgstr "Änderungen übernehmen"
 
-#: includes/Settings.php:437
+#: includes/Settings.php:433
 msgid "Search"
 msgstr "Suche"
 
-#: includes/Settings.php:484 includes/Settings.php:499
+#: includes/Settings.php:480 includes/Settings.php:495
 msgid "Password"
 msgstr "Passwort"
 
-#: includes/Settings.php:485 includes/Settings.php:500
+#: includes/Settings.php:481 includes/Settings.php:496
 msgid "Siteimprove"
 msgstr "Siteimprove"
 
-#: includes/Settings.php:494
+#: includes/Settings.php:490
 msgid "Person affiliation"
 msgstr "Personenzugehörigkeit"
 
-#: includes/Settings.php:495
+#: includes/Settings.php:491
 msgid "Person entitlement"
 msgstr "Personenberechtigung"
 
-#: includes/Settings.php:505
+#: includes/Settings.php:501
 msgid "Standard Permission"
 msgstr "Standardberechtigung"
 
-#: includes/Settings.php:507
+#: includes/Settings.php:503
 msgid "Automatic SSO Authentication"
 msgstr "Automatische SSO-Authentifizierung"
 
-#: includes/Settings.php:509
+#: includes/Settings.php:505
 msgid "Contact"
 msgstr "Kontakt"
 
-#: includes/Settings.php:512
+#: includes/Settings.php:508
 msgid "User Is Not Logged In (Title)"
 msgstr "Benutzer ist nicht angemeldet (Titel)"
 
-#: includes/Settings.php:513
+#: includes/Settings.php:509
 msgid "User Is Not Logged In (Message)"
 msgstr "Benutzer ist nicht angemeldet (Meldung)"
 
-#: includes/Settings.php:514
+#: includes/Settings.php:510
 msgid "User Is Not Logged In (Link Text)"
 msgstr "Benutzer ist nicht angemeldet (Linktext)"
 
-#: includes/Settings.php:516
+#: includes/Settings.php:512
 msgid "User Is Not SSO Logged In (Title)"
 msgstr "Benutzer ist nicht bei SSO angemeldet (Titel)"
 
-#: includes/Settings.php:517
+#: includes/Settings.php:513
 msgid "User Is Not SSO Logged In (Message)"
 msgstr "Benutzer ist nicht bei SSO angemeldet (Meldung)"
 
-#: includes/Settings.php:518
+#: includes/Settings.php:514
 msgid "User Is Not SSO Logged In (Link Text)"
 msgstr "Benutzer ist nicht bei SSO angemeldet (Linktext)"
 
-#: includes/Settings.php:520
+#: includes/Settings.php:516
 msgid "Access Denied Default (Title)"
 msgstr "Zugriff verweigert Standard (Titel)"
 
-#: includes/Settings.php:521
+#: includes/Settings.php:517
 msgid "Access Denied Default (Message)"
 msgstr "Zugriff verweigert Standard (Meldung)"
 
-#: includes/Settings.php:522
+#: includes/Settings.php:518
 msgid "Access Denied Password (Message)"
 msgstr "Zugang verweigert Passwort (Meldung)"
 
-#: includes/Settings.php:527
+#: includes/Settings.php:523
 msgid "Messages"
 msgstr "Meldungen"
 
-#: includes/Settings.php:551
+#: includes/Settings.php:547
 msgid "The user must be logged-in and a member of the website."
 msgstr "Der Benutzer muss angemeldet und Mitglied der Website sein."
 
-#: includes/Settings.php:564
+#: includes/Settings.php:560
 msgid "The user must be SSO logged-in."
 msgstr "Der Benutzer muss SSO angemeldet sein."
 
-#: includes/Settings.php:577
+#: includes/Settings.php:573
 msgid "Enter one person affiliation per line."
 msgstr "Eine Personenzuordnung pro Zeile eingeben."
 
-#: includes/Settings.php:589
+#: includes/Settings.php:585
 msgid "Enter one person entitlement per line."
 msgstr "Eine Personenberechtigung pro Zeile eingeben."
 
-#: includes/Settings.php:638
+#: includes/Settings.php:634
 msgid "Enable automatic SSO authentication process"
 msgstr "SSO-Authentifizierungsprozess automatisch aktivieren"
 
-#: includes/Settings.php:650
+#: includes/Settings.php:646
 msgid ""
 "The name of the contact that corresponds to the website administration email "
 "address"
@@ -503,12 +500,12 @@ msgstr ""
 "Der Name des Kontakts, der der Administrator-E-Mail-Adresse der Website "
 "entspricht"
 
-#: includes/Settings.php:652
+#: includes/Settings.php:648
 msgid "The contact will be displayed in all access denied messages."
 msgstr ""
 "Der Kontakt wird in allen Nachrichten mit verweigertem Zugriff angezeigt."
 
-#: includes/Settings.php:653
+#: includes/Settings.php:649
 msgid ""
 "If this field is left empty, all users with the administrator role will be "
 "listed as contacts in all access denied messages."
@@ -517,15 +514,15 @@ msgstr ""
 "Administratorrolle als Kontakte in allen Nachrichten mit verweigertem "
 "Zugriff aufgeführt."
 
-#: includes/Settings.php:730
+#: includes/Settings.php:726
 msgid "Enter one domain per line."
 msgstr "Eine Domain pro Zeile eingeben."
 
-#: includes/Settings.php:742
+#: includes/Settings.php:738
 msgid "Enter one IP address per line."
 msgstr "Eine IP-Adresse pro Zeile eingeben."
 
-#: includes/Settings.php:754
+#: includes/Settings.php:750
 msgid ""
 "Allows access using a password (alphanumeric value between 8 and 32 "
 "characters)."
@@ -533,17 +530,26 @@ msgstr ""
 "Ermöglicht den Zugriff mit einem Passwort (alphanumerischer Wert zwischen 8 "
 "und 32 Zeichen)."
 
-#: includes/Settings.php:766
+#: includes/Settings.php:762
 msgid "Allow Siteimprove crawler"
 msgstr "Siteimprove-Crawler zulassen"
 
-#: includes/Settings.php:787
+#: includes/Settings.php:783
 msgid "The permission has been enabled."
 msgstr "Die Berechtigung wurde aktiviert."
 
-#: includes/Settings.php:807
+#: includes/Settings.php:803
 msgid "The permission has been deleted."
 msgstr "Die Berechtigung wurde gelöscht."
+
+#. translators: 1: The plugin name, 2: The error string.
+#: includes/SSO/SimpleSAML.php:46 rrze-ac.php:105 rrze-ac.php:165
+msgid "Plugins: %1$s: %2$s"
+msgstr "Plugins: %1$s: %2$s"
+
+#: includes/SSO/SimpleSAML.php:74
+msgid "The simpleSAML library could not be loaded."
+msgstr "Die simpleSAML-Bibliothek konnte nicht geladen werden."
 
 #. translators: 1: Server PHP version number, 2: Required PHP version number.
 #: rrze-ac.php:73
@@ -578,8 +584,3 @@ msgstr "Der Web-Server-Software unterstützt das Rewrite-Modul nicht."
 #: rrze-ac.php:89
 msgid "The WordPress instance is not a MultiSite."
 msgstr "Die Wordpress-Instanz ist keine Multisite."
-
-#. translators: 1: The plugin name, 2: The error string.
-#: rrze-ac.php:105 rrze-ac.php:152
-msgid "Plugins: %1$s: %2$s"
-msgstr "Plugins: %1$s: %2$s"
