@@ -18,11 +18,11 @@ class Options
     {
         $options = [
             'permissions' => [
-                'logged-in' => [
-                    'permission_key' => 'logged-in',
-                    'description'    => __('Logged-in user', 'rrze-ac'),
-                    'select'         => __('Logged-in user', 'rrze-ac'),
-                    'logged_in'      => 1,
+                'public' =>  [
+                    'permission_key' => 'public',
+                    'description'    => __('Public', 'rrze-ac'),
+                    'select'         => __('Public', 'rrze-ac'),
+                    'logged_in'      => 0,
                     'sso_logged_in'  => 0,
                     'affiliation'    => '',
                     'entitlement'    => '',
@@ -33,11 +33,11 @@ class Options
                     'core'           => 1,
                     'active'         => 1
                 ],
-                'all' =>  [
-                    'permission_key' => 'all',
-                    'description'    => __('All', 'rrze-ac'),
-                    'select'         => __('All', 'rrze-ac'),
-                    'logged_in'      => 0,
+                'logged-in' => [
+                    'permission_key' => 'logged-in',
+                    'description'    => __('Logged-in user', 'rrze-ac'),
+                    'select'         => __('Logged-in user', 'rrze-ac'),
+                    'logged_in'      => 1,
                     'sso_logged_in'  => 0,
                     'affiliation'    => '',
                     'entitlement'    => '',
@@ -55,11 +55,11 @@ class Options
             // user_isnt_logged_in
             'user_isnt_logged_in_title' => __('Log in with your IdM ID', 'rrze-ac'),
             'user_isnt_logged_in_msg' => __('Access to this resource is only available to members of this website.', 'rrze-ac'),
-            'user_isnt_logged_in_link_txt' => __('Login through Single Sign-On (central login service of the University Erlangen-Nürnberg)', 'rrze-ac'),
+            'user_isnt_logged_in_link_txt' => __('Login', 'rrze-ac'),
             // user_isnt_sso_logged_in
             'user_isnt_sso_logged_in_title' => __("Log in with your IdM ID", 'rrze-ac'),
             'user_isnt_sso_logged_in_msg' => __('Access to this resource is only possible for registered users.', 'rrze-ac'),
-            'user_isnt_sso_logged_in_link_txt' => __('Login through Single Sign-On (central login service of the University Erlangen-Nürnberg)', 'rrze-ac'),
+            'user_isnt_sso_logged_in_link_txt' => __('Login through Single Sign-On', 'rrze-ac'),
             // access_denied_default
             'access_denied_default_title' => __('Access Denied', 'rrze-ac'),
             'access_denied_default_msg' => __('You do not have sufficient permissions to access this resource. If you believe you should have access to this resource, please get in touch with the contact person of the website.', 'rrze-ac'),
@@ -106,8 +106,14 @@ class Options
         $options = (array) get_option(self::$optionName);
 
         $options = wp_parse_args($options, $defaults);
+        $options = array_intersect_key($options, $defaults);
+
         $options['permissions'] = wp_parse_args($options['permissions'], $defaults['permissions']);
         foreach ($options['permissions'] as $key => $permission) {
+            if ($key === 'all') {
+                unset($options['permissions'][$key]);
+                continue;
+            }
             $options['permissions'][$key] = self::combineAtts($defaultPermission, $permission);
         }
 
