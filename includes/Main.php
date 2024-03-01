@@ -33,6 +33,7 @@ class Main
         if (!get_site_option($this->enabled_option_name)) {
             add_action('admin_notices', array($this, 'admin_error_notice'));
             add_action('network_admin_notices', array($this, 'admin_error_notice'));
+            return;
         }
 
         Post::init();
