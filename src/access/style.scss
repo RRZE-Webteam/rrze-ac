@@ -4,15 +4,15 @@
 
 span {
     &.access-icon:before {
-        color: #0073aa;
+        color: #c00c0c;
     }
 
     &.access-all-icon:before {
-        color: #82878c;
+        color: #6fc94e;
     }
 
     &.access-error-icon:before {
-        color: #d64e07;
+        color: #f08f06;
     }
 }
 
@@ -93,7 +93,8 @@ select.field-invalid {
             td,
             th {
                 border-top: 1px solid rgba(0, 0, 0, 0.03);
-                box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02) inset,
+                box-shadow:
+                    0 1px 0 rgba(0, 0, 0, 0.02) inset,
                     0 -1px 0 #e1e1e1 inset;
             }
         }
@@ -102,7 +103,8 @@ select.field-invalid {
             td,
             th {
                 border-top: 1px solid rgba(0, 0, 0, 0.03);
-                box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02) inset,
+                box-shadow:
+                    0 1px 0 rgba(0, 0, 0, 0.02) inset,
                     0 -1px 0 #e1e1e1 inset;
             }
         }
