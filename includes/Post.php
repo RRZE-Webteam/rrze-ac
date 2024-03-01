@@ -182,12 +182,16 @@ class Post
             'metaKey' => self::ACCESS_PERMISSION_META_KEY
         ];
 
-        $localization_json = json_encode($localization);
-
-        wp_add_inline_script(
+        wp_localize_script(
             'rrze-ac-blockeditor',
-            'var acObject = ' . $localization_json . ';',
-            'before'
+            'acObject',
+            $localization
+        );
+
+        wp_set_script_translations(
+            'rrze-ac-blockeditor',
+            'rrze-ac',
+            plugin()->getPath('languages')
         );
     }
 
