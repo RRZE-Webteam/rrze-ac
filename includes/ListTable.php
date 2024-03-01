@@ -2,22 +2,22 @@
 
 namespace RRZE\AccessControl;
 
-use WP_List_Table;
-
 defined('ABSPATH') || exit;
 
-class ListTable extends WP_List_Table {
+class ListTable extends \WP_List_Table
+{
 
     protected $main;
 
     public $list_data = array();
 
-    public function __construct(Main $main) {
+    public function __construct(Main $main)
+    {
         $this->main = $main;
 
-        $this->list_data = $this->main->get_the_permissions();
+        $this->list_data = permissions()->get_the_permissions();
         foreach ($this->list_data as $key => $data) {
-            $this->list_data[$key]['default'] = ($data['permission_key'] == $this->main->get_default_permission()) ? 1 : 0;
+            $this->list_data[$key]['default'] = ($data['permission_key'] == permissions()->get_default_permission()) ? 1 : 0;
         }
 
         parent::__construct(array(
@@ -27,7 +27,8 @@ class ListTable extends WP_List_Table {
         ));
     }
 
-    public function single_row($item) {
+    public function single_row($item)
+    {
         $class = $item['active'] ? 'active ' : 'inactive';
         $class .= $item['default'] ? 'default-permission' : '';
         echo $class ? '<tr class="' . trim($class) . '">' : '<tr>';
@@ -35,7 +36,8 @@ class ListTable extends WP_List_Table {
         echo '</tr>';
     }
 
-    public function column_default($item, $column_name) {
+    public function column_default($item, $column_name)
+    {
         switch ($column_name) {
             case 'permission_key':
             case 'select':
@@ -56,7 +58,8 @@ class ListTable extends WP_List_Table {
         return $item[$column_name];
     }
 
-    public function column_permission_key($item) {
+    public function column_permission_key($item)
+    {
         // Build row actions
         $actions = array();
         if (!$item['core']) {
@@ -75,11 +78,13 @@ class ListTable extends WP_List_Table {
         return sprintf('%1$s %2$s', $item['permission_key'], $this->row_actions($actions));
     }
 
-    public function column_cb($item) {
+    public function column_cb($item)
+    {
         return sprintf('<input type="checkbox" name="%1$s[]" value="%2$s">', $this->_args['singular'], $item['permission_key']);
     }
 
-    public function get_columns() {
+    public function get_columns()
+    {
         $columns = array(
             'cb' => '<input type="checkbox">', // Render a checkbox instead of text
             'permission_key' => __("Permission", 'rrze-ac'),
@@ -93,7 +98,8 @@ class ListTable extends WP_List_Table {
         return $columns;
     }
 
-    public function get_sortable_columns() {
+    public function get_sortable_columns()
+    {
         $sortable_columns = array(
             'permission_key' => array('permission_key', FALSE),
             'select' => array('select', FALSE),
@@ -103,7 +109,8 @@ class ListTable extends WP_List_Table {
         return $sortable_columns;
     }
 
-    public function get_bulk_actions() {
+    public function get_bulk_actions()
+    {
         $actions = array(
             'activate' => __("Activate", 'rrze-ac'),
             'deactivate' => __("Deactivate", 'rrze-ac'),
@@ -112,10 +119,11 @@ class ListTable extends WP_List_Table {
         return $actions;
     }
 
-    public function process_bulk_action() {
+    public function process_bulk_action()
+    {
         $permission_keys = $this->main->settings->request_var($this->_args['singular']);
 
-        if(!empty($permission_keys) && is_array($permission_keys)) {
+        if (!empty($permission_keys) && is_array($permission_keys)) {
             switch ($this->current_action()) {
                 case 'activate':
                     $this->process_bulk_activate($permission_keys);
@@ -130,28 +138,29 @@ class ListTable extends WP_List_Table {
         }
     }
 
-    private function process_bulk_delete($permission_keys) {
+    private function process_bulk_delete($permission_keys)
+    {
         foreach ($permission_keys as $value) {
-            $permission = $this->main->get_permission($value);
+            $permission = permissions()->get_permission($value);
             $this->main->settings->action_delete($permission);
         }
         wp_redirect($this->main->action_url());
         exit();
     }
 
-    private function process_bulk_activate($permission_keys, $activate = 1) {
+    private function process_bulk_activate($permission_keys, $activate = 1)
+    {
         foreach ($permission_keys as $value) {
-            $permission = $this->main->get_permission($value);
+            $permission = permissions()->get_permission($value);
             $this->main->settings->action_activate($permission, $activate);
         }
         wp_redirect($this->main->action_url());
         exit();
     }
 
-    public function prepare_items() {
+    public function prepare_items()
+    {
         $this->_column_headers = $this->get_column_info();
-
-        usort($this->list_data, array(&$this, 'sort_data'));
 
         if (isset($_GET['s']) && mb_strlen(trim($_GET['s'])) > 0) {
             $search = trim($_GET['s']);
@@ -198,12 +207,4 @@ class ListTable extends WP_List_Table {
             'total_pages' => ceil($total_items / $per_page)   // Total number of pages
         ));
     }
-
-    public function sort_data($a, $b) {
-        $orderby = (!empty($_REQUEST['orderby'])) ? $_REQUEST['orderby'] : 'select';
-        $order = (!empty($_GET['order'])) ? $_GET['order'] : 'asc';
-        $result = strnatcmp($a[$orderby], $b[$orderby]);
-        return ($order === 'asc') ? $result : -$result;
-    }
-
 }
