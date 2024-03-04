@@ -10,6 +10,13 @@ class Post
 
     public static function init()
     {
+        add_action('init', [__CLASS__, 'registerPostStatus']);
+
+        // Anpassung des Abfrageobjekts
+        add_filter('pre_get_posts', [__CLASS__, 'pre_get_posts_single']);
+        add_filter('pre_get_posts', [__CLASS__, 'pre_get_posts_list']);
+        add_action('views_edit-page', [__CLASS__, 'views_edit']);
+
         add_action('init', [__CLASS__, 'registerPostMeta']);
 
         add_action('add_meta_boxes', [__CLASS__, 'metabox']);
@@ -20,8 +27,141 @@ class Post
         add_action("manage_edit-page_columns", [__CLASS__, 'managePagesColumn']);
         add_filter("manage_page_posts_custom_column", [__CLASS__, 'managePagesCustomColumn'], 10, 2);
 
+        add_filter('rrze_menu_walker_nav_menu_edit', [__CLASS__, 'walker_nav_menu_edit'], 10, 5);
+
+        // Menüelemente die geschützte Objekte verlinken sind abgeschlossen
+        // add_filter('wp_nav_menu_objects', [__CLASS__, 'nav_menu_objects'], 10, 1);        
+
         /* Enqueue Block Editor Assets */
         add_action('enqueue_block_editor_assets', [__CLASS__, 'enqueueBlockEditorAssets']);
+    }
+
+    public static function registerPostStatus()
+    {
+        register_post_status('protected', [
+            'label'                     => __('Protected', 'rrze-ac'),
+            'public'                    => false,
+            'exclude_from_search'       => true,
+            'show_in_admin_all_list'    => false,
+            'show_in_admin_status_list' => false,
+            'label_count'               => _n_noop(
+                /* translators: %s: label count */
+                'Protected <span class="count">(%s)</span>',
+                'Protected <span class="count">(%s)</span>',
+                'rrze-ac'
+            ),
+        ]);
+    }
+
+    public static function pre_get_posts_single($query)
+    {
+        if (is_admin() || !$query->is_main_query() || $query->is_singular) {
+            return $query;
+        }
+
+        $post_not_in = [];
+        $permissions = permissions()->getThePermissions();
+        $permission_metas = self::getPermissionMetas();
+
+        foreach ($permission_metas as $pm) {
+            if (isset($permissions[$pm->meta_value]) && $permissions[$pm->meta_value]['active'] && !permissions()->checkAuthorPermission($pm->post_id)) {
+                $post_not_in[] = $pm->post_id;
+            }
+        }
+
+        if (!empty($post_not_in)) {
+            $query->set('post__not_in', $post_not_in);
+        }
+
+        return $query;
+    }
+
+    public static function getPermissionMetas($postType = '')
+    {
+        global $wpdb;
+
+        $pt_query = [
+            'page' => "p.post_type = 'page'",
+            'attachment' => "p.post_type = 'attachment'"
+        ];
+
+        switch ($postType) {
+            case 'page':
+                unset($pt_query['attachment']);
+                break;
+            case 'attachment':
+                unset($pt_query['page']);
+                break;
+            default:
+                break;
+        }
+
+        $query = "SELECT pm.post_id, pm.meta_value FROM {$wpdb->postmeta} pm
+            LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+            WHERE pm.meta_key = '%s'
+            AND p.post_status = 'publish'
+            AND (" . implode(' OR ', $pt_query) . ")";
+
+        return $wpdb->get_results($wpdb->prepare($query, self::ACCESS_PERMISSION_META_KEY));
+    }
+
+    public static function pre_get_posts_list($query)
+    {
+        global $postType;
+
+        if (!is_admin() || !isset($query->query_vars['post_status']) || $query->query_vars['post_status'] != 'protected') {
+            return $query;
+        }
+
+        if (!in_array($postType, ['page'])) {
+            return $query;
+        }
+
+        $query->set('post_status', ['publish', 'pending', 'draft', 'future', 'private', 'inherit', 'protected']);
+
+        $meta_query = [
+            [
+                'key' => self::ACCESS_PERMISSION_META_KEY,
+                'compare' => 'EXISTS'
+            ]
+        ];
+
+        $query->set('meta_query', $meta_query);
+
+        return $query;
+    }
+
+    public static function views_edit($views)
+    {
+        global $wp_query, $postType;
+
+        if (!in_array($postType, ['page'])) {
+            return $views;
+        }
+
+        $query = new \WP_Query(
+            [
+                'post_type'  => $postType,
+                'meta_query' => [
+                    [
+                        'key' => self::ACCESS_PERMISSION_META_KEY,
+                        'compare' => 'EXISTS'
+                    ]
+                ]
+            ]
+        );
+
+        $count = $query->found_posts;
+        $class = isset($wp_query->query['post_status']) && $wp_query->query['post_status'] == 'protected' ? ' class="current"' : '';
+
+        $views['protected'] = sprintf(
+            '<a href="%s"%s>%s</a>',
+            admin_url(sprintf('edit.php?post_status=protected&post_type=%s', $postType)),
+            $class,
+            sprintf(translate_nooped_plural(_n_noop('Protected <span class="count">(%s)</span>', 'Protected <span class="count">(%s)</span>'), $count, 'rrze-ac'), $count)
+        );
+
+        return $views;
     }
 
     public static function metabox($postType)
@@ -162,6 +302,62 @@ class Post
             ) . '" class="access-error-icon dashicons dashicons-shield"></span>';
 
         echo $description;
+    }
+
+    public static function walker_nav_menu_edit($output, $item, $depth, $args, $id)
+    {
+        $permission = get_post_meta($item->object_id, self::ACCESS_PERMISSION_META_KEY, true);
+        $permissions = permissions()->getThePermissions();
+        $pos = strpos($output, '<span class="menu-item-title">');
+
+        if (!empty($permission) && isset($permissions[$permission]) && $pos !== false) {
+            $substr = array(
+                substr($output, 0, $pos),
+                '<span class="access-icon dashicons dashicons-shield"></span>',
+                PHP_EOL,
+                substr($output, $pos),
+            );
+
+            $output = implode('', $substr);
+        }
+
+        return $output;
+    }
+
+    public static function nav_menu_objects($menu_items)
+    {
+        foreach ($menu_items as $key => $menu_item) {
+            if ($menu_item->object == 'page' && !Access::try($menu_item->object_id)) {
+                unset($menu_items[$key]);
+            }
+        }
+
+        return $menu_items;
+    }
+
+    public static function count_meta_keys($permissionKey)
+    {
+        $metas = self::meta_values();
+        return array_keys($metas, $permissionKey, true);
+    }
+
+    protected static function meta_values()
+    {
+        global $wpdb;
+
+        $metas = [];
+
+        $result = $wpdb->get_results("
+            SELECT pm.post_id, pm.meta_value FROM {$wpdb->postmeta} pm
+            LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+            WHERE pm.meta_key = '" . Post::ACCESS_PERMISSION_META_KEY . "'
+            AND ((p.post_type = 'attachment' AND p.post_status = 'inherit') OR (p.post_type = 'page' AND p.post_status = 'publish'))");
+
+        foreach ($result as $r) {
+            $metas[$r->post_id] = $r->meta_value;
+        }
+
+        return $metas;
     }
 
     public static function enqueueBlockEditorAssets()
