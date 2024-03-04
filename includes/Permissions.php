@@ -81,24 +81,24 @@ class Permissions
         );
     }
 
-    public function get_default_permission()
+    public function getDefaultPermission()
     {
-        $permissions = $this->get_the_permissions();
+        $permissions = $this->getThePermissions();
         $default_permission = isset($permissions[$this->options['default_permission']]) && $permissions[$this->options['default_permission']]['active'] ? $this->options['default_permission'] : 'logged-in';
         return $default_permission;
     }
 
-    public function get_permission($permission_key)
+    public function getPermission($permissionKey)
     {
-        if (empty($permission_key)) {
+        if (empty($permissionKey)) {
             return [];
         }
 
         $permission = [];
         foreach ($this->options['permissions'] as $key => $value) {
-            if ($key == $permission_key) {
+            if ($key == $permissionKey) {
                 $permission =  [
-                    'permission_key' => $permission_key,
+                    'permission_key' => $permissionKey,
                     'description' => $value['description'],
                     'select' => $value['select'],
                     'logged_in' => $value['logged_in'],
@@ -118,16 +118,16 @@ class Permissions
         return $permission;
     }
 
-    public function get_the_permissions()
+    public function getThePermissions()
     {
-        $access_permissions = $this->options['permissions'];
-        return apply_filters('rrze_ac_permissions', $access_permissions);
+        $permissions = $this->options['permissions'];
+        return apply_filters('rrze_ac_permissions', $permissions);
     }
 
-    public function get_the_permission($postId)
+    public function getThePermission($postId)
     {
         if (get_post_type($postId) == 'attachment') {
-            return $this->get_attachment_permission($postId);
+            return $this->getAttachmentPermission($postId);
         }
 
         $permission = get_post_meta($postId, Post::ACCESS_PERMISSION_META_KEY, true);
@@ -135,7 +135,7 @@ class Permissions
         return !empty($permission) ? $permission : false;
     }
 
-    public function check_author_permission($postId)
+    public function checkAuthorPermission($postId)
     {
         if (!is_user_logged_in()) {
             return false;
@@ -151,7 +151,7 @@ class Permissions
 
         $post_author = $post->post_author;
 
-        $authors = $this->post_authors($postId, $post_author);
+        $authors = $this->postAuthors($postId, $post_author);
 
         if (isset($authors[$current_user->ID])) {
             return true;
@@ -166,13 +166,13 @@ class Permissions
      * @param  integer $post_author
      * @return array
      */
-    public function post_authors($postId, $post_author)
+    public function postAuthors($postId, $post_author)
     {
         $authors = [];
 
         // cms-workflow plugin stuff.
         if (Utils::isPluginActive('cms-workflow/cms-workflow.php')) {
-            $authors = $this->workflow_authors($postId);
+            $authors = $this->workflowAuthors($postId);
         }
 
         $authors[$post_author] = $post_author;
@@ -181,17 +181,18 @@ class Permissions
     }
 
     /**
-     * Get Workflow Plugin Authors
+     * Get Workflow Authors
+     * CMS-Worfklow plugin stuff.
      * @param  integer $postId
      * @return array
      */
-    public function workflow_authors($postId)
+    public function workflowAuthors($postId)
     {
         global $wpdb;
 
         $authors = [];
 
-        $workflow_authors = $wpdb->get_col(
+        $workflowAuthors = $wpdb->get_col(
             $wpdb->prepare(
                 "SELECT t.name
                 FROM $wpdb->terms AS t
@@ -202,8 +203,8 @@ class Permissions
             )
         );
 
-        if ($workflow_authors) {
-            foreach ($workflow_authors as $author) {
+        if ($workflowAuthors) {
+            foreach ($workflowAuthors as $author) {
                 $user = get_user_by('login', $author);
                 if (!$user || !is_user_member_of_blog($user->ID)) {
                     continue;
@@ -216,7 +217,7 @@ class Permissions
         return $authors;
     }
 
-    public function get_attachment_permission($attachment_id)
+    public function getAttachmentPermission($attachment_id)
     {
         if (!Files::is_attachment_protected($attachment_id)) {
             return false;
@@ -224,10 +225,10 @@ class Permissions
 
         $permission = get_post_meta($attachment_id, Post::ACCESS_PERMISSION_META_KEY, true);
 
-        return empty($permission) ? $this->get_default_permission() : $permission;
+        return empty($permission) ? $this->getDefaultPermission() : $permission;
     }
 
-    public function get_permission_status($bitmask)
+    public function getPermissionStatus($bitmask)
     {
         return ($this->permission_status & (1 << $bitmask)) != 0;
     }
