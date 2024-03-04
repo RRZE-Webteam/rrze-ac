@@ -13,10 +13,14 @@ class Post
         add_action('add_meta_boxes', [__CLASS__, 'metabox']);
         add_action("save_post_page", [__CLASS__, 'savePost'], 10, 2);
 
+        add_action('init', [__CLASS__, 'registerPostMeta']);
+
+        add_action("manage_edit-page_columns", [__CLASS__, 'manage_pages_column']);
+        add_filter("manage_page_posts_custom_column", [__CLASS__, 'manage_pages_custom_column'], 10, 2);
+
+
         /* Enqueue Block Editor Assets */
         add_action('enqueue_block_editor_assets', [__CLASS__, 'enqueueBlockEditorAssets']);
-
-        add_action('init', [__CLASS__, 'registerPostMeta']);
 
         add_action("rest_after_insert_page", [__CLASS__, 'restAfterInsert']);
     }
@@ -29,7 +33,7 @@ class Post
 
         add_meta_box(
             'rrze_ac_metabox',
-            __('Access Restriction', 'rrze_autoshare'),
+            __('Access Restriction', 'rrze-ac'),
             [__CLASS__, 'renderMetabox'],
             'page',
             'side',
@@ -87,7 +91,7 @@ class Post
         $permissions = permissions()->get_the_permissions();
         $permissions = array_merge(['_none_' => []], $permissions);
 
-        if (isset($permissions[$permission]) && '_none_' == $permission) {
+        if ('_none_' === $permission) {
             delete_post_meta($postId, self::ACCESS_PERMISSION_META_KEY);
         } elseif (isset($permissions[$permission])) {
             update_post_meta($postId, self::ACCESS_PERMISSION_META_KEY, $permission);
