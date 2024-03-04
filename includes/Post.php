@@ -17,13 +17,11 @@ class Post
         add_action("save_post_page", [__CLASS__, 'savePost'], 10, 2);
         add_action('updated_postmeta', [__CLASS__, 'updatePostMeta'], 10, 4);
 
-        add_action("manage_edit-page_columns", [__CLASS__, 'manage_pages_column']);
-        add_filter("manage_page_posts_custom_column", [__CLASS__, 'manage_pages_custom_column'], 10, 2);
+        add_action("manage_edit-page_columns", [__CLASS__, 'managePagesColumn']);
+        add_filter("manage_page_posts_custom_column", [__CLASS__, 'managePagesCustomColumn'], 10, 2);
 
         /* Enqueue Block Editor Assets */
         add_action('enqueue_block_editor_assets', [__CLASS__, 'enqueueBlockEditorAssets']);
-
-        add_action("rest_after_insert_page", [__CLASS__, 'restAfterInsert']);
     }
 
     public static function metabox($postType)
@@ -49,7 +47,7 @@ class Post
     {
         $permission = get_post_meta($post->ID, self::ACCESS_PERMISSION_META_KEY, true);
 
-        $permissions = permissions()->get_the_permissions();
+        $permissions = permissions()->getThePermissions();
         $permissions = array_merge([
             '_none_' => [
                 'select' => __("--NONE--", 'rrze-ac'),
@@ -89,10 +87,12 @@ class Post
 
         $permission = $_POST['access_permission_select'] ?? '';
         $permission = sanitize_text_field($permission);
-        $permissions = permissions()->get_the_permissions();
+        $permissions = permissions()->getThePermissions();
         $permissions = array_merge(['_none_' => []], $permissions);
 
-        if (isset($permissions[$permission])) {
+        if ('_none_' === $permission) {
+            delete_post_meta($postId, self::ACCESS_PERMISSION_META_KEY);
+        } elseif (isset($permissions[$permission])) {
             update_post_meta($postId, self::ACCESS_PERMISSION_META_KEY, $permission);
         }
     }
@@ -119,33 +119,33 @@ class Post
         }
     }
 
-    public static function manage_pages_column($columns)
+    public static function managePagesColumn($columns)
     {
         $columns['access_info'] = '<span title="' . esc_attr__('Access Restriction', 'rrze-ac') . '" class="dashicons dashicons-shield"></span>';
         return $columns;
     }
 
-    public static function manage_pages_custom_column($column_name, $postId)
+    public static function managePagesCustomColumn($column_name, $postId)
     {
         if ('access_info' != $column_name) {
             return;
         }
 
-        if (!$permission = permissions()->get_the_permission($postId)) {
+        if (!$permission = permissions()->getThePermission($postId)) {
             return;
         }
 
         $error = '';
-        $permissions = permissions()->get_the_permissions();
+        $permissions = permissions()->getThePermissions();
 
         if (!isset($permissions[$permission])) {
-            $permission = permissions()->get_default_permission();
+            $permission = permissions()->getDefaultPermission();
             $error = __("Permission does not exist or has been removed.", 'rrze-ac');
         }
 
         if (!$permissions[$permission]['active']) {
             $error = __("Permission has been disabled.", 'rrze-ac');
-            $permission = permissions()->get_default_permission();
+            $permission = permissions()->getDefaultPermission();
         }
 
         $class = $permission == 'public' ? 'access-all-icon' : 'access-icon';
@@ -189,7 +189,7 @@ class Post
 
         $permission = get_post_meta($post->ID, self::ACCESS_PERMISSION_META_KEY, true);
 
-        $permissions = permissions()->get_the_permissions();
+        $permissions = permissions()->getThePermissions();
         $permissions = array_merge([
             '_none_' => [
                 'select' => __("--NONE--", 'rrze-ac'),
@@ -218,12 +218,5 @@ class Post
             'rrze-ac',
             plugin()->getPath('languages')
         );
-    }
-
-    public static function restAfterInsert($post)
-    {
-        if ($post->post_type !== 'page') {
-            return;
-        }
     }
 }
