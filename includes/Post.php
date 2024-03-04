@@ -10,14 +10,15 @@ class Post
 
     public static function init()
     {
-        add_action('add_meta_boxes', [__CLASS__, 'metabox']);
-        add_action("save_post_page", [__CLASS__, 'savePost'], 10, 2);
-
         add_action('init', [__CLASS__, 'registerPostMeta']);
+
+        add_action('add_meta_boxes', [__CLASS__, 'metabox']);
+
+        add_action("save_post_page", [__CLASS__, 'savePost'], 10, 2);
+        add_action('updated_postmeta', [__CLASS__, 'updatePostMeta'], 10, 4);
 
         add_action("manage_edit-page_columns", [__CLASS__, 'manage_pages_column']);
         add_filter("manage_page_posts_custom_column", [__CLASS__, 'manage_pages_custom_column'], 10, 2);
-
 
         /* Enqueue Block Editor Assets */
         add_action('enqueue_block_editor_assets', [__CLASS__, 'enqueueBlockEditorAssets']);
@@ -91,10 +92,30 @@ class Post
         $permissions = permissions()->get_the_permissions();
         $permissions = array_merge(['_none_' => []], $permissions);
 
-        if ('_none_' === $permission) {
-            delete_post_meta($postId, self::ACCESS_PERMISSION_META_KEY);
-        } elseif (isset($permissions[$permission])) {
+        if (isset($permissions[$permission])) {
             update_post_meta($postId, self::ACCESS_PERMISSION_META_KEY, $permission);
+        }
+    }
+
+    public static function registerPostMeta()
+    {
+        register_post_meta(
+            'page',
+            self::ACCESS_PERMISSION_META_KEY,
+            [
+                'show_in_rest' => true,
+                'single' => true,
+                'type' => 'string',
+            ]
+        );
+    }
+
+    public static function updatePostMeta($metaId, $postId, $metaKey, $metaValue)
+    {
+        if (self::ACCESS_PERMISSION_META_KEY == $metaKey) {
+            if ('_none_' === $metaValue) {
+                delete_post_meta($postId, self::ACCESS_PERMISSION_META_KEY);
+            }
         }
     }
 
@@ -196,19 +217,6 @@ class Post
             'rrze-ac-blockeditor',
             'rrze-ac',
             plugin()->getPath('languages')
-        );
-    }
-
-    public static function registerPostMeta()
-    {
-        register_post_meta(
-            'page',
-            self::ACCESS_PERMISSION_META_KEY,
-            [
-                'show_in_rest' => true,
-                'single' => true,
-                'type' => 'string',
-            ]
         );
     }
 
