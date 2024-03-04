@@ -9,8 +9,8 @@ use RRZE\AccessControl\Media\Files;
 class Main
 {
     public $options;
-    public $option_name;
-    public $enabled_option_name;
+    public $optionName;
+    public $enabledOptionName;
 
     public $settings;
     public $page_slug;
@@ -19,8 +19,8 @@ class Main
     public function __construct()
     {
         $this->options = Options::getOptions();
-        $this->option_name = Options::getOptionName();
-        $this->enabled_option_name = Options::getEnabledOptionName();
+        $this->optionName = Options::getOptionName();
+        $this->enabledOptionName = Options::getEnabledOptionName();
 
         $this->settings = new Settings($this);
 
@@ -30,9 +30,9 @@ class Main
 
         add_action('init', array($this, 'register_post_status'));
 
-        if (!get_site_option($this->enabled_option_name)) {
-            add_action('admin_notices', array($this, 'admin_error_notice'));
-            add_action('network_admin_notices', array($this, 'admin_error_notice'));
+        if (!get_site_option($this->enabledOptionName)) {
+            add_action('admin_notices', array($this, 'adminErrorNotice'));
+            add_action('network_admin_notices', array($this, 'adminErrorNotice'));
             return;
         }
 
@@ -43,12 +43,12 @@ class Main
         Files::init();
 
         add_filter('plugin_action_links_' . plugin()->getBaseName(), function ($links) {
-            $settings_link = '<a href="' . $this->action_url(array('page' => 'rrze-ac-settings')) . '">' . esc_html(__("Settings", 'rrze-ac')) . '</a>';
+            $settings_link = '<a href="' . $this->actionUrl(array('page' => 'rrze-ac-settings')) . '">' . esc_html(__("Settings", 'rrze-ac')) . '</a>';
             array_unshift($links, $settings_link);
             return $links;
         });
 
-        add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
+        add_action('admin_enqueue_scripts', array($this, 'adminEnqueueScripts'));
 
         add_action('admin_notices', array($this->settings, 'admin_notices'));
 
@@ -63,7 +63,7 @@ class Main
         add_action('views_edit-page', array($this, 'views_edit'));
         add_filter('pre_get_posts', array($this, 'pre_get_posts_list'));
 
-        add_action('template_redirect', array($this, 'template_redirect'), 0);
+        add_action('template_redirect', array($this, 'templateRedirect'), 0);
 
         // WP-REST-API
         add_filter("rest_page_query", array($this, 'rest_filter'));
@@ -86,17 +86,17 @@ class Main
 
     public function check_rewrite()
     {
-        if (is_admin() && !get_site_option($this->enabled_option_name)) {
+        if (is_admin() && !get_site_option($this->enabledOptionName)) {
             global $pagenow;
             if ($this->check_rewrite_rules()) {
-                add_site_option($this->enabled_option_name, 1);
+                add_site_option($this->enabledOptionName, 1);
                 wp_redirect(admin_url($pagenow ? $pagenow : ''));
                 exit();
             }
         }
     }
 
-    public function admin_error_notice()
+    public function adminErrorNotice()
     {
         if (!current_user_can('manage_options')) {
             return;
@@ -156,7 +156,7 @@ class Main
         return $rewrite_rules;
     }
 
-    public function enqueue_scripts()
+    public function adminEnqueueScripts()
     {
         wp_register_style(
             'rrze-ac-access',
@@ -215,7 +215,7 @@ class Main
         }
     }
 
-    public function get_permission_metas($post_type = '')
+    public function getPermissionMetas($post_type = '')
     {
         global $wpdb;
 
@@ -263,13 +263,13 @@ class Main
         return $metas;
     }
 
-    public function count_meta_keys($permission_key)
+    public function count_meta_keys($permissionKey)
     {
         $metas = $this->meta_values();
-        return array_keys($metas, $permission_key, true);
+        return array_keys($metas, $permissionKey, true);
     }
 
-    public function action_url($atts = [])
+    public function actionUrl($atts = [])
     {
         $atts = array_merge(
             array(
@@ -308,7 +308,7 @@ class Main
         return $menu_items;
     }
 
-    public function template_redirect()
+    public function templateRedirect()
     {
         if (is_page() || is_attachment()) {
             global $post;
@@ -328,11 +328,11 @@ class Main
     public function rest_filter($args)
     {
         $post_not_in = [];
-        $permissions = permissions()->get_the_permissions();
-        $permission_metas = permissions()->get_permission_metas($args['post_type']);
+        $permissions = permissions()->getThePermissions();
+        $permission_metas = permissions()->getPermissionMetas($args['post_type']);
 
         foreach ($permission_metas as $pm) {
-            if (isset($permissions[$pm->meta_value]) && $permissions[$pm->meta_value]['active'] && !permissions()->check_author_permission($pm->post_id)) {
+            if (isset($permissions[$pm->meta_value]) && $permissions[$pm->meta_value]['active'] && !permissions()->checkAuthorPermission($pm->post_id)) {
                 $post_not_in[] = $pm->post_id;
             }
         }
@@ -351,11 +351,11 @@ class Main
         }
 
         $post_not_in = [];
-        $permissions = permissions()->get_the_permissions();
-        $permission_metas = $this->get_permission_metas();
+        $permissions = permissions()->getThePermissions();
+        $permission_metas = $this->getPermissionMetas();
 
         foreach ($permission_metas as $pm) {
-            if (isset($permissions[$pm->meta_value]) && $permissions[$pm->meta_value]['active'] && !permissions()->check_author_permission($pm->post_id)) {
+            if (isset($permissions[$pm->meta_value]) && $permissions[$pm->meta_value]['active'] && !permissions()->checkAuthorPermission($pm->post_id)) {
                 $post_not_in[] = $pm->post_id;
             }
         }
@@ -370,7 +370,7 @@ class Main
     public function walker_nav_menu_edit($output, $item, $depth, $args, $id)
     {
         $permission = get_post_meta($item->object_id, Post::ACCESS_PERMISSION_META_KEY, true);
-        $permissions = permissions()->get_the_permissions();
+        $permissions = permissions()->getThePermissions();
         $pos = strpos($output, '<span class="menu-item-title">');
 
         if (!empty($permission) && isset($permissions[$permission]) && $pos !== false) {
