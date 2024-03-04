@@ -9,7 +9,7 @@ class ListTable extends \WP_List_Table
 
     protected $main;
 
-    public $list_data = array();
+    public $list_data = [];
 
     public function __construct(Main $main)
     {
@@ -61,17 +61,17 @@ class ListTable extends \WP_List_Table
     public function column_permission_key($item)
     {
         // Build row actions
-        $actions = array();
+        $actions = [];
         if (!$item['core']) {
-            $actions['edit'] = '<a href="' . esc_url($this->main->actionUrl(array('action' => 'edit', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Edit", 'rrze-ac')) . '</a>';
+            $actions['edit'] = '<a href="' . esc_url(Utils::actionUrl(array('action' => 'edit', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Edit", 'rrze-ac')) . '</a>';
         }
         if (!$item['core'] && !$item['default']) {
             if ($item['active']) {
-                $actions['deactivate'] = '<a href="' . esc_url($this->main->actionUrl(array('action' => 'deactivate', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Deactivate", 'rrze-ac')) . '</a>';
+                $actions['deactivate'] = '<a href="' . esc_url(Utils::actionUrl(array('action' => 'deactivate', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Deactivate", 'rrze-ac')) . '</a>';
             } else {
-                $actions['activate'] = '<a href="' . esc_url($this->main->actionUrl(array('action' => 'activate', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Activate", 'rrze-ac')) . '</a>';
-                if (empty($this->main->count_meta_keys($item['permission_key']))) {
-                    $actions['delete'] = '<a href="' . esc_url($this->main->actionUrl(array('action' => 'delete', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Delete", 'rrze-ac')) . '</a>';
+                $actions['activate'] = '<a href="' . esc_url(Utils::actionUrl(array('action' => 'activate', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Activate", 'rrze-ac')) . '</a>';
+                if (empty(Post::count_meta_keys($item['permission_key']))) {
+                    $actions['delete'] = '<a href="' . esc_url(Utils::actionUrl(array('action' => 'delete', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Delete", 'rrze-ac')) . '</a>';
                 }
             }
         }
@@ -144,7 +144,7 @@ class ListTable extends \WP_List_Table
             $permission = permissions()->getPermission($value);
             $this->main->settings->action_delete($permission);
         }
-        wp_redirect($this->main->actionUrl());
+        wp_redirect(Utils::actionUrl());
         exit();
     }
 
@@ -154,7 +154,7 @@ class ListTable extends \WP_List_Table
             $permission = permissions()->getPermission($value);
             $this->main->settings->action_activate($permission, $activate);
         }
-        wp_redirect($this->main->actionUrl());
+        wp_redirect(Utils::actionUrl());
         exit();
     }
 
@@ -169,7 +169,7 @@ class ListTable extends \WP_List_Table
                 $select = mb_stripos($data['select'], $search) === FALSE ? TRUE : FALSE;
                 $description = mb_stripos($data['description'], $search) === FALSE ? TRUE : FALSE;
 
-                $domain = !empty($data['domain']) ? $data['domain'] : array();
+                $domain = !empty($data['domain']) ? $data['domain'] : [];
                 $dom = TRUE;
                 foreach ($domain as $value) {
                     if (isset($value) && mb_stripos($value, $search) !== FALSE) {
@@ -178,7 +178,7 @@ class ListTable extends \WP_List_Table
                     }
                 }
 
-                $ipAddress = !empty($data['ip_address']) ? $data['ip_address'] : array();
+                $ipAddress = !empty($data['ip_address']) ? $data['ip_address'] : [];
                 $ip = TRUE;
                 foreach ($ipAddress as $value) {
                     if (isset($value) && mb_stripos($value, $search) !== FALSE) {
