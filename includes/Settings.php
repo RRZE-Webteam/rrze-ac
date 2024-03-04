@@ -73,7 +73,7 @@ class Settings
             <h2>
                 <?php echo esc_html(__("Permissions", 'rrze-ac')); ?>
                 <?php if (empty($action)) : ?>
-                    <a href="<?php echo $this->main->actionUrl(array('action' => 'new')); ?>" class="add-new-h2"><?php _e("Add New Permission", 'rrze-ac'); ?></a>
+                    <a href="<?php echo Utils::actionUrl(array('action' => 'new')); ?>" class="add-new-h2"><?php _e("Add New Permission", 'rrze-ac'); ?></a>
                 <?php endif; ?>
             </h2>
             <?php
@@ -119,12 +119,12 @@ class Settings
                     $this->addAdminNotice($error['message'], 'error');
                 }
             }
-            wp_redirect($this->main->actionUrl(array('action' => 'new')));
+            wp_redirect(Utils::actionUrl(array('action' => 'new')));
             exit();
         }
 
         $this->addAdminNotice(__("The permission has been added.", 'rrze-ac'));
-        wp_redirect($this->main->actionUrl(array('action' => 'edit', 'permission' => $permissionKey)));
+        wp_redirect(Utils::actionUrl(array('action' => 'edit', 'permission' => $permissionKey)));
         exit();
     }
 
@@ -155,7 +155,7 @@ class Settings
                     $this->addAdminNotice($error['message'], 'error');
                 }
             }
-            wp_redirect($this->main->actionUrl(array('action' => 'edit', 'permission' => $permissionKey)));
+            wp_redirect(Utils::actionUrl(array('action' => 'edit', 'permission' => $permissionKey)));
             exit();
         }
 
@@ -163,7 +163,7 @@ class Settings
             $this->addAdminNotice(__("The permission has been updated.", 'rrze-ac'));
         }
 
-        wp_redirect($this->main->actionUrl(array('action' => 'edit', 'permission' => $permissionKey)));
+        wp_redirect(Utils::actionUrl(array('action' => 'edit', 'permission' => $permissionKey)));
         exit();
     }
 
@@ -184,7 +184,7 @@ class Settings
                     $this->addAdminNotice($error['message'], 'error');
                 }
             }
-            wp_redirect($this->main->actionUrl(array('page' => 'rrze-ac-settings')));
+            wp_redirect(Utils::actionUrl(array('page' => 'rrze-ac-settings')));
             exit();
         }
 
@@ -192,7 +192,7 @@ class Settings
             $this->addAdminNotice(__("The settings have been updated.", 'rrze-ac'));
         }
 
-        wp_redirect($this->main->actionUrl(array('page' => 'rrze-ac-settings')));
+        wp_redirect(Utils::actionUrl(array('page' => 'rrze-ac-settings')));
         exit();
     }
 
@@ -402,7 +402,7 @@ class Settings
     {
     ?>
         <h2><?php echo esc_html(__("Add New Permission", 'rrze-ac')); ?></h2>
-        <form action="<?php echo $this->main->actionUrl(array('action' => 'new')); ?>" method="post">
+        <form action="<?php echo Utils::actionUrl(array('action' => 'new')); ?>" method="post">
             <?php
             settings_fields('rrze-ac-new');
             do_settings_sections('rrze-ac-new');
@@ -415,7 +415,7 @@ class Settings
     {
     ?>
         <h2><?php echo esc_html(__("Edit permission", 'rrze-ac')); ?></h2>
-        <form action="<?php echo $this->main->actionUrl(array('action' => 'edit')) ?>" method="post">
+        <form action="<?php echo Utils::actionUrl(array('action' => 'edit')) ?>" method="post">
             <?php
             settings_fields('rrze-ac-edit');
             do_settings_sections('rrze-ac-edit');
@@ -781,7 +781,7 @@ class Settings
                     }
                     if ($this->action_activate($permission)) {
                         $this->addAdminNotice(__("The permission has been enabled.", 'rrze-ac'));
-                        wp_redirect($this->main->actionUrl());
+                        wp_redirect(Utils::actionUrl());
                         exit();
                     }
                     break;
@@ -791,7 +791,7 @@ class Settings
                     }
                     if ($this->action_activate($permission, 0)) {
                         $this->addAdminNotice(__("The permission has been disabled.", 'rrze-ac'));
-                        wp_redirect($this->main->actionUrl());
+                        wp_redirect(Utils::actionUrl());
                         exit();
                     }
                     break;
@@ -801,7 +801,7 @@ class Settings
                     }
                     if ($this->action_delete($permission)) {
                         $this->addAdminNotice(__("The permission has been deleted.", 'rrze-ac'));
-                        wp_redirect($this->main->actionUrl());
+                        wp_redirect(Utils::actionUrl());
                         exit();
                     }
                     break;
@@ -827,7 +827,7 @@ class Settings
             !isset($permission['permission_key'])
             || $permission['core']
             || $permission['permission_key'] == permissions()->getDefaultPermission()
-            || !empty($this->main->count_meta_keys($permission['permission_key']))
+            || !empty(Post::count_meta_keys($permission['permission_key']))
         ) {
             return false;
         }
@@ -889,7 +889,7 @@ class Settings
 
         $transient = $this->notice_transient . get_current_user_id();
         $transient_value = get_transient($transient);
-        $notices = maybe_unserialize($transient_value ? $transient_value : array());
+        $notices = maybe_unserialize($transient_value ? $transient_value : []);
         $notices[$class][] = $message;
 
         set_transient($transient, $notices, $this->notice_transient_expiration);
@@ -920,7 +920,7 @@ class Settings
     {
         $transient = $this->settingsErrorTransient . get_current_user_id();
         $transient_value = get_transient($transient);
-        $errors = maybe_unserialize($transient_value ? $transient_value : array());
+        $errors = maybe_unserialize($transient_value ? $transient_value : []);
         $errors[$field] = array('value' => $value, 'message' => $message, 'error' => $error);
 
         set_transient($transient, $errors, $this->settingsErrorTransientExpiration);
