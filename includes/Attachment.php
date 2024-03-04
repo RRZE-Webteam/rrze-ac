@@ -43,7 +43,7 @@ class Attachment
             $permission = permissions()->getDefaultPermission();
         } ?>
         <input type="hidden" name="access_protection_toggle" value="off">
-        <input type="checkbox" id="access-protection-toggle" name="access_protection_toggle" <?php checked(Files::is_attachment_protected($post->ID)); ?>>
+        <input type="checkbox" id="access-protection-toggle" name="access_protection_toggle" <?php checked(Files::isAttachmentProtected($post->ID)); ?>>
         <label class="access-protection-toggle" for="access-protection-toggle">
             <span aria-role="hidden" class="access-on button button-primary" data-access-content="<?php esc_attr_e("Enable permission", 'rrze-ac'); ?>"></span>
             <span aria-role="hidden" class="access-off" data-access-content="<?php esc_attr_e("Remove permission", 'rrze-ac'); ?>"></span>
@@ -84,22 +84,22 @@ class Attachment
         self::bulk_actions();
     }
 
-    public static function image_downsize_placeholder($img, $attachment_id, $size)
+    public static function image_downsize_placeholder($img, $attachmentId, $size)
     {
-        $upload_dir = wp_upload_dir();
+        $uploadDir = wp_upload_dir();
 
-        if (isset($img[0]) && 0 !== strpos(ltrim($img[0], $upload_dir['baseurl']), Files::protected_upload_dir('/', true))) {
+        if (isset($img[0]) && 0 !== strpos(ltrim($img[0], $uploadDir['baseurl']), Files::protectedUploadDir('/', true))) {
             return $img;
         }
 
-        if (Access::try($attachment_id)) {
+        if (Access::try($attachmentId)) {
             return $img;
         }
 
-        if (!Files::is_attachment_protected($attachment_id)) {
+        if (!Files::isAttachmentProtected($attachmentId)) {
             remove_filter('image_downsize', [__CLASS__, 'image_downsize_placeholder'], 999, 3);
 
-            $placeholder = wp_get_attachment_image_src($attachment_id, $size);
+            $placeholder = wp_get_attachment_image_src($attachmentId, $size);
 
             add_filter('image_downsize', [__CLASS__, 'image_downsize_placeholder'], 999, 3);
 
@@ -179,7 +179,7 @@ class Attachment
             </th>
             <td class="field">
                 <input type="hidden" name="attachments[<?php echo $post->ID ?>][access_protection_toggle]" value="off">
-                <input class="radio access-protection-toggle" type="checkbox" id="attachments[<?php echo $post->ID; ?>][access_protection_toggle]" name="attachments[<?php echo $post->ID; ?>][access_protection_toggle]" <?php checked(Files::is_attachment_protected($post->ID)); ?>>
+                <input class="radio access-protection-toggle" type="checkbox" id="attachments[<?php echo $post->ID; ?>][access_protection_toggle]" name="attachments[<?php echo $post->ID; ?>][access_protection_toggle]" <?php checked(Files::isAttachmentProtected($post->ID)); ?>>
                 <p id="access-attachment-permissions-field">
                     <label for="attachments[<?php echo $post->ID; ?>][access_permission_select]"><?php esc_html_e("Permission", 'rrze-ac'); ?></label><br>
                     <select class="access-permission-select" id="attachments[<?php echo $post->ID; ?>][access_permission_select]" name="attachments[<?php echo $post->ID; ?>][access_permission_select]">
@@ -209,14 +209,14 @@ class Attachment
             return $post;
         }
 
-        $attachment_id = $post['ID'];
+        $attachmentId = $post['ID'];
 
         switch ($attachment['access_protection_toggle']) {
 
             case 'off':
                 remove_action('edit_attachment', [__CLASS__, 'save_attachment_data']);
 
-                $move_attachment = Files::move_attachment_from_protected($attachment_id);
+                $move_attachment = Files::moveAttachmentFromProtected($attachmentId);
 
                 add_action('edit_attachment', [__CLASS__, 'save_attachment_data']);
 
@@ -224,14 +224,14 @@ class Attachment
                     return $post;
                 }
 
-                delete_post_meta($attachment_id, Post::ACCESS_PERMISSION_META_KEY);
+                delete_post_meta($attachmentId, Post::ACCESS_PERMISSION_META_KEY);
 
                 return $post;
 
             case 'on':
                 remove_action('edit_attachment', [__CLASS__, 'save_attachment_data']);
 
-                $move_attachment = Files::move_attachment_to_protected($attachment_id);
+                $move_attachment = Files::moveAttachmentToProtected($attachmentId);
 
                 add_action('edit_attachment', [__CLASS__, 'save_attachment_data']);
 
@@ -246,9 +246,9 @@ class Attachment
                 $permissions = permissions()->getThePermissions();
 
                 if (!isset($permissions[$attachment['access_permission_select']])) {
-                    delete_post_meta($attachment_id, Post::ACCESS_PERMISSION_META_KEY);
+                    delete_post_meta($attachmentId, Post::ACCESS_PERMISSION_META_KEY);
                 } else {
-                    update_post_meta($attachment_id, Post::ACCESS_PERMISSION_META_KEY, $attachment['access_permission_select']);
+                    update_post_meta($attachmentId, Post::ACCESS_PERMISSION_META_KEY, $attachment['access_permission_select']);
                 }
 
                 return $post;
@@ -258,7 +258,7 @@ class Attachment
         }
     }
 
-    public static function save_attachment_data($attachment_id)
+    public static function save_attachment_data($attachmentId)
     {
         if ((defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || (defined('DOING_AJAX') && DOING_AJAX) || isset($_REQUEST['bulk_edit'])) {
             return;
@@ -268,7 +268,7 @@ class Attachment
             return;
         }
 
-        if (!current_user_can('edit_post', $attachment_id)) {
+        if (!current_user_can('edit_post', $attachmentId)) {
             return;
         }
 
@@ -281,7 +281,7 @@ class Attachment
             case 'off':
                 remove_action('edit_attachment', [__CLASS__, 'save_attachment_data']);
 
-                $move_attachment = Files::move_attachment_from_protected($attachment_id);
+                $move_attachment = Files::moveAttachmentFromProtected($attachmentId);
 
                 add_action('edit_attachment', [__CLASS__, 'save_attachment_data']);
 
@@ -289,14 +289,14 @@ class Attachment
                     return;
                 }
 
-                delete_post_meta($attachment_id, Post::ACCESS_PERMISSION_META_KEY);
+                delete_post_meta($attachmentId, Post::ACCESS_PERMISSION_META_KEY);
 
                 break;
 
             case 'on':
                 remove_action('edit_attachment', [__CLASS__, 'save_attachment_data']);
 
-                $move_attachment = Files::move_attachment_to_protected($attachment_id);
+                $move_attachment = Files::moveAttachmentToProtected($attachmentId);
 
                 add_action('edit_attachment', [__CLASS__, 'save_attachment_data']);
 
@@ -311,9 +311,9 @@ class Attachment
                 $permissions = permissions()->getThePermissions();
 
                 if (!isset($permissions[$_POST['access_permission_select']])) {
-                    delete_post_meta($attachment_id, Post::ACCESS_PERMISSION_META_KEY);
+                    delete_post_meta($attachmentId, Post::ACCESS_PERMISSION_META_KEY);
                 } else {
-                    update_post_meta($attachment_id, Post::ACCESS_PERMISSION_META_KEY, $_POST['access_permission_select']);
+                    update_post_meta($attachmentId, Post::ACCESS_PERMISSION_META_KEY, $_POST['access_permission_select']);
                 }
 
                 break;
@@ -391,7 +391,7 @@ class Attachment
             return;
         }
 
-        $bulk_actions = array();
+        $bulk_actions = [];
         if (!isset($_GET['access-show-protected'])) {
             $bulk_actions['access-protect'] = esc_html__("Enable permission", 'rrze-ac');
         }
@@ -507,11 +507,11 @@ class Attachment
                         continue;
                     }
 
-                    if (Files::is_attachment_protected($media_id)) {
+                    if (Files::isAttachmentProtected($media_id)) {
                         continue;
                     }
 
-                    $move_attachment = Files::move_attachment_to_protected($media_id);
+                    $move_attachment = Files::moveAttachmentToProtected($media_id);
 
                     if (is_wp_error($move_attachment)) {
                         wp_die(
@@ -551,11 +551,11 @@ class Attachment
                         continue;
                     }
 
-                    if (!Files::is_attachment_protected($media_id)) {
+                    if (!Files::isAttachmentProtected($media_id)) {
                         continue;
                     }
 
-                    $move_attachment = Files::move_attachment_from_protected($media_id);
+                    $move_attachment = Files::moveAttachmentFromProtected($media_id);
 
                     if (is_wp_error($move_attachment)) {
                         wp_die(
