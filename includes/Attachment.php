@@ -37,10 +37,10 @@ class Attachment
 
         $permission = get_post_meta($post->ID, Post::ACCESS_PERMISSION_META_KEY, true);
 
-        $permissions = permissions()->get_the_permissions();
+        $permissions = permissions()->getThePermissions();
 
         if (empty($permission) || !isset($permissions[$permission]) || !$permissions[$permission]['active']) {
-            $permission = permissions()->get_default_permission();
+            $permission = permissions()->getDefaultPermission();
         } ?>
         <input type="hidden" name="access_protection_toggle" value="off">
         <input type="checkbox" id="access-protection-toggle" name="access_protection_toggle" <?php checked(Files::is_attachment_protected($post->ID)); ?>>
@@ -163,10 +163,10 @@ class Attachment
 
         $permission = get_post_meta($post->ID, Post::ACCESS_PERMISSION_META_KEY, true);
 
-        $permissions = permissions()->get_the_permissions();
+        $permissions = permissions()->getThePermissions();
 
         if (empty($permission) || !isset($permissions[$permission])) {
-            $permission = permissions()->get_default_permission();
+            $permission = permissions()->getDefaultPermission();
         }
 
         ob_start(); ?>
@@ -243,7 +243,7 @@ class Attachment
                     return $post;
                 }
 
-                $permissions = permissions()->get_the_permissions();
+                $permissions = permissions()->getThePermissions();
 
                 if (!isset($permissions[$attachment['access_permission_select']])) {
                     delete_post_meta($attachment_id, Post::ACCESS_PERMISSION_META_KEY);
@@ -308,7 +308,7 @@ class Attachment
                     return;
                 }
 
-                $permissions = permissions()->get_the_permissions();
+                $permissions = permissions()->getThePermissions();
 
                 if (!isset($permissions[$_POST['access_permission_select']])) {
                     delete_post_meta($attachment_id, Post::ACCESS_PERMISSION_META_KEY);
@@ -344,21 +344,21 @@ class Attachment
             return;
         }
 
-        if (!$permission = permissions()->get_the_permission($postId)) {
+        if (!$permission = permissions()->getThePermission($postId)) {
             return;
         }
 
         $error = '';
-        $permissions = permissions()->get_the_permissions();
+        $permissions = permissions()->getThePermissions();
 
         if (!isset($permissions[$permission])) {
-            $permission = permissions()->get_default_permission();
+            $permission = permissions()->getDefaultPermission();
             $error = __("Permission does not exist or has been removed.", 'rrze-ac');
         }
 
         if (!$permissions[$permission]['active']) {
             $error = __("The permission has been disabled.", 'rrze-ac');
-            $permission = permissions()->get_default_permission();
+            $permission = permissions()->getDefaultPermission();
         }
 
         $class = $permission == 'public' ? 'access-all-icon' : 'access-icon';
