@@ -155,9 +155,9 @@ class Access
     {
         $message = '';
 
-        $post_type = get_post_type($postId);
+        $postType = get_post_type($postId);
 
-        if ($post_type == 'attachment' && !wp_attachment_is_image($postId)) {
+        if ($postType == 'attachment' && !wp_attachment_is_image($postId)) {
             $permalink = wp_get_attachment_url($postId);
         } else {
             $permalink = get_permalink($postId);
