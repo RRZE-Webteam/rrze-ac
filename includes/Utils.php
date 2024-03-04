@@ -64,4 +64,37 @@ class Utils
 
         return $output;
     }
+
+    /**
+     * Generate a URL with an action
+     * @param array $atts
+     * @return string URL
+     */
+    public static function actionUrl($atts = [])
+    {
+        $atts = array_merge(
+            array(
+                'page' => 'rrze-ac'
+            ),
+            $atts
+        );
+
+        if (isset($atts['action'])) {
+            switch ($atts['action']) {
+                case 'activate':
+                    $atts['nonce'] = wp_create_nonce('activate');
+                    break;
+                case 'deactivate':
+                    $atts['nonce'] = wp_create_nonce('deactivate');
+                    break;
+                case 'delete':
+                    $atts['nonce'] = wp_create_nonce('delete');
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return add_query_arg($atts, get_admin_url(null, 'admin.php'));
+    }
 }
