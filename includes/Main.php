@@ -248,7 +248,7 @@ class Main
     {
         global $wpdb;
 
-        $metas = array();
+        $metas = [];
 
         $result = $wpdb->get_results("
             SELECT pm.post_id, pm.meta_value FROM {$wpdb->postmeta} pm
@@ -269,7 +269,7 @@ class Main
         return array_keys($metas, $permission_key, true);
     }
 
-    public function action_url($atts = array())
+    public function action_url($atts = [])
     {
         $atts = array_merge(
             array(
@@ -327,7 +327,7 @@ class Main
 
     public function rest_filter($args)
     {
-        $post_not_in = array();
+        $post_not_in = [];
         $permissions = permissions()->get_the_permissions();
         $permission_metas = permissions()->get_permission_metas($args['post_type']);
 
@@ -350,7 +350,7 @@ class Main
             return $query;
         }
 
-        $post_not_in = array();
+        $post_not_in = [];
         $permissions = permissions()->get_the_permissions();
         $permission_metas = $this->get_permission_metas();
 
