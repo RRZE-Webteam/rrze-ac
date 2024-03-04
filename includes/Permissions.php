@@ -217,13 +217,13 @@ class Permissions
         return $authors;
     }
 
-    public function getAttachmentPermission($attachment_id)
+    public function getAttachmentPermission($attachmentId)
     {
-        if (!Files::is_attachment_protected($attachment_id)) {
+        if (!Files::isAttachmentProtected($attachmentId)) {
             return false;
         }
 
-        $permission = get_post_meta($attachment_id, Post::ACCESS_PERMISSION_META_KEY, true);
+        $permission = get_post_meta($attachmentId, Post::ACCESS_PERMISSION_META_KEY, true);
 
         return empty($permission) ? $this->getDefaultPermission() : $permission;
     }
