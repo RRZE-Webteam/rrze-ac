@@ -12,21 +12,23 @@ class Files
 
     public static function init()
     {
-        add_filter('upload_dir', [__CLASS__, 'change_upload_directory'], 999);
+        add_filter('upload_dir', [__CLASS__, 'changeUploadDirectory'], 999);
+
+        add_action('init', [__CLASS__, 'requestFile'], 0);
     }
 
-    public static function is_attachment_protected($attachment_id)
+    public static function isAttachmentProtected($attachmentId)
     {
-        $file = get_post_meta($attachment_id, '_wp_attached_file', true);
+        $file = get_post_meta($attachmentId, '_wp_attached_file', true);
 
-        if (!empty($file) && (0 === stripos($file, self::protected_upload_dir('/')))) {
+        if (!empty($file) && (0 === stripos($file, self::protectedUploadDir('/')))) {
             return true;
         }
 
         return false;
     }
 
-    public static function protected_upload_dir($path = '', $in_url = false)
+    public static function protectedUploadDir($path = '', $in_url = false)
     {
         $dirpath = $in_url ? '/' : '';
         $dirpath .= self::PROTECTED_DIRNAME;
@@ -35,10 +37,10 @@ class Files
         return $dirpath;
     }
 
-    public static function change_upload_directory($param)
+    public static function changeUploadDirectory($param)
     {
         if (isset($_POST['access_protected']) && 'on' == $_POST['access_protected']) {
-            $param['subdir'] = self::protected_upload_dir($param['subdir'], true);
+            $param['subdir'] = self::protectedUploadDir($param['subdir'], true);
             $param['path'] = $param['basedir'] . $param['subdir'];
             $param['url'] = $param['baseurl'] . $param['subdir'];
         }
@@ -46,24 +48,24 @@ class Files
         return $param;
     }
 
-    public static function move_attachment_from_protected($attachment_id)
+    public static function moveAttachmentFromProtected($attachmentId)
     {
-        $file = get_post_meta($attachment_id, '_wp_attached_file', true);
+        $file = get_post_meta($attachmentId, '_wp_attached_file', true);
 
-        if (0 !== stripos($file, self::protected_upload_dir('/'))) {
+        if (0 !== stripos($file, self::protectedUploadDir('/'))) {
             return true;
         }
 
-        $new_reldir = ltrim(dirname($file), self::protected_upload_dir('/'));
+        $newRelDir = ltrim(dirname($file), self::protectedUploadDir('/'));
 
-        return self::move_attachment_files($attachment_id, $new_reldir);
+        return self::moveAttachmentFiles($attachmentId, $newRelDir);
     }
 
-    public static function move_attachment_to_protected($attachment_id)
+    public static function moveAttachmentToProtected($attachmentId)
     {
-        $file = get_post_meta($attachment_id, '_wp_attached_file', true);
+        $file = get_post_meta($attachmentId, '_wp_attached_file', true);
 
-        if (0 === stripos($file, self::protected_upload_dir('/'))) {
+        if (0 === stripos($file, self::protectedUploadDir('/'))) {
             return true;
         }
 
@@ -72,183 +74,183 @@ class Files
             $reldir = '';
         }
 
-        $new_reldir = path_join(self::protected_upload_dir(), $reldir);
+        $newRelDir = path_join(self::protectedUploadDir(), $reldir);
 
-        return self::move_attachment_files($attachment_id, $new_reldir);
+        return self::moveAttachmentFiles($attachmentId, $newRelDir);
     }
 
-    public static function move_attachment_files($attachment_id, $new_reldir)
+    public static function moveAttachmentFiles($attachmentId, $newRelDir)
     {
-        if ('attachment' != get_post_type($attachment_id)) {
+        if ('attachment' != get_post_type($attachmentId)) {
             return new \WP_Error('not_attachment', sprintf(
                 /* translators: %d is the attachment id */
                 __("The post %d is not a Media Post-Type.", 'rrze-ac'),
-                $attachment_id
+                $attachmentId
             ));
         }
 
-        if (path_is_absolute($new_reldir)) {
+        if (path_is_absolute($newRelDir)) {
             return new \WP_Error('new_reldir_not_relative', sprintf(
                 /* translators: %s is the path to the WP uploads directory */
                 __("The newly specified path %s is absolute. The new path must be a path relative to the WP uploads directory.", 'rrze-ac'),
-                $new_reldir
+                $newRelDir
             ));
         }
 
-        $meta = wp_get_attachment_metadata($attachment_id);
+        $meta = wp_get_attachment_metadata($attachmentId);
 
-        $file = get_post_meta($attachment_id, '_wp_attached_file', true);
+        $file = get_post_meta($attachmentId, '_wp_attached_file', true);
 
-        $backups = get_post_meta($attachment_id, '_wp_attachment_backup_sizes', true);
+        $backups = get_post_meta($attachmentId, '_wp_attachment_backup_sizes', true);
 
-        $upload_dir = wp_upload_dir();
+        $uploadDir = wp_upload_dir();
 
-        $old_reldir = dirname($file);
-        if (in_array($old_reldir, array('\\', '/', '.'), true)) {
-            $old_reldir = '';
+        $oldRelDir = dirname($file);
+        if (in_array($oldRelDir, array('\\', '/', '.'), true)) {
+            $oldRelDir = '';
         }
 
-        if ($new_reldir === $old_reldir) {
+        if ($newRelDir === $oldRelDir) {
             return null;
         }
 
-        $old_fulldir = path_join($upload_dir['basedir'], $old_reldir);
-        $new_fulldir = path_join($upload_dir['basedir'], $new_reldir);
+        $oldFullDir = path_join($uploadDir['basedir'], $oldRelDir);
+        $newFullDir = path_join($uploadDir['basedir'], $newRelDir);
 
-        if (!wp_mkdir_p($new_fulldir)) {
+        if (!wp_mkdir_p($newFullDir)) {
             return new \WP_Error('wp_mkdir_p_error', sprintf(
                 /* translators: %s is the path to a directory */
                 __("An error has occurred while creating the directory %s.", 'rrze-ac'),
-                $new_fulldir
+                $newFullDir
             ));
         }
 
-        $meta_sizes = array();
+        $metaSizes = [];
         if (isset($meta['sizes']) && is_array($meta['sizes'])) {
             foreach ($meta['sizes'] as $size) {
-                $meta_sizes[] = $size['file'];
+                $metaSizes[] = $size['file'];
             }
         }
 
-        $backup_sizes = array();
+        $backupSizes = [];
         if (is_array($backups)) {
             foreach ($backups as $size) {
-                $backup_sizes[] = $size['file'];
+                $backupSizes[] = $size['file'];
             }
         }
 
-        $old_basenames = $new_basenames = array_merge(array(basename($file)), $meta_sizes, $backup_sizes);
+        $oldBasenames = $newBasenames = array_merge(array(basename($file)), $metaSizes, $backupSizes);
 
-        $orig_basename = basename($file);
+        $origBasename = basename($file);
         if (is_array($backups) && isset($backups['full-orig'])) {
-            $orig_basename = $backups['full-orig']['file'];
+            $origBasename = $backups['full-orig']['file'];
         }
 
-        $orig_filename = pathinfo($orig_basename);
-        $orig_filename = $orig_filename['filename'];
+        $origFilename = pathinfo($origBasename);
+        $origFilename = $origFilename['filename'];
         $conflict = true;
         $number = 1;
         $separator = '#';
-        $med_filename = $orig_filename;
+        $medFilename = $origFilename;
 
         while ($conflict) {
             $conflict = false;
-            foreach ($new_basenames as $basename) {
-                if (is_file(path_join($new_fulldir, $basename))) {
+            foreach ($newBasenames as $basename) {
+                if (is_file(path_join($newFullDir, $basename))) {
                     $conflict = true;
                     break;
                 }
             }
 
             if ($conflict) {
-                $new_filename = "$orig_filename$number";
+                $newFilename = "$origFilename$number";
                 $number++;
-                $pattern = "$separator$med_filename";
-                $replace = "$separator$new_filename";
-                $new_basenames = explode($separator, ltrim(str_replace($pattern, $replace, $separator . implode($separator, $new_basenames)), $separator));
-                $med_filename = $new_filename;
+                $pattern = "$separator$medFilename";
+                $replace = "$separator$newFilename";
+                $newBasenames = explode($separator, ltrim(str_replace($pattern, $replace, $separator . implode($separator, $newBasenames)), $separator));
+                $medFilename = $newFilename;
             }
         }
 
-        $unique_old_basenames = array_values(array_unique($old_basenames));
-        $unique_new_basenames = array_values(array_unique($new_basenames));
+        $uniqueOldBasenames = array_values(array_unique($oldBasenames));
+        $uniqueNewBasenames = array_values(array_unique($newBasenames));
 
-        $i = count($unique_old_basenames);
+        $i = count($uniqueOldBasenames);
         while ($i--) {
-            $old_fullpath = path_join($old_fulldir, $unique_old_basenames[$i]);
-            $new_fullpath = path_join($new_fulldir, $unique_new_basenames[$i]);
+            $oldFullpath = path_join($oldFullDir, $uniqueOldBasenames[$i]);
+            $newFullpath = path_join($newFullDir, $uniqueNewBasenames[$i]);
 
-            rename($old_fullpath, $new_fullpath);
+            rename($oldFullpath, $newFullpath);
 
-            if (!is_file($new_fullpath)) {
+            if (!is_file($newFullpath)) {
                 return new \WP_Error('rename_failed', sprintf(
                     /* translators: 1: old file path, 2: new file path */
                     __('The file can not be moved from %1$s to %2$s.', 'rrze-ac'),
-                    $old_fullpath,
-                    $new_fullpath
+                    $oldFullpath,
+                    $newFullpath
                 ));
             }
         }
 
-        $file = path_join($new_reldir, $new_basenames[0]);
-        if (wp_attachment_is_image($attachment_id)) {
+        $file = path_join($newRelDir, $newBasenames[0]);
+        if (wp_attachment_is_image($attachmentId)) {
             $meta['file'] = $file;
         }
 
-        update_post_meta($attachment_id, '_wp_attached_file', $file);
+        update_post_meta($attachmentId, '_wp_attached_file', $file);
 
-        if ($new_basenames[0] != $old_basenames[0]) {
-            $orig_basename = ltrim(str_replace($pattern, $replace, $separator . $orig_basename), $separator);
+        if ($newBasenames[0] != $oldBasenames[0]) {
+            $origBasename = ltrim(str_replace($pattern, $replace, $separator . $origBasename), $separator);
 
             if (is_array($meta['sizes'])) {
                 $i = 0;
                 foreach ($meta['sizes'] as $size => $data) {
-                    $meta['sizes'][$size]['file'] = $new_basenames[++$i];
+                    $meta['sizes'][$size]['file'] = $newBasenames[++$i];
                 }
             }
 
             if (is_array($backups)) {
                 $i = 0;
                 $l = count($backups);
-                $new_backup_sizes = array_slice($new_basenames, -$l, $l);
+                $new_backup_sizes = array_slice($newBasenames, -$l, $l);
 
                 foreach ($backups as $size => $data) {
                     $backups[$size]['file'] = $new_backup_sizes[$i++];
                 }
-                update_post_meta($attachment_id, '_wp_attachment_backup_sizes', $backups);
+                update_post_meta($attachmentId, '_wp_attachment_backup_sizes', $backups);
             }
         }
 
-        update_post_meta($attachment_id, '_wp_attachment_metadata', $meta);
+        update_post_meta($attachmentId, '_wp_attachment_metadata', $meta);
 
-        $path = explode('/wp-content/', path_join($new_fulldir, $orig_basename));
+        $path = explode('/wp-content/', path_join($newFullDir, $origBasename));
 
         $permalink = site_url('/wp-content/' . $path[1]);
 
         global $wpdb;
-        $wpdb->update($wpdb->posts, array('guid' => $permalink), array('ID' => $attachment_id), array('%s'), array('%d'));
+        $wpdb->update($wpdb->posts, array('guid' => $permalink), array('ID' => $attachmentId), array('%s'), array('%d'));
 
         return true;
     }
 
-    public static function request_file()
+    public static function requestFile()
     {
         if (isset($_GET['protected_file']) && !empty($_GET['protected_file'])) {
             if (isset($_GET['access_rewrite_test']) && $_GET['access_rewrite_test']) {
                 die('rewrite test passed');
             }
 
-            self::get_file($_GET['protected_file']);
+            self::getFile($_GET['protected_file']);
             exit();
         }
     }
 
-    public static function get_file($rel_file)
+    public static function getFile($relFile)
     {
-        $rel_file = isset($rel_file) ? $rel_file : '';
-        $upload_dir = wp_upload_dir();
+        $relFile = isset($relFile) ? $relFile : '';
+        $uploadDir = wp_upload_dir();
 
-        if (empty($upload_dir['basedir'])) {
+        if (empty($uploadDir['basedir'])) {
             wp_die(
                 __('The requested file was not found.', 'rrze-ac'),
                 __('Not Found', 'rrze-ac'),
@@ -259,11 +261,11 @@ class Files
             );
         }
 
-        $file = rtrim($upload_dir['basedir'], '/') . str_replace('..', '', $rel_file);
+        $file = rtrim($uploadDir['basedir'], '/') . str_replace('..', '', $relFile);
 
         if (!is_file($file)) {
-            $rel_file = str_replace('_protected', '', rtrim($rel_file, '/'));
-            $file = rtrim($upload_dir['basedir'], '/') . str_replace('..', '', $rel_file);
+            $relFile = str_replace('_protected', '', rtrim($relFile, '/'));
+            $file = rtrim($uploadDir['basedir'], '/') . str_replace('..', '', $relFile);
             if (!is_file($file)) {
                 wp_die(
                     __('The requested file was not found.', 'rrze-ac'),
@@ -291,9 +293,9 @@ class Files
             );
         }
 
-        $file_info = pathinfo($rel_file);
+        $fileInfo = pathinfo($relFile);
 
-        if (0 !== stripos($file_info['dirname'] . '/', self::protected_upload_dir('/', true))) {
+        if (0 !== stripos($fileInfo['dirname'] . '/', self::protectedUploadDir('/', true))) {
             wp_die(
                 __('The requested file was not found.', 'rrze-ac'),
                 __('Not Found', 'rrze-ac'),
@@ -317,8 +319,8 @@ class Files
         }
 
         global $wpdb;
-        $attachment_dirname = trim($file_info['dirname'], '/\\');
-        $attachment_file = $attachment_dirname . '/' . $file_info['basename'];
+        $attachmentDirname = trim($fileInfo['dirname'], '/\\');
+        $attachment_file = $attachmentDirname . '/' . $fileInfo['basename'];
 
         $attachment = $wpdb->get_row(
             $wpdb->prepare(
@@ -335,9 +337,9 @@ class Files
                         . "FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value LIKE %s "
                         . "AND post_id IN (SELECT post_id FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value LIKE %s) ",
                     '_wp_attachment_metadata',
-                    '%' . $file_info['basename'] . '%',
+                    '%' . $fileInfo['basename'] . '%',
                     '_wp_attached_file',
-                    '%' . $attachment_dirname . '%'
+                    '%' . $attachmentDirname . '%'
                 )
             );
         }
@@ -353,12 +355,12 @@ class Files
             );
         }
 
-        $attachment_id = $attachment->post_id;
+        $attachmentId = $attachment->post_id;
 
-        if (!Access::try($attachment_id)) {
+        if (!Access::try($attachmentId)) {
             $options = Options::getOptions();
             wp_die(
-                Access::permission_message($attachment_id, $options),
+                Access::permission_message($attachmentId, $options),
                 __('Login is required', 'rrze-ac'),
                 [
                     'response' => '403',
@@ -378,19 +380,19 @@ class Files
         header('Pragma: no-cache');
         header('Expires: Thu, 01 Dec 1994 16:00:00 GMT');
 
-        $client_etag = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? stripslashes($_SERVER['HTTP_IF_NONE_MATCH']) : false;
+        $clientEtag = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? stripslashes($_SERVER['HTTP_IF_NONE_MATCH']) : false;
 
         if (!isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
             $_SERVER['HTTP_IF_MODIFIED_SINCE'] = false;
         }
 
-        $client_last_modified = trim($_SERVER['HTTP_IF_MODIFIED_SINCE']);
+        $clientLastModified = trim($_SERVER['HTTP_IF_MODIFIED_SINCE']);
 
-        $client_modified_timestamp = $client_last_modified ? strtotime($client_last_modified) : 0;
+        $clientModifiedTimestamp = $clientLastModified ? strtotime($clientLastModified) : 0;
 
-        $modified_timestamp = strtotime($last_modified);
+        $modifiedTimestamp = strtotime($last_modified);
 
-        if (($client_last_modified && $client_etag) ? (($client_modified_timestamp >= $modified_timestamp) && ($client_etag == $etag)) : (($client_modified_timestamp >= $modified_timestamp) || ($client_etag == $etag))) {
+        if (($clientLastModified && $clientEtag) ? (($clientModifiedTimestamp >= $modifiedTimestamp) && ($clientEtag == $etag)) : (($clientModifiedTimestamp >= $modifiedTimestamp) || ($clientEtag == $etag))) {
             status_header(304);  // Not Modified
             exit();
         }
