@@ -20,19 +20,19 @@ class Access
             return false;
         }
 
-        if (!$permission = permissions()->get_the_permission($postId)) {
+        if (!$permission = permissions()->getThePermission($postId)) {
             return true;
         }
 
-        if (permissions()->check_author_permission($postId)) {
+        if (permissions()->checkAuthorPermission($postId)) {
             return true;
         }
 
-        $permissions = permissions()->get_the_permissions();
+        $permissions = permissions()->getThePermissions();
 
         // Set permission to default permission if not exist or not active.
         if (!isset($permissions[$permission]) || !$permissions[$permission]['active']) {
-            $permission = permissions()->get_default_permission();
+            $permission = permissions()->getDefaultPermission();
         }
 
         $allowed = false;
@@ -89,19 +89,19 @@ class Access
         }
 
         // Check if permission is set to be sso logged in.
-        $sso_logged_in = false;
+        $ssoLoggedIn = false;
         if (!$allowed && !empty($permissions[$permission]['sso_logged_in'])) {
             if (!permissions()->checkSSOLoggedIn()) {
                 permissions()->set_permission_status(permissions()->user_isnt_sso_logged_in);
             } else {
-                $sso_logged_in = true;
+                $ssoLoggedIn = true;
                 $allowed = true;
             }
         }
 
         // Require person affiliation OR person entitlement.
         if (
-            $sso_logged_in
+            $ssoLoggedIn
             && !is_null(permissions()->personAttributes)
             && (!empty($permissions[$permission]['affiliation']) || !empty($permissions[$permission]['entitlement']))
         ) {
@@ -165,7 +165,7 @@ class Access
 
         $login_url = wp_login_url($permalink);
 
-        if (permissions()->get_permission_status(permissions()->user_isnt_logged_in)) {
+        if (permissions()->getPermissionStatus(permissions()->user_isnt_logged_in)) {
             $message .= '<h3>' . esc_html($options['user_isnt_logged_in_title']) . '</h3>';
             $message .= wpautop(esc_html($options['user_isnt_logged_in_msg']));
             $message .= wpautop('<a href="' . $login_url . '">' . esc_html($options['user_isnt_logged_in_link_txt']) . '</a>');
@@ -173,7 +173,7 @@ class Access
             return $message;
         }
 
-        if (permissions()->get_permission_status(permissions()->user_isnt_sso_logged_in) && permissions()->simplesamlAuth) {
+        if (permissions()->getPermissionStatus(permissions()->user_isnt_sso_logged_in) && permissions()->simplesamlAuth) {
             $login_url = permissions()->simplesamlAuth->getLoginURL();
             $message .= '<h3>' . esc_html($options['user_isnt_sso_logged_in_title']) . '</h3>';
             $message .= wpautop(esc_html($options['user_isnt_sso_logged_in_msg']));
@@ -184,7 +184,7 @@ class Access
 
         $message .= '<h3>' . esc_html($options['access_denied_default_title']) . '</h3>';
 
-        if (permissions()->get_permission_status(permissions()->wrong_password)) {
+        if (permissions()->getPermissionStatus(permissions()->wrong_password)) {
             $message .= wpautop(esc_html($options['access_denied_password_msg'])) . PHP_EOL;
 
             $fieldName = 'rrze_ac_password_' . $postId;
