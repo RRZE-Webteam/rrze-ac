@@ -15,9 +15,9 @@ class ListTable extends \WP_List_Table
     {
         $this->main = $main;
 
-        $this->list_data = permissions()->get_the_permissions();
+        $this->list_data = permissions()->getThePermissions();
         foreach ($this->list_data as $key => $data) {
-            $this->list_data[$key]['default'] = ($data['permission_key'] == permissions()->get_default_permission()) ? 1 : 0;
+            $this->list_data[$key]['default'] = ($data['permission_key'] == permissions()->getDefaultPermission()) ? 1 : 0;
         }
 
         parent::__construct(array(
@@ -63,15 +63,15 @@ class ListTable extends \WP_List_Table
         // Build row actions
         $actions = array();
         if (!$item['core']) {
-            $actions['edit'] = '<a href="' . esc_url($this->main->action_url(array('action' => 'edit', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Edit", 'rrze-ac')) . '</a>';
+            $actions['edit'] = '<a href="' . esc_url($this->main->actionUrl(array('action' => 'edit', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Edit", 'rrze-ac')) . '</a>';
         }
         if (!$item['core'] && !$item['default']) {
             if ($item['active']) {
-                $actions['deactivate'] = '<a href="' . esc_url($this->main->action_url(array('action' => 'deactivate', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Deactivate", 'rrze-ac')) . '</a>';
+                $actions['deactivate'] = '<a href="' . esc_url($this->main->actionUrl(array('action' => 'deactivate', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Deactivate", 'rrze-ac')) . '</a>';
             } else {
-                $actions['activate'] = '<a href="' . esc_url($this->main->action_url(array('action' => 'activate', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Activate", 'rrze-ac')) . '</a>';
+                $actions['activate'] = '<a href="' . esc_url($this->main->actionUrl(array('action' => 'activate', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Activate", 'rrze-ac')) . '</a>';
                 if (empty($this->main->count_meta_keys($item['permission_key']))) {
-                    $actions['delete'] = '<a href="' . esc_url($this->main->action_url(array('action' => 'delete', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Delete", 'rrze-ac')) . '</a>';
+                    $actions['delete'] = '<a href="' . esc_url($this->main->actionUrl(array('action' => 'delete', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Delete", 'rrze-ac')) . '</a>';
                 }
             }
         }
@@ -121,40 +121,40 @@ class ListTable extends \WP_List_Table
 
     public function process_bulk_action()
     {
-        $permission_keys = $this->main->settings->request_var($this->_args['singular']);
+        $permissionKeys = $this->main->settings->requestVar($this->_args['singular']);
 
-        if (!empty($permission_keys) && is_array($permission_keys)) {
+        if (!empty($permissionKeys) && is_array($permissionKeys)) {
             switch ($this->current_action()) {
                 case 'activate':
-                    $this->process_bulk_activate($permission_keys);
+                    $this->process_bulk_activate($permissionKeys);
                     break;
                 case 'deactivate':
-                    $this->process_bulk_activate($permission_keys, 0);
+                    $this->process_bulk_activate($permissionKeys, 0);
                     break;
                 case 'delete':
-                    $this->process_bulk_delete($permission_keys);
+                    $this->process_bulk_delete($permissionKeys);
                     break;
             }
         }
     }
 
-    private function process_bulk_delete($permission_keys)
+    private function process_bulk_delete($permissionKeys)
     {
-        foreach ($permission_keys as $value) {
-            $permission = permissions()->get_permission($value);
+        foreach ($permissionKeys as $value) {
+            $permission = permissions()->getPermission($value);
             $this->main->settings->action_delete($permission);
         }
-        wp_redirect($this->main->action_url());
+        wp_redirect($this->main->actionUrl());
         exit();
     }
 
-    private function process_bulk_activate($permission_keys, $activate = 1)
+    private function process_bulk_activate($permissionKeys, $activate = 1)
     {
-        foreach ($permission_keys as $value) {
-            $permission = permissions()->get_permission($value);
+        foreach ($permissionKeys as $value) {
+            $permission = permissions()->getPermission($value);
             $this->main->settings->action_activate($permission, $activate);
         }
-        wp_redirect($this->main->action_url());
+        wp_redirect($this->main->actionUrl());
         exit();
     }
 
@@ -165,7 +165,7 @@ class ListTable extends \WP_List_Table
         if (isset($_GET['s']) && mb_strlen(trim($_GET['s'])) > 0) {
             $search = trim($_GET['s']);
             foreach ($this->list_data as $key => $data) {
-                $permission_key = mb_stripos($data['permission_key'], $search) === FALSE ? TRUE : FALSE;
+                $permissionKey = mb_stripos($data['permission_key'], $search) === FALSE ? TRUE : FALSE;
                 $select = mb_stripos($data['select'], $search) === FALSE ? TRUE : FALSE;
                 $description = mb_stripos($data['description'], $search) === FALSE ? TRUE : FALSE;
 
@@ -178,16 +178,16 @@ class ListTable extends \WP_List_Table
                     }
                 }
 
-                $ip_address = !empty($data['ip_address']) ? $data['ip_address'] : array();
+                $ipAddress = !empty($data['ip_address']) ? $data['ip_address'] : array();
                 $ip = TRUE;
-                foreach ($ip_address as $value) {
+                foreach ($ipAddress as $value) {
                     if (isset($value) && mb_stripos($value, $search) !== FALSE) {
                         $ip = FALSE;
                         break;
                     }
                 }
 
-                if ($permission_key && $select && $description && $ip && $dom) {
+                if ($permissionKey && $select && $description && $ip && $dom) {
                     unset($this->list_data[$key]);
                 }
             }
