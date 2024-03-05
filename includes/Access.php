@@ -207,7 +207,7 @@ class Access
         $output = '';
         $contact = [];
 
-        if (!$siteAdminName =  $options['contact_admin_name']) {
+        if (!$siteAdminName = $options['contact_admin_name']) {
             $blogId = get_current_blog_id();
             $admins = get_users([
                 'role' => 'administrator',
@@ -223,7 +223,7 @@ class Access
                 }
             }
         } else {
-            $siteAdminEmail = get_option('admin_email');
+            $siteAdminEmail = get_option('admin_email', '');
             $contact[] = sprintf(
                 '<a href="mailto:%1$s">%2$s</a>',
                 Utils::encodeEmail($siteAdminEmail),
