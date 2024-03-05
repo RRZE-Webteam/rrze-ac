@@ -532,7 +532,7 @@ class Settings
         $permissionKey = isset($settingsErrors['permission_key']['value']) && !$readonly ? $settingsErrors['permission_key']['value'] : $permissionKey;
         $field_invalid = !empty($settingsErrors['permission_key']['error']) ? 'field-invalid' : ''; ?>
         <input type="hidden" value="<?php echo !empty($permission['active']) ? 1 : 0; ?>" name="<?php printf('%s[active]', $this->optionName); ?>">
-        <input class="regular-text <?php echo $field_invalid; ?>" type="text" value="<?php echo $permissionKey; ?>" name="<?php printf('%s[permission_key]', $this->optionName); ?>" <?php echo $readonly; ?>>
+        <input class="regular-text <?php echo $field_invalid; ?>" type="text" value="<?php echo strtoupper($permissionKey); ?>" name="<?php printf('%s[permission_key]', $this->optionName); ?>" <?php echo $readonly; ?>>
     <?php
     }
 
@@ -888,8 +888,8 @@ class Settings
         }
 
         $transient = $this->notice_transient . get_current_user_id();
-        $transient_value = get_transient($transient);
-        $notices = maybe_unserialize($transient_value ? $transient_value : []);
+        $transientValue = get_transient($transient);
+        $notices = maybe_unserialize($transientValue ? $transientValue : []);
         $notices[$class][] = $message;
 
         set_transient($transient, $notices, $this->notice_transient_expiration);
@@ -898,8 +898,8 @@ class Settings
     public function displayAdminNotices()
     {
         $transient = $this->notice_transient . get_current_user_id();
-        $transient_value = get_transient($transient);
-        $notices = maybe_unserialize($transient_value ? $transient_value : '');
+        $transientValue = get_transient($transient);
+        $notices = maybe_unserialize($transientValue ? $transientValue : '');
 
         if (is_array($notices)) {
             foreach ($notices as $class => $messages) {
@@ -919,8 +919,8 @@ class Settings
     public function addSettingsError($field, $value = '', $message = '', $error = true)
     {
         $transient = $this->settingsErrorTransient . get_current_user_id();
-        $transient_value = get_transient($transient);
-        $errors = maybe_unserialize($transient_value ? $transient_value : []);
+        $transientValue = get_transient($transient);
+        $errors = maybe_unserialize($transientValue ? $transientValue : []);
         $errors[$field] = array('value' => $value, 'message' => $message, 'error' => $error);
 
         set_transient($transient, $errors, $this->settingsErrorTransientExpiration);
@@ -929,8 +929,8 @@ class Settings
     public function settingsErrors()
     {
         $transient = $this->settingsErrorTransient . get_current_user_id();
-        $transient_value = get_transient($transient);
-        $errors = (array) maybe_unserialize($transient_value ? $transient_value : '');
+        $transientValue = get_transient($transient);
+        $errors = (array) maybe_unserialize($transientValue ? $transientValue : '');
 
         foreach ($errors as $error) {
             if (!empty($error['error'])) {
