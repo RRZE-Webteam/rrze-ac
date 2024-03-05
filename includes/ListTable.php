@@ -9,15 +9,15 @@ class ListTable extends \WP_List_Table
 
     protected $main;
 
-    public $list_data = [];
+    public $listData = [];
 
     public function __construct(Main $main)
     {
         $this->main = $main;
 
-        $this->list_data = permissions()->getThePermissions();
-        foreach ($this->list_data as $key => $data) {
-            $this->list_data[$key]['default'] = ($data['permission_key'] == permissions()->getDefaultPermission()) ? 1 : 0;
+        $this->listData = permissions()->getThePermissions();
+        foreach ($this->listData as $key => $data) {
+            $this->listData[$key]['default'] = ($data['permission_key'] == permissions()->getDefaultPermission()) ? 1 : 0;
         }
 
         parent::__construct(array(
@@ -70,7 +70,7 @@ class ListTable extends \WP_List_Table
                 $actions['deactivate'] = '<a href="' . esc_url(Utils::actionUrl(array('action' => 'deactivate', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Deactivate", 'rrze-ac')) . '</a>';
             } else {
                 $actions['activate'] = '<a href="' . esc_url(Utils::actionUrl(array('action' => 'activate', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Activate", 'rrze-ac')) . '</a>';
-                if (empty(Post::count_meta_keys($item['permission_key']))) {
+                if (empty(Post::countMetaKeys($item['permission_key']))) {
                     $actions['delete'] = '<a href="' . esc_url(Utils::actionUrl(array('action' => 'delete', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Delete", 'rrze-ac')) . '</a>';
                 }
             }
@@ -164,7 +164,7 @@ class ListTable extends \WP_List_Table
 
         if (isset($_GET['s']) && mb_strlen(trim($_GET['s'])) > 0) {
             $search = trim($_GET['s']);
-            foreach ($this->list_data as $key => $data) {
+            foreach ($this->listData as $key => $data) {
                 $permissionKey = mb_stripos($data['permission_key'], $search) === FALSE ? TRUE : FALSE;
                 $select = mb_stripos($data['select'], $search) === FALSE ? TRUE : FALSE;
                 $description = mb_stripos($data['description'], $search) === FALSE ? TRUE : FALSE;
@@ -188,23 +188,23 @@ class ListTable extends \WP_List_Table
                 }
 
                 if ($permissionKey && $select && $description && $ip && $dom) {
-                    unset($this->list_data[$key]);
+                    unset($this->listData[$key]);
                 }
             }
         }
 
         $this->process_bulk_action();
 
-        $per_page = $this->get_items_per_page('rrzeacs_per_page', 20);
-        $current_page = $this->get_pagenum();
-        $total_items = count($this->list_data);
+        $perPage = $this->get_items_per_page('rrzeacs_per_page', 20);
+        $currentPage = $this->get_pagenum();
+        $totalItems = count($this->listData);
 
-        $this->items = array_slice($this->list_data, (($current_page - 1) * $per_page), $per_page);
+        $this->items = array_slice($this->listData, (($currentPage - 1) * $perPage), $perPage);
 
-        $this->set_pagination_args(array(
-            'total_items' => $total_items, // Total number of items
-            'per_page' => $per_page, // How many items to show on a page
-            'total_pages' => ceil($total_items / $per_page)   // Total number of pages
-        ));
+        $this->set_pagination_args([
+            'total_items' => $totalItems, // Total number of items
+            'per_page' => $perPage, // How many items to show on a page
+            'total_pages' => ceil($totalItems / $perPage)   // Total number of pages
+        ]);
     }
 }
