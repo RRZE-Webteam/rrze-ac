@@ -11,12 +11,12 @@ class Attachment
     public static function init()
     {
         add_action('add_meta_boxes', [__CLASS__, 'metabox']);
-        add_action('load-media-new.php', [__CLASS__, 'load_media_new']);
-        add_action('load-upload.php', [__CLASS__, 'load_upload']);
-        add_filter('image_downsize', [__CLASS__, 'image_downsize_placeholder'], 999, 3);
-        add_filter('attachment_fields_to_edit', [__CLASS__, 'attachment_fields_to_edit'], 10, 2);
-        add_filter('attachment_fields_to_save', [__CLASS__, 'save_attachment_edit_fields'], 10, 2);
-        add_action('edit_attachment', [__CLASS__, 'save_attachment_data']);
+        add_action('load-media-new.php', [__CLASS__, 'loadMediaNew']);
+        add_action('load-upload.php', [__CLASS__, 'loadUpload']);
+        add_filter('image_downsize', [__CLASS__, 'imageDownsizePlaceholder'], 999, 3);
+        add_filter('attachment_fields_to_edit', [__CLASS__, 'attachmentFieldsToEdit'], 10, 2);
+        add_filter('attachment_fields_to_save', [__CLASS__, 'saveAttachmentEditFields'], 10, 2);
+        add_action('edit_attachment', [__CLASS__, 'saveAttachmentData']);
     }
 
     public static function metabox()
@@ -66,25 +66,25 @@ class Attachment
         <?php
     }
 
-    public static function load_media_new()
+    public static function loadMediaNew()
     {
         add_action('post-upload-ui', [__CLASS__, 'media_new_upload_ui']);
-        add_action('pre-plupload-upload-ui', [__CLASS__, 'media_new_upload_ui_notice']);
+        add_action('pre-plupload-upload-ui', [__CLASS__, 'mediaNewUploadUINotice']);
     }
 
-    public static function load_upload()
+    public static function loadUpload()
     {
-        add_filter('media_row_actions', [__CLASS__, 'media_row_actions'], 10, 2);
+        add_filter('mediaRowActions', [__CLASS__, 'mediaRowActions'], 10, 2);
         add_filter('manage_upload_columns', [__CLASS__, 'manage_upload_columns']);
         add_action('manage_media_custom_column', [__CLASS__, 'manage_media_custom_column'], 10, 2);
-        add_action('admin_head-upload.php', [__CLASS__, 'media_custom_column_styles']);
-        add_action('admin_footer-upload.php', [__CLASS__, 'media_bulk_actions_js']);
-        add_action('admin_notices', [__CLASS__, 'media_admin_notices']);
+        add_action('admin_head-upload.php', [__CLASS__, 'mediaCustomColumnStyles']);
+        add_action('admin_footer-upload.php', [__CLASS__, 'mediaBulkActionsJS']);
+        add_action('admin_notices', [__CLASS__, 'mediaAdminNotices']);
 
-        self::bulk_actions();
+        self::bulkActions();
     }
 
-    public static function image_downsize_placeholder($img, $attachmentId, $size)
+    public static function imageDownsizePlaceholder($img, $attachmentId, $size)
     {
         $uploadDir = wp_upload_dir();
 
@@ -97,22 +97,22 @@ class Attachment
         }
 
         if (!Files::isAttachmentProtected($attachmentId)) {
-            remove_filter('image_downsize', [__CLASS__, 'image_downsize_placeholder'], 999, 3);
+            remove_filter('image_downsize', [__CLASS__, 'imageDownsizePlaceholder'], 999, 3);
 
             $placeholder = wp_get_attachment_image_src($attachmentId, $size);
 
-            add_filter('image_downsize', [__CLASS__, 'image_downsize_placeholder'], 999, 3);
+            add_filter('image_downsize', [__CLASS__, 'imageDownsizePlaceholder'], 999, 3);
 
             return $placeholder;
         } else {
             list($width, $height) = image_constrain_size_for_editor(1024, 1024, $size);
 
-            return array(
+            return [
                 plugin()->getUrl('images') . 'media-placeholder.jpg',
                 $width,
                 $height,
                 false
-            );
+            ];
         }
     }
 
@@ -144,7 +144,7 @@ class Attachment
         endif;
     }
 
-    public static function media_new_upload_ui_notice()
+    public static function mediaNewUploadUINotice()
     {
         $screen = get_current_screen();
         if (isset($screen->base) && 'media' == $screen->base && 'add' == $screen->action) {
@@ -155,10 +155,10 @@ class Attachment
         }
     }
 
-    public static function attachment_fields_to_edit($form_fields, $post)
+    public static function attachmentFieldsToEdit($formFields, $post)
     {
         if (!is_null(get_current_screen())) {
-            return $form_fields;
+            return $formFields;
         }
 
         $permission = get_post_meta($post->ID, Post::ACCESS_PERMISSION_META_KEY, true);
@@ -198,12 +198,12 @@ class Attachment
             <td>
         </tr>
     <?php
-        $form_fields['access_permission_fields']['tr'] = ob_get_clean();
+        $formFields['access_permission_fields']['tr'] = ob_get_clean();
 
-        return $form_fields;
+        return $formFields;
     }
 
-    public static function save_attachment_edit_fields($post, $attachment)
+    public static function saveAttachmentEditFields($post, $attachment)
     {
         if (!isset($attachment['access_protection_toggle'])) {
             return $post;
@@ -214,13 +214,13 @@ class Attachment
         switch ($attachment['access_protection_toggle']) {
 
             case 'off':
-                remove_action('edit_attachment', [__CLASS__, 'save_attachment_data']);
+                remove_action('edit_attachment', [__CLASS__, 'saveAttachmentData']);
 
-                $move_attachment = Files::moveAttachmentFromProtected($attachmentId);
+                $moveAttachment = Files::moveAttachmentFromProtected($attachmentId);
 
-                add_action('edit_attachment', [__CLASS__, 'save_attachment_data']);
+                add_action('edit_attachment', [__CLASS__, 'saveAttachmentData']);
 
-                if (is_wp_error($move_attachment)) {
+                if (is_wp_error($moveAttachment)) {
                     return $post;
                 }
 
@@ -229,13 +229,13 @@ class Attachment
                 return $post;
 
             case 'on':
-                remove_action('edit_attachment', [__CLASS__, 'save_attachment_data']);
+                remove_action('edit_attachment', [__CLASS__, 'saveAttachmentData']);
 
-                $move_attachment = Files::moveAttachmentToProtected($attachmentId);
+                $moveAttachment = Files::moveAttachmentToProtected($attachmentId);
 
-                add_action('edit_attachment', [__CLASS__, 'save_attachment_data']);
+                add_action('edit_attachment', [__CLASS__, 'saveAttachmentData']);
 
-                if (is_wp_error($move_attachment)) {
+                if (is_wp_error($moveAttachment)) {
                     return $post;
                 }
 
@@ -258,7 +258,7 @@ class Attachment
         }
     }
 
-    public static function save_attachment_data($attachmentId)
+    public static function saveAttachmentData($attachmentId)
     {
         if ((defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || (defined('DOING_AJAX') && DOING_AJAX) || isset($_REQUEST['bulk_edit'])) {
             return;
@@ -279,13 +279,13 @@ class Attachment
         switch ($_POST['access_protection_toggle']) {
 
             case 'off':
-                remove_action('edit_attachment', [__CLASS__, 'save_attachment_data']);
+                remove_action('edit_attachment', [__CLASS__, 'saveAttachmentData']);
 
-                $move_attachment = Files::moveAttachmentFromProtected($attachmentId);
+                $moveAttachment = Files::moveAttachmentFromProtected($attachmentId);
 
-                add_action('edit_attachment', [__CLASS__, 'save_attachment_data']);
+                add_action('edit_attachment', [__CLASS__, 'saveAttachmentData']);
 
-                if (is_wp_error($move_attachment)) {
+                if (is_wp_error($moveAttachment)) {
                     return;
                 }
 
@@ -294,13 +294,13 @@ class Attachment
                 break;
 
             case 'on':
-                remove_action('edit_attachment', [__CLASS__, 'save_attachment_data']);
+                remove_action('edit_attachment', [__CLASS__, 'saveAttachmentData']);
 
-                $move_attachment = Files::moveAttachmentToProtected($attachmentId);
+                $moveAttachment = Files::moveAttachmentToProtected($attachmentId);
 
-                add_action('edit_attachment', [__CLASS__, 'save_attachment_data']);
+                add_action('edit_attachment', [__CLASS__, 'saveAttachmentData']);
 
-                if (is_wp_error($move_attachment)) {
+                if (is_wp_error($moveAttachment)) {
                     return;
                 }
 
@@ -323,7 +323,7 @@ class Attachment
         }
     }
 
-    public static function media_row_actions($actions, $post)
+    public static function mediaRowActions($actions, $post)
     {
         if (!Access::try($post->ID)) {
             return array(esc_html__('You do not have sufficient permissions to access the file.', 'rrze-ac'));
@@ -372,7 +372,7 @@ class Attachment
         echo $description;
     }
 
-    public static function media_custom_column_styles()
+    public static function mediaCustomColumnStyles()
     {
     ?>
 
@@ -385,22 +385,22 @@ class Attachment
     <?php
     }
 
-    public static function media_bulk_actions_js()
+    public static function mediaBulkActionsJS()
     {
         if (!current_user_can('edit_posts')) {
             return;
         }
 
-        $bulk_actions = [];
+        $bulkActions = [];
         if (!isset($_GET['access-show-protected'])) {
-            $bulk_actions['access-protect'] = esc_html__("Enable permission", 'rrze-ac');
+            $bulkActions['access-protect'] = esc_html__("Enable permission", 'rrze-ac');
         }
         if (!isset($_GET['access-show-unprotected'])) {
-            $bulk_actions['access-unprotect'] = esc_html__("Remove permission", 'rrze-ac');
+            $bulkActions['access-unprotect'] = esc_html__("Remove permission", 'rrze-ac');
         } ?>
         <script type="text/javascript">
             jQuery(document).ready(function($) {
-                $.each(<?php echo json_encode($bulk_actions); ?>, function(index, value) {
+                $.each(<?php echo json_encode($bulkActions); ?>, function(index, value) {
                     $('<option>')
                         .val(index)
                         .text(value)
@@ -413,7 +413,7 @@ class Attachment
 <?php
     }
 
-    public static function media_admin_notices()
+    public static function mediaAdminNotices()
     {
         $screen = get_current_screen();
         if ('upload' === $screen->id) {
@@ -449,26 +449,26 @@ class Attachment
         }
     }
 
-    public static function bulk_actions()
+    public static function bulkActions()
     {
-        $wp_list_table = _get_list_table('WP_Media_List_Table');
-        $action = $wp_list_table->current_action();
+        $wpListTable = _get_list_table('WP_Media_List_Table');
+        $action = $wpListTable->current_action();
 
-        $allowed_actions = array(
+        $allowedActions = [
             'access-protect',
             'access-unprotect'
-        );
-        if (!in_array($action, $allowed_actions)) {
+        ];
+        if (!in_array($action, $allowedActions)) {
             return;
         }
 
         check_admin_referer('bulk-media');
 
         if (isset($_REQUEST['media'])) {
-            $media_ids = array_map('intval', $_REQUEST['media']);
+            $mediaIds = array_map('intval', $_REQUEST['media']);
         }
 
-        if (empty($media_ids)) {
+        if (empty($mediaIds)) {
             return;
         }
 
@@ -482,7 +482,7 @@ class Attachment
             }
         }
 
-        $pagenum = $wp_list_table->get_pagenum();
+        $pagenum = $wpListTable->get_pagenum();
         if ($pagenum > 1) {
             $location = add_query_arg('paged', $pagenum, $location);
         }
@@ -502,7 +502,7 @@ class Attachment
                 }
 
                 $protected = 0;
-                foreach ((array) $media_ids as $media_id) {
+                foreach ((array) $mediaIds as $media_id) {
                     if (!current_user_can('edit_post', $media_id)) {
                         continue;
                     }
@@ -511,11 +511,11 @@ class Attachment
                         continue;
                     }
 
-                    $move_attachment = Files::moveAttachmentToProtected($media_id);
+                    $moveAttachment = Files::moveAttachmentToProtected($media_id);
 
-                    if (is_wp_error($move_attachment)) {
+                    if (is_wp_error($moveAttachment)) {
                         wp_die(
-                            __('An error has occurred while moving the media files in the protected directory.', 'rrze-ac') . '<br/>' . $move_attachment->get_error_message(),
+                            __('An error has occurred while moving the media files in the protected directory.', 'rrze-ac') . '<br/>' . $moveAttachment->get_error_message(),
                             __('Internal Server Error', 'rrze-ac'),
                             [
                                 'response' => '500',
@@ -529,7 +529,7 @@ class Attachment
 
                 $location = add_query_arg(array(
                     'access-protected' => $protected,
-                    'ids' => join(',', $media_ids)
+                    'ids' => join(',', $mediaIds)
                 ), $location);
                 break;
 
@@ -546,7 +546,7 @@ class Attachment
                 }
 
                 $unprotected = 0;
-                foreach ((array) $media_ids as $media_id) {
+                foreach ((array) $mediaIds as $media_id) {
                     if (!current_user_can('edit_post', $media_id)) {
                         continue;
                     }
@@ -555,11 +555,11 @@ class Attachment
                         continue;
                     }
 
-                    $move_attachment = Files::moveAttachmentFromProtected($media_id);
+                    $moveAttachment = Files::moveAttachmentFromProtected($media_id);
 
-                    if (is_wp_error($move_attachment)) {
+                    if (is_wp_error($moveAttachment)) {
                         wp_die(
-                            __('An error has occurred while removing the media files from the protected directory.', 'rrze-ac') . '<br/>' . $move_attachment->get_error_message(),
+                            __('An error has occurred while removing the media files from the protected directory.', 'rrze-ac') . '<br/>' . $moveAttachment->get_error_message(),
                             __('Internal Server Error', 'rrze-ac'),
                             [
                                 'response' => '500',
@@ -575,7 +575,7 @@ class Attachment
 
                 $location = add_query_arg(array(
                     'access-unprotected' => $unprotected,
-                    'ids' => join(',', $media_ids)
+                    'ids' => join(',', $mediaIds)
                 ), $location);
                 break;
 
