@@ -13,9 +13,9 @@ class Post
         add_action('init', [__CLASS__, 'registerPostStatus']);
 
         // Anpassung des Abfrageobjekts
-        add_filter('pre_get_posts', [__CLASS__, 'pre_get_posts_single']);
-        add_filter('pre_get_posts', [__CLASS__, 'pre_get_posts_list']);
-        add_action('views_edit-page', [__CLASS__, 'views_edit']);
+        add_filter('pre_get_posts', [__CLASS__, 'preGetPostsSingle']);
+        add_filter('pre_get_posts', [__CLASS__, 'preGetPostsList']);
+        add_action('views_edit-page', [__CLASS__, 'viewsEdit']);
 
         add_action('init', [__CLASS__, 'registerPostMeta']);
 
@@ -27,10 +27,10 @@ class Post
         add_action("manage_edit-page_columns", [__CLASS__, 'managePagesColumn']);
         add_filter("manage_page_posts_custom_column", [__CLASS__, 'managePagesCustomColumn'], 10, 2);
 
-        add_filter('rrze_menu_walker_nav_menu_edit', [__CLASS__, 'walker_nav_menu_edit'], 10, 5);
+        add_filter('rrze_menu_walker_nav_menu_edit', [__CLASS__, 'walkerNavMenuEdit'], 10, 5);
 
         // Menüelemente die geschützte Objekte verlinken sind abgeschlossen
-        // add_filter('wp_nav_menu_objects', [__CLASS__, 'nav_menu_objects'], 10, 1);        
+        // add_filter('wp_nav_menu_objects', [__CLASS__, 'navMenuObjects'], 10, 1);        
 
         /* Enqueue Block Editor Assets */
         add_action('enqueue_block_editor_assets', [__CLASS__, 'enqueueBlockEditorAssets']);
@@ -53,24 +53,24 @@ class Post
         ]);
     }
 
-    public static function pre_get_posts_single($query)
+    public static function preGetPostsSingle($query)
     {
         if (is_admin() || !$query->is_main_query() || $query->is_singular) {
             return $query;
         }
 
-        $post_not_in = [];
+        $postNotIn = [];
         $permissions = permissions()->getThePermissions();
         $permission_metas = self::getPermissionMetas();
 
         foreach ($permission_metas as $pm) {
             if (isset($permissions[$pm->meta_value]) && $permissions[$pm->meta_value]['active'] && !permissions()->checkAuthorPermission($pm->post_id)) {
-                $post_not_in[] = $pm->post_id;
+                $postNotIn[] = $pm->post_id;
             }
         }
 
-        if (!empty($post_not_in)) {
-            $query->set('post__not_in', $post_not_in);
+        if (!empty($postNotIn)) {
+            $query->set('post__not_in', $postNotIn);
         }
 
         return $query;
@@ -105,7 +105,7 @@ class Post
         return $wpdb->get_results($wpdb->prepare($query, self::ACCESS_PERMISSION_META_KEY));
     }
 
-    public static function pre_get_posts_list($query)
+    public static function preGetPostsList($query)
     {
         global $postType;
 
@@ -131,7 +131,7 @@ class Post
         return $query;
     }
 
-    public static function views_edit($views)
+    public static function viewsEdit($views)
     {
         global $wp_query, $postType;
 
@@ -304,7 +304,7 @@ class Post
         echo $description;
     }
 
-    public static function walker_nav_menu_edit($output, $item, $depth, $args, $id)
+    public static function walkerNavMenuEdit($output, $item, $depth, $args, $id)
     {
         $permission = get_post_meta($item->object_id, self::ACCESS_PERMISSION_META_KEY, true);
         $permissions = permissions()->getThePermissions();
@@ -324,7 +324,7 @@ class Post
         return $output;
     }
 
-    public static function nav_menu_objects($menu_items)
+    public static function navMenuObjects($menu_items)
     {
         foreach ($menu_items as $key => $menu_item) {
             if ($menu_item->object == 'page' && !Access::try($menu_item->object_id)) {
@@ -335,13 +335,13 @@ class Post
         return $menu_items;
     }
 
-    public static function count_meta_keys($permissionKey)
+    public static function countMetaKeys($permissionKey)
     {
-        $metas = self::meta_values();
+        $metas = self::metaValues();
         return array_keys($metas, $permissionKey, true);
     }
 
-    protected static function meta_values()
+    protected static function metaValues()
     {
         global $wpdb;
 
