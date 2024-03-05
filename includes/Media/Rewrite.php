@@ -33,7 +33,7 @@ class Rewrite
         }
     }
 
-    protected function checkRewriteRules()
+    protected static function checkRewriteRules()
     {
         $uploadDir = wp_upload_dir();
 
@@ -48,7 +48,7 @@ class Rewrite
         return true;
     }
 
-    protected function rewriteRules()
+    protected static function rewriteRules()
     {
         $uploadsPath = '';
 
@@ -73,7 +73,7 @@ class Rewrite
         return $rewriteRules;
     }
 
-    public function adminErrorNotice()
+    public static function adminErrorNotice()
     {
         if (!current_user_can('manage_options')) {
             return;
