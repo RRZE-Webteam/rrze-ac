@@ -20,11 +20,11 @@ class ListTable extends \WP_List_Table
             $this->listData[$key]['default'] = ($data['permission_key'] == permissions()->getDefaultPermission()) ? 1 : 0;
         }
 
-        parent::__construct(array(
+        parent::__construct([
             'singular' => 'rrzeac',
             'plural' => 'rrzeacs',
-            'ajax' => FALSE
-        ));
+            'ajax' => false
+        ]);
     }
 
     public function single_row($item)
@@ -51,8 +51,13 @@ class ListTable extends \WP_List_Table
                 $item[$column_name] = !empty($item[$column_name]) ? implode('<br>', $item[$column_name]) : '';
                 break;
             case 'logged_in':
+                $item[$column_name] = !empty($item[$column_name]) ? '<span class="dashicons dashicons-yes"></span>' : '';
+                break;
             case 'sso_logged_in':
                 $item[$column_name] = !empty($item[$column_name]) ? '<span class="dashicons dashicons-yes"></span>' : '';
+                $item[$column_name] .= !empty($item['affiliation']) ? '<br>' . implode(' ', $item['affiliation']) : '';
+                $item[$column_name] .= !empty($item['entitlement']) ? '<br>' . implode(' ', $item['entitlement']) : '';
+                break;
         }
 
         return $item[$column_name];
@@ -62,20 +67,20 @@ class ListTable extends \WP_List_Table
     {
         // Build row actions
         $actions = [];
+        $format = '%1$s %2$s';
         if (!$item['core']) {
-            $actions['edit'] = '<a href="' . esc_url(Utils::actionUrl(array('action' => 'edit', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Edit", 'rrze-ac')) . '</a>';
+            $actions['edit'] = '<a href="' . esc_url(Utils::actionUrl(['action' => 'edit', 'permission' => $item['permission_key']])) . '">' . esc_html(__("Edit", 'rrze-ac')) . '</a>';
         }
-        if (!$item['core'] && !$item['default']) {
-            if ($item['active']) {
-                $actions['deactivate'] = '<a href="' . esc_url(Utils::actionUrl(array('action' => 'deactivate', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Deactivate", 'rrze-ac')) . '</a>';
-            } else {
-                $actions['activate'] = '<a href="' . esc_url(Utils::actionUrl(array('action' => 'activate', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Activate", 'rrze-ac')) . '</a>';
-                if (empty(Post::countMetaKeys($item['permission_key']))) {
-                    $actions['delete'] = '<a href="' . esc_url(Utils::actionUrl(array('action' => 'delete', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Delete", 'rrze-ac')) . '</a>';
-                }
+        if ($item['active']) {
+            $format = '<strong>%1$s</strong> %2$s';
+            $actions['deactivate'] = '<a href="' . esc_url(Utils::actionUrl(['action' => 'deactivate', 'permission' => $item['permission_key']])) . '">' . esc_html(__("Deactivate", 'rrze-ac')) . '</a>';
+        } else {
+            $actions['activate'] = '<a href="' . esc_url(Utils::actionUrl(array('action' => 'activate', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Activate", 'rrze-ac')) . '</a>';
+            if (empty(Post::countMetaKeys($item['permission_key']))) {
+                $actions['delete'] = '<a href="' . esc_url(Utils::actionUrl(array('action' => 'delete', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Delete", 'rrze-ac')) . '</a>';
             }
         }
-        return sprintf('%1$s %2$s', $item['permission_key'], $this->row_actions($actions));
+        return sprintf($format, strtoupper($item['permission_key']), $this->row_actions($actions));
     }
 
     public function column_cb($item)
@@ -100,22 +105,22 @@ class ListTable extends \WP_List_Table
 
     public function get_sortable_columns()
     {
-        $sortable_columns = array(
-            'permission_key' => array('permission_key', FALSE),
-            'select' => array('select', FALSE),
-            'logged_in' => array('logged_in', FALSE),
-            'sso_logged_in' => array('sso_logged_in', FALSE)
-        );
-        return $sortable_columns;
+        $sortableColumns = [
+            'permission_key' => ['permission_key', false],
+            'select' => ['select', false],
+            'logged_in' => ['logged_in', false],
+            'sso_logged_in' => ['sso_logged_in', false]
+        ];
+        return $sortableColumns;
     }
 
     public function get_bulk_actions()
     {
-        $actions = array(
+        $actions = [
             'activate' => __("Activate", 'rrze-ac'),
             'deactivate' => __("Deactivate", 'rrze-ac'),
             'delete' => __("Delete", 'rrze-ac')
-        );
+        ];
         return $actions;
     }
 
@@ -165,24 +170,24 @@ class ListTable extends \WP_List_Table
         if (isset($_GET['s']) && mb_strlen(trim($_GET['s'])) > 0) {
             $search = trim($_GET['s']);
             foreach ($this->listData as $key => $data) {
-                $permissionKey = mb_stripos($data['permission_key'], $search) === FALSE ? TRUE : FALSE;
-                $select = mb_stripos($data['select'], $search) === FALSE ? TRUE : FALSE;
-                $description = mb_stripos($data['description'], $search) === FALSE ? TRUE : FALSE;
+                $permissionKey = mb_stripos($data['permission_key'], $search) === false ? true : false;
+                $select = mb_stripos($data['select'], $search) === false ? true : false;
+                $description = mb_stripos($data['description'], $search) === false ? true : false;
 
                 $domain = !empty($data['domain']) ? $data['domain'] : [];
-                $dom = TRUE;
+                $dom = true;
                 foreach ($domain as $value) {
-                    if (isset($value) && mb_stripos($value, $search) !== FALSE) {
-                        $dom = FALSE;
+                    if (isset($value) && mb_stripos($value, $search) !== false) {
+                        $dom = false;
                         break;
                     }
                 }
 
                 $ipAddress = !empty($data['ip_address']) ? $data['ip_address'] : [];
-                $ip = TRUE;
+                $ip = true;
                 foreach ($ipAddress as $value) {
-                    if (isset($value) && mb_stripos($value, $search) !== FALSE) {
-                        $ip = FALSE;
+                    if (isset($value) && mb_stripos($value, $search) !== false) {
+                        $ip = false;
                         break;
                     }
                 }
