@@ -827,7 +827,7 @@ class Settings
             !isset($permission['permission_key'])
             || $permission['core']
             || $permission['permission_key'] == permissions()->getDefaultPermission()
-            || !empty(Post::count_meta_keys($permission['permission_key']))
+            || !empty(Post::countMetaKeys($permission['permission_key']))
         ) {
             return false;
         }
@@ -875,9 +875,9 @@ class Settings
         return update_option($this->optionName, $this->options);
     }
 
-    public function admin_notices()
+    public function adminNotices()
     {
-        $this->display_admin_notices();
+        $this->displayAdminNotices();
     }
 
     public function addAdminNotice($message, $class = 'updated')
@@ -895,7 +895,7 @@ class Settings
         set_transient($transient, $notices, $this->notice_transient_expiration);
     }
 
-    public function display_admin_notices()
+    public function displayAdminNotices()
     {
         $transient = $this->notice_transient . get_current_user_id();
         $transient_value = get_transient($transient);
