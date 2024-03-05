@@ -39,7 +39,7 @@ class Main
 
         add_action('admin_enqueue_scripts', [$this, 'adminEnqueueScripts']);
 
-        add_action('admin_notices', [$this->settings, 'admin_notices']);
+        add_action('admin_notices', [$this->settings, 'adminNotices']);
 
         add_action('template_redirect', [$this, 'templateRedirect'], 0);
 
@@ -74,7 +74,7 @@ class Main
 
         wp_register_script(
             'rrze-ac-upload',
-            plugins_url('build/upload.style.js', plugin()->getBasename()),
+            plugins_url('build/upload.js', plugin()->getBasename()),
             ['jquery', 'media-editor'],
             plugin()->getVersion(),
             true
@@ -99,6 +99,7 @@ class Main
         wp_enqueue_style('rrze-ac-access');
 
         $screen = get_current_screen();
+
         if (isset($screen->id) && 'page' == $screen->id) {
             wp_enqueue_script('rrze-ac-page');
         } elseif (isset($screen->id) && 'attachment' == $screen->id) {
@@ -117,7 +118,7 @@ class Main
             global $post;
             if (!Access::try($post->ID)) {
                 wp_die(
-                    Access::permission_message($post->ID, $this->options),
+                    Access::permissionMessage($post->ID, $this->options),
                     __('Login is required', 'rrze-ac'),
                     [
                         'response' => '403',
@@ -130,18 +131,18 @@ class Main
 
     public function restFilter($args)
     {
-        $post_not_in = [];
+        $postNotIn = [];
         $permissions = permissions()->getThePermissions();
         $permission_metas = permissions()->getPermissionMetas($args['post_type']);
 
         foreach ($permission_metas as $pm) {
             if (isset($permissions[$pm->meta_value]) && $permissions[$pm->meta_value]['active'] && !permissions()->checkAuthorPermission($pm->post_id)) {
-                $post_not_in[] = $pm->post_id;
+                $postNotIn[] = $pm->post_id;
             }
         }
 
-        if (!empty($post_not_in)) {
-            $args['post__not_in'] = $post_not_in;
+        if (!empty($postNotIn)) {
+            $args['post__not_in'] = $postNotIn;
         }
 
         return $args;
