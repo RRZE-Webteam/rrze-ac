@@ -151,7 +151,7 @@ class Access
         return $allowed;
     }
 
-    public static function permission_message($postId, $options)
+    public static function permissionMessage($postId, $options)
     {
         $message = '';
 
@@ -169,7 +169,7 @@ class Access
             $message .= '<h3>' . esc_html($options['user_isnt_logged_in_title']) . '</h3>';
             $message .= wpautop(esc_html($options['user_isnt_logged_in_msg']));
             $message .= wpautop('<a href="' . $login_url . '">' . esc_html($options['user_isnt_logged_in_link_txt']) . '</a>');
-            $message .= self::get_contact($options);
+            $message .= self::getContact($options);
             return $message;
         }
 
@@ -178,7 +178,7 @@ class Access
             $message .= '<h3>' . esc_html($options['user_isnt_sso_logged_in_title']) . '</h3>';
             $message .= wpautop(esc_html($options['user_isnt_sso_logged_in_msg']));
             $message .= wpautop('<a href="' . $login_url . '">' . esc_html($options['user_isnt_sso_logged_in_link_txt']) . '</a>');
-            $message .= self::get_contact($options);
+            $message .= self::getContact($options);
             return $message;
         }
 
@@ -197,12 +197,12 @@ class Access
 
         $message .= wpautop(esc_html($options['access_denied_default_msg']));
         $message .= wpautop('<a href="' . $login_url . '">' . esc_html($options['user_isnt_logged_in_link_txt']) . '</a>');
-        $message .= self::get_contact($options);
+        $message .= self::getContact($options);
 
         return $message;
     }
 
-    protected static function get_contact($options)
+    protected static function getContact($options)
     {
         $output = '';
         $contact = [];
