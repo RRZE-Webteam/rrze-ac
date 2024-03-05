@@ -37,6 +37,16 @@ select.field-invalid {
 
 /* List Table */
 
+.wp-list-table.rrzeacs {
+    padding-right: 12px;
+}
+
+td.column-permission_key strong {
+    display: block;
+    margin-bottom: 0.2em;
+    font-size: 14px;
+}
+
 .rrzeacs {
     .inactive th.check-column,
     tfoot td.check-column,
