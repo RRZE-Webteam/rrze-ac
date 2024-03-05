@@ -320,13 +320,13 @@ class Files
 
         global $wpdb;
         $attachmentDirname = trim($fileInfo['dirname'], '/\\');
-        $attachment_file = $attachmentDirname . '/' . $fileInfo['basename'];
+        $attachmentFile = $attachmentDirname . '/' . $fileInfo['basename'];
 
         $attachment = $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT post_id FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value = %s",
                 '_wp_attached_file',
-                $attachment_file
+                $attachmentFile
             )
         );
 
@@ -360,7 +360,7 @@ class Files
         if (!Access::try($attachmentId)) {
             $options = Options::getOptions();
             wp_die(
-                Access::permission_message($attachmentId, $options),
+                Access::permissionMessage($attachmentId, $options),
                 __('Login is required', 'rrze-ac'),
                 [
                     'response' => '403',
