@@ -1,22 +1,24 @@
 <?php
 
-namespace RRZE\AccessControl;
+namespace RRZE\AccessControl\SSO;
 
 defined('ABSPATH') || exit;
 
+use function RRZE\AccessControl\plugin;
+
 /**
- * [SimpleSAML description]
+ * SimpleSAML
  */
 class SimpleSAML
 {
     /**
-     * [protected description]
+     * SimpleSAML options
      * @var object
      */
-    protected $options;
+    private $options;
 
     /**
-     * [__construct description]
+     * __construct
      */
     public function __construct($options)
     {
@@ -24,8 +26,8 @@ class SimpleSAML
     }
 
     /**
-     * onLoaded
-     * @return [type] [description]
+     * loaded
+     * @return mixed
      */
     public function loaded()
     {
@@ -41,7 +43,7 @@ class SimpleSAML
                         printf(
                             '<div class="notice notice-error"><p>' .
                                 /* translators: 1: The plugin name, 2: The error string. */
-                                __('Plugins: %1$s: %2$s', 'rrze-sso') .
+                                __('Plugins: %1$s: %2$s', 'rrze-ac') .
                                 '</p></div>',
                             esc_html($pluginName),
                             esc_html($error)
@@ -54,6 +56,10 @@ class SimpleSAML
         return $simplesaml;
     }
 
+    /**
+     * loadSimpleSAML
+     * @return mixed
+     */
     protected function loadSimpleSAML()
     {
         if (file_exists(WP_CONTENT_DIR . $this->options->simplesaml_include)) {
@@ -65,6 +71,6 @@ class SimpleSAML
             }
             return $auth;
         }
-        return new \WP_Error('simplesaml_could_not_be_loaded', __('The simpleSAML library could not be loaded.', 'rrze-sso'));
+        return new \WP_Error('simplesaml_could_not_be_loaded', __('The simpleSAML library could not be loaded.', 'rrze-ac'));
     }
 }

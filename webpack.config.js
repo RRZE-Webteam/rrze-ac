@@ -1,79 +1,55 @@
-const autoprefixer = require("autoprefixer");
-const MiniCSSExtractPlugin = require("mini-css-extract-plugin");
-const CSSMinimizerPlugin = require("css-minimizer-webpack-plugin");
-const TerserPlugin = require("terser-webpack-plugin");
+const defaultConfig = require("@wordpress/scripts/config/webpack.config");
+const webpack = require("webpack");
+const { basename, dirname, resolve } = require("path");
+const srcDir = "src";
 
-const path = require("path");
-const access = path.join(__dirname, "src", "access");
-const page = path.join(__dirname, "src", "page");
-const attachment = path.join(__dirname, "src", "attachment");
-const upload = path.join(__dirname, "src", "upload");
-const media = path.join(__dirname, "src", "media");
+const access = resolve(process.cwd(), "src", "access");
+const page = resolve(process.cwd(), "src", "page");
+const attachment = resolve(process.cwd(), "src", "attachment");
+const upload = resolve(process.cwd(), "src", "upload");
+const media = resolve(process.cwd(), "src", "media");
+const blockeditor = resolve(process.cwd(), "src", "blockeditor");
 
-module.exports = (env, argv) => {
-    function isDevelopment() {
-        return argv.mode === "development";
-    }
-    var config = {
-        entry: {
-            access,
-            page,
-            attachment,
-            upload,
-            media,
-        },
-        output: {
-            path: path.resolve(__dirname, "build"),
-            filename: "[name].js",
-            clean: true,
-        },
-        optimization: {
-            minimizer: [
-                new CSSMinimizerPlugin(),
-                new TerserPlugin({ terserOptions: { sourceMap: true } }),
-            ],
-        },
-        plugins: [
-            new MiniCSSExtractPlugin({
-                chunkFilename: "[id].css",
-                filename: (chunkData) => {
-                    return "[name].css";
+module.exports = {
+    ...defaultConfig,
+    entry: {
+        access,
+        page,
+        attachment,
+        upload,
+        media,
+        blockeditor,
+    },
+    output: {
+        path: resolve(process.cwd(), "build"),
+        filename: "[name].js",
+        clean: true,
+    },
+    optimization: {
+        ...defaultConfig.optimization,
+        splitChunks: {
+            cacheGroups: {
+                style: {
+                    type: "css/mini-extract",
+                    test: /[\\/]style(\.module)?\.(pc|sc|sa|c)ss$/,
+                    chunks: "all",
+                    enforce: true,
+                    name(_, chunks, cacheGroupKey) {
+                        const chunkName = chunks[0].name;
+                        return `${dirname(chunkName)}/${basename(
+                            chunkName
+                        )}.${cacheGroupKey}`;
+                    },
                 },
-            }),
-        ],
-        devtool: isDevelopment() ? "cheap-module-source-map" : "source-map",
-        module: {
-            rules: [
-                {
-                    test: /\.js$/,
-                    exclude: /node_modules/,
-                    use: [
-                        {
-                            loader: "babel-loader",
-                            options: {
-                                presets: ["@babel/preset-env"],
-                            },
-                        },
-                    ],
-                },
-                {
-                    test: /\.(sa|sc|c)ss$/,
-                    use: [
-                        MiniCSSExtractPlugin.loader,
-                        "css-loader",
-                        {
-                            loader: "postcss-loader",
-                            options: {
-                                postcssOptions: {
-                                    plugins: [autoprefixer()],
-                                },
-                            },
-                        },
-                        "sass-loader",
-                    ],
-                },
-            ],
+                default: false,
+            },
         },
-    };
-    return config;
+    },
+    plugins: [
+        ...defaultConfig.plugins,
+        new webpack.ProvidePlugin({
+            $: "jquery",
+            jQuery: "jquery",
+        }),
+    ],
 };

@@ -4,7 +4,7 @@
 Plugin Name:     RRZE Access Control
 Plugin URI:      https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
 Description:     Allows protection of files/documents through user and network related functions.
-Version:         2.11.4
+Version:         3.0.0
 Author:          RRZE Webteam
 Author URI:      https://blogs.fau.de/webworking/
 License:         GNU General Public License v2
@@ -127,6 +127,19 @@ function plugin()
     static $instance;
     if (null === $instance) {
         $instance = new Plugin(__FILE__);
+    }
+    return $instance;
+}
+
+/**
+ * Instantiate Permissions class.
+ * @return object Permissions
+ */
+function permissions()
+{
+    static $instance;
+    if (null === $instance) {
+        $instance = new Permissions();
     }
     return $instance;
 }

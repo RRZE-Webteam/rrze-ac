@@ -1,4 +1,4 @@
-(function ($) {
+jQuery(document).ready(function ($) {
     var vals = {},
         postId,
         permissionsField;
@@ -50,4 +50,4 @@
                     "checkbox" === this.type ? this.checked : this.value;
             }
         );
-})(jQuery);
+});
