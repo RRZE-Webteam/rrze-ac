@@ -31,11 +31,13 @@ class Utils
      * @param string $email
      * @return string
      */
-    public static function encodeEmail($email)
+    public static function encodeEmail(string $email): string
     {
         $output = '';
-        for ($i = 0; $i < mb_strlen($email); $i++) {
-            $output .= '&#' . ord($email[$i]) . ';';
+        if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            for ($i = 0; $i < mb_strlen($email); $i++) {
+                $output .= '&#' . ord($email[$i]) . ';';
+            }
         }
         return $output;
     }
