@@ -61,9 +61,9 @@ class Post
 
         $postNotIn = [];
         $permissions = permissions()->getThePermissions();
-        $permission_metas = self::getPermissionMetas();
+        $permissionMetas = self::getPermissionMetas();
 
-        foreach ($permission_metas as $pm) {
+        foreach ($permissionMetas as $pm) {
             if (isset($permissions[$pm->meta_value]) && $permissions[$pm->meta_value]['active'] && !permissions()->checkAuthorPermission($pm->post_id)) {
                 $postNotIn[] = $pm->post_id;
             }
