@@ -46,10 +46,6 @@ class Main
         // WP-REST-API
         add_filter("rest_page_query", [$this, 'restFilter']);
         add_filter("rest_attachment_query", [$this, 'restFilter']);
-        // Pending development
-        add_filter('rest_post_dispatch', function ($result, $server, $request) {
-            return $result;
-        }, 10, 3);
     }
 
     public function adminEnqueueScripts()
@@ -133,9 +129,9 @@ class Main
     {
         $postNotIn = [];
         $permissions = permissions()->getThePermissions();
-        $permission_metas = permissions()->getPermissionMetas($args['post_type']);
+        $permissionMetas = Post::getPermissionMetas($args['post_type']);
 
-        foreach ($permission_metas as $pm) {
+        foreach ($permissionMetas as $pm) {
             if (isset($permissions[$pm->meta_value]) && $permissions[$pm->meta_value]['active'] && !permissions()->checkAuthorPermission($pm->post_id)) {
                 $postNotIn[] = $pm->post_id;
             }
