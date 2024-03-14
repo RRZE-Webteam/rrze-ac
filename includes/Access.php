@@ -144,11 +144,8 @@ class Access
             );
         }
 
-        // Allow the rrze-private-site plugin to filter the access.
-        if (Utils::isPluginActive('rrze-private-site/rrze-private-site.php')) {
-            return apply_filters('rrze_ac_access_allowed', $allowed);
-        }
-        return $allowed;
+        // Allow reading or modifying the access status.
+        return apply_filters('rrze_ac_access_allowed', $allowed);
     }
 
     public static function permissionMessage($postId, $options)
