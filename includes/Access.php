@@ -131,6 +131,9 @@ class Access
             }
         }
 
+        // Allow reading or modifying the access status.
+        $allowed = apply_filters('rrze_ac_access_allowed', $allowed);
+
         if (!$allowed) {
             do_action(
                 'rrze.log.info',
@@ -144,8 +147,7 @@ class Access
             );
         }
 
-        // Allow reading or modifying the access status.
-        return apply_filters('rrze_ac_access_allowed', $allowed);
+        return $allowed;
     }
 
     public static function permissionMessage($postId, $options)
