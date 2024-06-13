@@ -44,8 +44,8 @@ class Main
         add_action('template_redirect', [$this, 'templateRedirect'], 0);
 
         // WP-REST-API
-        add_filter("rest_page_query", [$this, 'restFilter']);
-        add_filter("rest_attachment_query", [$this, 'restFilter']);
+        add_filter('rest_page_query', [$this, 'restFilter']);
+        add_filter('rest_attachment_query', [$this, 'restFilter']);
     }
 
     public function adminEnqueueScripts()
