@@ -132,7 +132,7 @@ class Access
         }
 
         // Allow reading or modifying the access status.
-        $allowed = apply_filters('rrze_ac_access_allowed', $allowed);
+        $allowed = apply_filters('rrze_ac_access_allowed', $allowed, $postId, $permission, $permissions[$permission]);
 
         if (!$allowed) {
             do_action(
