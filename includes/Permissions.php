@@ -94,6 +94,7 @@ class Permissions
             return [];
         }
 
+        $permissionKey = strtolower($permissionKey);
         $permission = [];
         foreach ($this->options['permissions'] as $key => $value) {
             if ($key == $permissionKey) {
