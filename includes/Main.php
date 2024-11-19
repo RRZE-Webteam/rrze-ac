@@ -23,6 +23,8 @@ class Main
 
         $this->settings = new Settings($this);
 
+        add_action('init', [__CLASS__, 'registerMetas']);
+
         Rewrite::init();
 
         Files::init();
@@ -142,5 +144,25 @@ class Main
         }
 
         return $args;
+    }
+
+    public static function registerMetas()
+    {
+        $postTypes = ['page', 'attachment'];
+        foreach ($postTypes as $postType) {
+            register_meta(
+                $postType,
+                '_access_permission',
+                [
+                    'show_in_rest' => true,
+                    'type' => 'string',
+                    'single' => true,
+                    'auth_callback' => function () {
+                        return current_user_can('edit_posts');
+                    },
+                    'default' => '',
+                ]
+            );
+        }
     }
 }
