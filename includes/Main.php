@@ -22,7 +22,10 @@ class Main
         $this->optionName = Options::getOptionName();
 
         $this->settings = new Settings($this);
+    }
 
+    public function loaded()
+    {
         add_action('init', [__CLASS__, 'registerMetas']);
 
         Rewrite::init();
