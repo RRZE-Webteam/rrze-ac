@@ -50,25 +50,19 @@ class Rewrite
 
     protected static function rewriteRules()
     {
-        $uploadsPath = '';
-
-        if (!get_site_option('ms_files_rewriting')) {
-            $uploadsPath .= 'wp-content(?:/uploads)?(?:/sites/[0-9]+)?';
+        $rewriteRules = [];
+        $rewriteRules[] = '# BEGIN RRZE ACCESS CONTROL WP PLUGIN';
+        if (is_subdomain_install()) {
+            $rewriteRules[] =
+                'RewriteRule ^wp-content(?:\/uploads(?:\/sites\/[0-9]+)?|\/blogs\.dir\/[0-9]+\/files)(\/_protected\/.*\.\w+)$ index.php?protected_file=$1 [QSA,L]';
         } else {
-            $uploadsPath .= '(?:wp-content/uploads)?(?:files)?';
+            $rewriteRules[] =
+                'RewriteRule ^([_0-9a-zA-Z-]+\/)wp-content(?:\/uploads(?:\/sites\/[0-9]+)?|\/blogs\.dir\/[0-9]+\/files)(\/_protected\/.*\.\w+)$ index.php?protected_file=$1 [QSA,L]';
         }
-
-        if (!is_subdomain_install()) {
-            $uploadsPath = '(?:[_0-9a-zA-Z-]+/)?' . $uploadsPath;
+        if (get_site_option('ms_files_rewriting')) {
+            $rewriteRules[] = 'RewriteRule ^files(\/_protected\/.*\.\w+)$ index.php?protected_file=$1 [QSA,L]';
         }
-
-        $protectedPath = $uploadsPath . '(' . Files::protectedUploadDir('/.*\.\w+)$', true);
-
-        $rewriteRules = array(
-            '# Beginn Access Rewrite Rules',
-            'RewriteRule ^' . $protectedPath . ' index.php?protected_file=$1 [QSA,L]',
-            '# End Access Rewrite Rules'
-        );
+        $rewriteRules[] = '# END RRZE ACCESS CONTROL WP PLUGIN';
 
         return $rewriteRules;
     }

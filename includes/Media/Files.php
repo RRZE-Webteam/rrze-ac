@@ -28,9 +28,9 @@ class Files
         return false;
     }
 
-    public static function protectedUploadDir($path = '', $in_url = false)
+    public static function protectedUploadDir($path = '', $inUrl = false)
     {
-        $dirpath = $in_url ? '/' : '';
+        $dirpath = $inUrl ? '/' : '';
         $dirpath .= self::PROTECTED_DIRNAME;
         $dirpath .= $path;
 
@@ -248,6 +248,13 @@ class Files
     public static function getFile($relFile)
     {
         $relFile = isset($relFile) ? $relFile : '';
+        $relFile = str_replace('..', '', $relFile);
+        $relFile = rtrim($relFile, '/');
+        $startPos = strpos($relFile, self::protectedUploadDir('/', true));
+        if ($startPos !== false) {
+            $relFile = substr($relFile, $startPos);
+        }
+
         $uploadDir = wp_upload_dir();
 
         if (empty($uploadDir['basedir'])) {
@@ -261,11 +268,11 @@ class Files
             );
         }
 
-        $file = rtrim($uploadDir['basedir'], '/') . str_replace('..', '', $relFile);
+        $file = $uploadDir['basedir'] . $relFile;
 
         if (!is_file($file)) {
-            $relFile = str_replace('_protected', '', rtrim($relFile, '/'));
-            $file = rtrim($uploadDir['basedir'], '/') . str_replace('..', '', $relFile);
+            $relFile = str_replace(self::protectedUploadDir('/', true), '', $relFile);
+            $file = $uploadDir['basedir'] . $relFile;
             if (!is_file($file)) {
                 wp_die(
                     __('The requested file was not found.', 'rrze-ac'),
@@ -295,7 +302,7 @@ class Files
 
         $fileInfo = pathinfo($relFile);
 
-        if (0 !== stripos($fileInfo['dirname'] . '/', self::protectedUploadDir('/', true))) {
+        if (0 !== stripos($fileInfo['dirname'], self::protectedUploadDir('/', true))) {
             wp_die(
                 __('The requested file was not found.', 'rrze-ac'),
                 __('Not Found', 'rrze-ac'),
