@@ -3,7 +3,7 @@
 /*
 Plugin Name:        RRZE Access Control
 Plugin URI:         https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-Version:            3.1.0
+Version:            3.1.2
 Description:        Allows protection of files/documents through user and network related functions.
 Author:             RRZE Webteam
 Author URI:         https://blogs.fau.de/webworking/
@@ -169,9 +169,10 @@ function loaded()
     plugin()->loaded();
 
     // Check system requirements and store any error messages.
-    if ($error = systemRequirements()) {
+    if (systemRequirements()) {
         // If there is an error, add an action to display an admin notice with the error message.
-        add_action('admin_init', function () use ($error) {
+        add_action('admin_init', function () {
+            $error = systemRequirements();
             // Check if the current user has the capability to activate plugins.
             if (current_user_can('activate_plugins')) {
                 // Get plugin data to retrieve the plugin's name.
