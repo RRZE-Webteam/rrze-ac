@@ -46,7 +46,7 @@ class Main
 
         add_action('admin_notices', [$this->settings, 'adminNotices']);
 
-        add_action('template_redirect', [$this, 'templateRedirect'], 9999);
+        add_action('template_redirect', [$this, 'templateRedirect'], 0);
 
         // WP-REST-API
         add_filter('rest_page_query', [$this, 'restFilter']);
