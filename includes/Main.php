@@ -115,6 +115,9 @@ class Main
 
     public function templateRedirect()
     {
+        if (defined('DOING_CRON') && DOING_CRON) {
+            return;
+        }
         if (is_page() || is_attachment()) {
             global $post;
             if (!Access::try($post->ID)) {
