@@ -26,8 +26,6 @@ class Main
 
     public function loaded()
     {
-        add_action('init', [__CLASS__, 'registerMetas']);
-
         Rewrite::init();
 
         Files::init();
@@ -47,10 +45,6 @@ class Main
         add_action('admin_notices', [$this->settings, 'adminNotices']);
 
         add_action('template_redirect', [$this, 'templateRedirect'], 0);
-
-        // WP-REST-API
-        add_filter('rest_page_query', [$this, 'restFilter']);
-        add_filter('rest_attachment_query', [$this, 'restFilter']);
     }
 
     public function adminEnqueueScripts()
@@ -130,45 +124,6 @@ class Main
                     ]
                 );
             }
-        }
-    }
-
-    public function restFilter($args)
-    {
-        $postNotIn = [];
-        $permissions = permissions()->getThePermissions();
-        $permissionMetas = Post::getPermissionMetas($args['post_type']);
-
-        foreach ($permissionMetas as $pm) {
-            if (isset($permissions[$pm->meta_value]) && $permissions[$pm->meta_value]['active'] && !permissions()->checkAuthorPermission($pm->post_id)) {
-                $postNotIn[] = $pm->post_id;
-            }
-        }
-
-        if (!empty($postNotIn)) {
-            $args['post__not_in'] = $postNotIn;
-        }
-
-        return $args;
-    }
-
-    public static function registerMetas()
-    {
-        $postTypes = ['page', 'attachment'];
-        foreach ($postTypes as $postType) {
-            register_meta(
-                $postType,
-                '_access_permission',
-                [
-                    'show_in_rest' => true,
-                    'type' => 'string',
-                    'single' => true,
-                    'auth_callback' => function () {
-                        return current_user_can('edit_posts');
-                    },
-                    'default' => '',
-                ]
-            );
         }
     }
 }
