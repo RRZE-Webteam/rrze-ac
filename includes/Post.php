@@ -17,7 +17,12 @@ class Post
         add_filter('pre_get_posts', [__CLASS__, 'preGetPostsList']);
         add_action('views_edit-page', [__CLASS__, 'viewsEdit']);
 
-        add_action('init', [__CLASS__, 'registerPostMeta']);
+        // Metadaten registrieren
+        add_action('init', [__CLASS__, 'registerMetas']);
+
+        // WP-REST-API
+        add_filter('rest_page_query', [__CLASS__, 'restFilter']);
+        add_filter('rest_attachment_query', [__CLASS__, 'restFilter']);
 
         add_action('add_meta_boxes', [__CLASS__, 'metabox']);
 
@@ -237,17 +242,43 @@ class Post
         }
     }
 
-    public static function registerPostMeta()
+    public function restFilter($args)
     {
-        register_post_meta(
-            'page',
-            self::ACCESS_PERMISSION_META_KEY,
-            [
-                'show_in_rest' => true,
-                'single' => true,
-                'type' => 'string',
-            ]
-        );
+        $postNotIn = [];
+        $permissions = permissions()->getThePermissions();
+        $permissionMetas = Post::getPermissionMetas($args['post_type']);
+
+        foreach ($permissionMetas as $pm) {
+            if (isset($permissions[$pm->meta_value]) && $permissions[$pm->meta_value]['active'] && !permissions()->checkAuthorPermission($pm->post_id)) {
+                $postNotIn[] = $pm->post_id;
+            }
+        }
+
+        if (!empty($postNotIn)) {
+            $args['post__not_in'] = $postNotIn;
+        }
+
+        return $args;
+    }
+
+    public static function registerMetas()
+    {
+        $postTypes = ['page', 'attachment'];
+        foreach ($postTypes as $postType) {
+            register_meta(
+                $postType,
+                self::ACCESS_PERMISSION_META_KEY,
+                [
+                    'show_in_rest' => true,
+                    'type' => 'string',
+                    'single' => true,
+                    'auth_callback' => function () {
+                        return current_user_can('edit_posts');
+                    },
+                    'default' => '',
+                ]
+            );
+        }
     }
 
     public static function updatePostMeta($metaId, $postId, $metaKey, $metaValue)
