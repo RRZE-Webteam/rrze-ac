@@ -242,7 +242,7 @@ class Post
         }
     }
 
-    public function restFilter($args)
+    public static function restFilter($args)
     {
         $postNotIn = [];
         $permissions = permissions()->getThePermissions();
