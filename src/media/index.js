@@ -1,5 +1,5 @@
 /**
- * RRZE-AC Plugin: Admin Dependencies
+ * Plugin dependencies
  */
-import "./script.js";
-import "./style.scss";
+import "./media.js";
+import "./media.scss";

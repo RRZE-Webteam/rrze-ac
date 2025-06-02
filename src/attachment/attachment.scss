@@ -19,8 +19,12 @@
         max-height: 0;
         opacity: 0;
         overflow: hidden;
-        -webkit-transition: 0.5s opacity, 0.5s 0.1s max-height;
-        transition: 0.5s opacity, 0.5s 0.1s max-height;
+        -webkit-transition:
+            0.5s opacity,
+            0.5s 0.1s max-height;
+        transition:
+            0.5s opacity,
+            0.5s 0.1s max-height;
     }
 }
 
@@ -56,8 +60,12 @@ div.access-permission-select.access-active {
     margin-bottom: 4.2em !important;
     max-height: 100px;
     opacity: 1;
-    -webkit-transition: 0.3s 0.1s opacity, 0.5s max-height ease-out;
-    transition: 0.3s 0.1s opacity, 0.5s max-height ease-out;
+    -webkit-transition:
+        0.3s 0.1s opacity,
+        0.5s max-height ease-out;
+    transition:
+        0.3s 0.1s opacity,
+        0.5s max-height ease-out;
 }
 
 #access-protection-toggle:checked + .access-protection-toggle {

@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Access Control\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-ac\n"
-"POT-Creation-Date: 2024-12-13T15:07:13+00:00\n"
-"PO-Revision-Date: 2024-12-13 16:09+0100\n"
+"POT-Creation-Date: 2025-06-02T10:11:00+00:00\n"
+"PO-Revision-Date: 2025-06-02 12:12+0200\n"
 "Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
 "Language-Team: Deutsch\n"
 "Language: de_DE\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Poedit 3.5\n"
+"X-Generator: Poedit 3.6\n"
 
 #. Plugin Name of the plugin
 #: rrze-ac.php
@@ -52,8 +52,8 @@ msgstr "Kontakt:"
 
 #: includes/Attachment.php:26 includes/Attachment.php:129
 #: includes/Attachment.php:176 includes/Attachment.php:337
-#: includes/Post.php:175 includes/Post.php:264 includes/Settings.php:41
-#: src/blockeditor/script.js:43
+#: includes/Post.php:180 includes/Post.php:296 includes/Settings.php:41
+#: src/blockeditor/blockeditor.js:95
 msgid "Access Restriction"
 msgstr "Zugriffsbeschränkung"
 
@@ -67,7 +67,7 @@ msgstr "Berechtigung entfernen"
 
 #: includes/Attachment.php:53 includes/Attachment.php:184
 #: includes/ListTable.php:95 includes/Settings.php:475
-#: includes/Settings.php:486 src/blockeditor/script.js:47
+#: includes/Settings.php:486 src/blockeditor/blockeditor.js:99
 msgid "Permission"
 msgstr "Berechtigung"
 
@@ -86,7 +86,7 @@ msgstr ""
 "Sie verfügen nicht über ausreichende Berechtigungen, um auf die Datei "
 "zugreifen zu können."
 
-#: includes/Attachment.php:356 includes/Post.php:283
+#: includes/Attachment.php:356 includes/Post.php:315
 msgid "Permission does not exist or has been removed."
 msgstr "Die Berechtigung ist nicht vorhanden oder wurde entfernt."
 
@@ -95,7 +95,7 @@ msgid "The permission has been disabled."
 msgstr "Die Berechtigung wurde deaktiviert."
 
 #. translators: 1: Error message, 2: Default permission.
-#: includes/Attachment.php:370 includes/Post.php:299
+#: includes/Attachment.php:370 includes/Post.php:331
 msgid ""
 "An error has occurred: %1$s and has been replaced by the default permission "
 "%2$s."
@@ -196,11 +196,11 @@ msgstr "Domäne zulassen"
 msgid "Allow IP address"
 msgstr "IP-Adresse zulassen"
 
-#: includes/Main.php:40 includes/Settings.php:46 includes/Settings.php:448
+#: includes/Main.php:38 includes/Settings.php:46 includes/Settings.php:448
 msgid "Settings"
 msgstr "Einstellungen"
 
-#: includes/Main.php:123 includes/Media/Files.php:371
+#: includes/Main.php:120 includes/Media/Files.php:371
 msgid "Login is required"
 msgstr "Anmeldung ist erforderlich"
 
@@ -323,22 +323,22 @@ msgstr ""
 msgid "Unauthorized access to the REST API."
 msgstr "Unbefugter Zugriff auf die REST-API."
 
-#: includes/Post.php:42
+#: includes/Post.php:47
 msgid "Protected"
 msgstr "Geschützt"
 
 #. translators: %s: label count
-#: includes/Post.php:47
+#: includes/Post.php:52
 msgid "Protected <span class=\"count\">(%s)</span>"
 msgid_plural "Protected <span class=\"count\">(%s)</span>"
 msgstr[0] "Geschützt <span class=\"count\">(%s)</span>"
 msgstr[1] "Geschützt <span class=\"count\">(%s)</span>"
 
-#: includes/Post.php:193 includes/Post.php:391
+#: includes/Post.php:198 includes/Post.php:423
 msgid "--NONE--"
 msgstr "—KEINER—"
 
-#: includes/Post.php:287
+#: includes/Post.php:319
 msgid "Permission has been disabled."
 msgstr "Berechtigung wurde deaktiviert."
 
@@ -549,7 +549,7 @@ msgid "The permission has been deleted."
 msgstr "Die Berechtigung wurde gelöscht."
 
 #. translators: 1: The plugin name, 2: The error string.
-#: includes/SSO/SimpleSAML.php:46 rrze-ac.php:188
+#: includes/SSO/SimpleSAML.php:46 rrze-ac.php:189
 msgid "Plugins: %1$s: %2$s"
 msgstr "Plugins: %1$s: %2$s"
 
@@ -590,3 +590,7 @@ msgstr "Der Web-Server-Software unterstützt das Rewrite-Modul nicht."
 #: rrze-ac.php:153
 msgid "The WordPress instance is not a MultiSite."
 msgstr "Die Wordpress-Instanz ist keine Multisite."
+
+#: src/blockeditor/blockeditor.js:80
+msgid "Permission updated successfully."
+msgstr "Berechtigung erfolgreich aktualisiert."

@@ -51,19 +51,19 @@ class Main
     {
         wp_register_style(
             'rrze-ac-access',
-            plugins_url('build/access.style.css', plugin()->getBasename()),
+            plugins_url('build/access.css', plugin()->getBasename()),
             plugin()->getVersion()
         );
 
         wp_register_style(
             'rrze-ac-attachment',
-            plugins_url('build/attachment.style.css', plugin()->getBasename()),
+            plugins_url('build/attachment.css', plugin()->getBasename()),
             plugin()->getVersion()
         );
 
         wp_register_style(
             'rrze-ac-media',
-            plugins_url('build/media.style.css', plugin()->getBasename()),
+            plugins_url('build/media.css', plugin()->getBasename()),
             plugin()->getVersion()
         );
 
