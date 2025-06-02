@@ -1,4 +1,4 @@
 /**
- * RRZE-AC Plugin: Admin Dependencies
+ * Plugin dependencies
  */
- import "./style.scss";
+import "./attachment.scss";

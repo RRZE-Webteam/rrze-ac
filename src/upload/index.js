@@ -1,4 +1,4 @@
 /**
- * RRZE-AC Plugin: Admin Dependencies
+ * Plugin dependencies
  */
- import "./script.js";
+import "./upload.js";
