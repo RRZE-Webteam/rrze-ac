@@ -3,7 +3,7 @@
 /*
 Plugin Name:        RRZE Access Control
 Plugin URI:         https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-Version:            3.1.5
+Version:            3.1.6
 Description:        Allows protection of files/documents through user and network related functions.
 Author:             RRZE Webteam
 Author URI:         https://blogs.fau.de/webworking/
@@ -11,7 +11,7 @@ License:            GNU General Public License Version 3
 License URI:        https://www.gnu.org/licenses/gpl-3.0.html
 Text Domain:        rrze-ac
 Domain Path:        /languages
-Requires at least:  6.7
+Requires at least:  6.8
 Requires PHP:       8.2
 */
 
