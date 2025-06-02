@@ -18,7 +18,7 @@ class Post
         add_action('views_edit-page', [__CLASS__, 'viewsEdit']);
 
         // Metadaten registrieren
-        add_action('init', [__CLASS__, 'registerMetas']);
+        add_action('init', [__CLASS__, 'registerPostMetas']);
 
         // WP-REST-API
         add_filter('rest_page_query', [__CLASS__, 'restFilter']);
@@ -261,21 +261,22 @@ class Post
         return $args;
     }
 
-    public static function registerMetas()
+    public static function registerPostMetas()
     {
         $postTypes = ['page', 'attachment'];
+
         foreach ($postTypes as $postType) {
-            register_meta(
+            register_post_meta(
                 $postType,
                 self::ACCESS_PERMISSION_META_KEY,
                 [
-                    'show_in_rest' => true,
-                    'type' => 'string',
-                    'single' => true,
+                    'show_in_rest'  => true,
+                    'type'          => 'string',
+                    'single'        => true,
                     'auth_callback' => function () {
                         return current_user_can('edit_posts');
                     },
-                    'default' => '',
+                    'default'       => '',
                 ]
             );
         }
@@ -400,7 +401,7 @@ class Post
 
         wp_enqueue_style(
             'rrze-ac-blockeditor',
-            plugins_url('build/blockeditor.style.css', plugin()->getBasename()),
+            plugins_url('build/blockeditor.css', plugin()->getBasename()),
             [],
             plugin()->getVersion()
         );
