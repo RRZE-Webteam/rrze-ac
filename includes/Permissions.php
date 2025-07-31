@@ -312,7 +312,7 @@ class Permissions
             return false;
         }
 
-        $remoteAddr = $this->getRemoteIpAddress();
+        $remoteAddr = $this->getRemoteIpAddress($ipAddress);
 
         if (!$remoteAddr) {
             do_action(
@@ -343,9 +343,9 @@ class Permissions
         return false;
     }
 
-    public function getRemoteIpAddress()
+    public function getRemoteIpAddress($ipAddress = [])
     {
-        $remoteAddress = new RemoteAddress();
+        $remoteAddress = new RemoteAddress($ipAddress);
         return $remoteAddress->getIpAddress();
     }
 
