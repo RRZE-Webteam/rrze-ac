@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Access Control\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-ac\n"
-"POT-Creation-Date: 2025-06-02T10:11:00+00:00\n"
-"PO-Revision-Date: 2025-06-02 12:54+0200\n"
+"POT-Creation-Date: 2025-12-11T16:02:32+00:00\n"
+"PO-Revision-Date: 2025-12-11 17:04+0100\n"
 "Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
 "Language-Team: Deutsch (Sie)\n"
 "Language: de\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Poedit 3.6\n"
+"X-Generator: Poedit 3.8\n"
 
 #. Plugin Name of the plugin
 #: rrze-ac.php
@@ -42,18 +42,22 @@ msgstr "RRZE Webteam"
 msgid "https://blogs.fau.de/webworking/"
 msgstr "https://blogs.fau.de/webworking/"
 
-#: includes/Access.php:193
+#: includes/Access.php:199
+msgid "Login via Access Password"
+msgstr "Anmeldung mit Zugangspasswort"
+
+#: includes/Access.php:206
 msgid "Send password"
 msgstr "Passwort senden"
 
-#: includes/Access.php:234
+#: includes/Access.php:249
 msgid "Contact:"
 msgstr "Kontakt:"
 
 #: includes/Attachment.php:26 includes/Attachment.php:129
 #: includes/Attachment.php:176 includes/Attachment.php:337
 #: includes/Post.php:180 includes/Post.php:296 includes/Settings.php:41
-#: src/blockeditor/blockeditor.js:95
+#: build/blockeditor.js:1 src/blockeditor/blockeditor.js:95
 msgid "Access Restriction"
 msgstr "Zugriffsbeschränkung"
 
@@ -67,7 +71,8 @@ msgstr "Berechtigung entfernen"
 
 #: includes/Attachment.php:53 includes/Attachment.php:184
 #: includes/ListTable.php:95 includes/Settings.php:475
-#: includes/Settings.php:486 src/blockeditor/blockeditor.js:99
+#: includes/Settings.php:486 build/blockeditor.js:1
+#: src/blockeditor/blockeditor.js:99
 msgid "Permission"
 msgstr "Berechtigung"
 
@@ -96,6 +101,7 @@ msgstr "Die Berechtigung wurde deaktiviert."
 
 #. translators: 1: Error message, 2: Default permission.
 #: includes/Attachment.php:370 includes/Post.php:331
+#, php-format
 msgid ""
 "An error has occurred: %1$s and has been replaced by the default permission "
 "%2$s."
@@ -105,6 +111,7 @@ msgstr ""
 
 #. translators: %s: number of media files
 #: includes/Attachment.php:422
+#, php-format
 msgid "%s media file is now protected."
 msgid_plural "%s media files are now protected."
 msgstr[0] "%s Mediendatei ist nun geschützt."
@@ -112,6 +119,7 @@ msgstr[1] "%s Mediendateien sind nun geschützt."
 
 #. translators: %s: number of media files
 #: includes/Attachment.php:437
+#, php-format
 msgid "Data protection on %s Media file has been removed."
 msgid_plural "Data protection on %s Media files has been removed."
 msgstr[0] "Dateischutz auf %s Mediendatei entfernt."
@@ -206,11 +214,13 @@ msgstr "Anmeldung ist erforderlich"
 
 #. translators: %d is the attachment id
 #: includes/Media/Files.php:87
+#, php-format
 msgid "The post %d is not a Media Post-Type."
 msgstr "Der Beitrag %d is kein Medienposttyp."
 
 #. translators: %s is the path to the WP uploads directory
 #: includes/Media/Files.php:95
+#, php-format
 msgid ""
 "The newly specified path %s is absolute. The new path must be a path "
 "relative to the WP uploads directory."
@@ -220,11 +230,13 @@ msgstr ""
 
 #. translators: %s is the path to a directory
 #: includes/Media/Files.php:123
+#, php-format
 msgid "An error has occurred while creating the directory %s."
 msgstr "Ein Fehler ist aufgetreten bei der Erstellung des Verzeichnis %s."
 
 #. translators: 1: old file path, 2: new file path
 #: includes/Media/Files.php:188
+#, php-format
 msgid "The file can not be moved from %1$s to %2$s."
 msgstr "Die Datei kann nicht von %1$s nach %2$s verschoben werden."
 
@@ -329,6 +341,7 @@ msgstr "Geschützt"
 
 #. translators: %s: label count
 #: includes/Post.php:52
+#, php-format
 msgid "Protected <span class=\"count\">(%s)</span>"
 msgid_plural "Protected <span class=\"count\">(%s)</span>"
 msgstr[0] "Geschützt <span class=\"count\">(%s)</span>"
@@ -390,11 +403,13 @@ msgstr "Kurzbeschreibung erforderlich."
 
 #. translators: %s: domain name
 #: includes/Settings.php:349
+#, php-format
 msgid "The domain %s is not valid."
 msgstr "Die Domain %s ist nicht gültig."
 
 #. translators: %s: IP address
 #: includes/Settings.php:378
+#, php-format
 msgid "The IP address %s is not valid."
 msgstr "Die IP-Adresse %s ist nicht gültig."
 
@@ -550,6 +565,7 @@ msgstr "Die Berechtigung wurde gelöscht."
 
 #. translators: 1: The plugin name, 2: The error string.
 #: includes/SSO/SimpleSAML.php:46 rrze-ac.php:189
+#, php-format
 msgid "Plugins: %1$s: %2$s"
 msgstr "Plugins: %1$s: %2$s"
 
@@ -559,6 +575,7 @@ msgstr "Die simpleSAML-Bibliothek konnte nicht geladen werden."
 
 #. translators: 1: Server WordPress version number, 2: Required WordPress version number.
 #: rrze-ac.php:136
+#, php-format
 msgid ""
 "The server is running WordPress version %1$s. The plugin requires at least "
 "WordPress version %2$s."
@@ -568,6 +585,7 @@ msgstr ""
 
 #. translators: 1: Server PHP version number, 2: Required PHP version number.
 #: rrze-ac.php:144
+#, php-format
 msgid ""
 "The server is running PHP version %1$s. The plugin requires at least PHP "
 "version %2$s."
@@ -591,6 +609,6 @@ msgstr "Der Web-Server-Software unterstützt das Rewrite-Modul nicht."
 msgid "The WordPress instance is not a MultiSite."
 msgstr "Die Wordpress-Instanz ist keine Multisite."
 
-#: src/blockeditor/blockeditor.js:80
+#: build/blockeditor.js:1 src/blockeditor/blockeditor.js:80
 msgid "Permission updated successfully."
 msgstr "Berechtigung erfolgreich aktualisiert."

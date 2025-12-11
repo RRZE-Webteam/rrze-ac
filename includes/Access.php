@@ -179,9 +179,13 @@ class Access
 
         if (permissions()->getPermissionStatus(permissions()->user_isnt_sso_logged_in) && permissions()->simplesamlAuth) {
             $login_url = permissions()->simplesamlAuth->getLoginURL();
+            $message .= '<div class="sso-login">';
+            $message .= '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#1f1f1f"><path d="M480-120v-80h280v-560H480v-80h280q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H480Zm-80-160-55-58 102-102H120v-80h327L345-622l55-58 200 200-200 200Z"/></svg>';
+            $message .= '<br/><span class="label label--recommended">' . __('Recommended', 'rrze-private-site') . '</span>';
             $message .= '<h3>' . esc_html($options['user_isnt_sso_logged_in_title']) . '</h3>';
             $message .= wpautop(esc_html($options['user_isnt_sso_logged_in_msg']));
             $message .= wpautop('<a class="sso-link" href="' . $login_url . '">' . esc_html($options['user_isnt_sso_logged_in_link_txt']) . '</a>');
+            $message .= '</div>';
             $message .= self::getContact($options);
             $message .= '<style>' . self::getDeniedMessageCss() . '</style>';
             return $message;
