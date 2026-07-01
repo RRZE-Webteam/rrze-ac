@@ -136,7 +136,7 @@ class Permissions
         return !empty($permission) ? $permission : false;
     }
 
-    public function checkAuthorPermission($postId)
+    public function checkPrivilegedAccess()
     {
         if (!is_user_logged_in()) {
             return false;
@@ -146,9 +146,25 @@ class Permissions
             return true;
         }
 
+        if (current_user_can('rrze_websupport_site_admin')) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function checkAuthorPermission($postId)
+    {
+        if (!is_user_logged_in()) {
+            return false;
+        }
+
         $current_user = wp_get_current_user();
 
         $post = get_post($postId);
+        if (!$post) {
+            return false;
+        }
 
         $post_author = $post->post_author;
 

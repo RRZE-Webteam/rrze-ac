@@ -24,6 +24,10 @@ class Access
             return true;
         }
 
+        if (permissions()->checkPrivilegedAccess()) {
+            return true;
+        }
+
         if (permissions()->checkAuthorPermission($postId)) {
             return true;
         }

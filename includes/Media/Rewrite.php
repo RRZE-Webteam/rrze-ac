@@ -8,6 +8,22 @@ use RRZE\AccessControl\Options;
 
 class Rewrite
 {
+    protected static $rewriteCheckErrorTransient = 'rrze_ac_rewrite_check_error';
+
+    public static function maybeHandleRewriteCheck()
+    {
+        if (empty($_GET['access_rewrite_test']) || empty($_GET['protected_file'])) {
+            return;
+        }
+
+        http_response_code(200);
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'rewrite test passed';
+        exit();
+    }
+
     public static function init()
     {
         add_action('init', [__CLASS__, 'checkRewrite']);
@@ -26,7 +42,7 @@ class Rewrite
         if (is_admin() && !get_site_option($enabledOptionName)) {
             global $pagenow;
             if (self::checkRewriteRules()) {
-                add_site_option($enabledOptionName, 1);
+                update_site_option($enabledOptionName, 1);
                 wp_redirect(admin_url($pagenow ? $pagenow : ''));
                 exit();
             }
@@ -41,11 +57,42 @@ class Rewrite
 
         $checkUrl = $uploadDir['baseurl'] . $protectedTest;
         $check = wp_remote_get($checkUrl, array('sslverify' => false, 'httpversion' => '1.1'));
-        if (is_wp_error($check) || !isset($check['response']['code']) || 200 != $check['response']['code'] || !isset($check['body']) || 'rewrite test passed' != $check['body']) {
+        if (is_wp_error($check)) {
+            self::setRewriteCheckError(sprintf(
+                /* translators: 1: The rewrite check URL, 2: The WordPress error message. */
+                __('Rewrite check failed for %1$s. WordPress returned: %2$s', 'rrze-ac'),
+                esc_url_raw($checkUrl),
+                $check->get_error_message()
+            ));
             return false;
         }
 
+        $responseCode = wp_remote_retrieve_response_code($check);
+        $body = trim(wp_remote_retrieve_body($check));
+
+        if (200 != $responseCode || 'rewrite test passed' != $body) {
+            self::setRewriteCheckError(sprintf(
+                /* translators: 1: The rewrite check URL, 2: The HTTP status code, 3: The response body. */
+                __('Rewrite check failed for %1$s. HTTP status: %2$s. Response body: %3$s', 'rrze-ac'),
+                esc_url_raw($checkUrl),
+                (string) $responseCode,
+                $body !== '' ? esc_html(wp_trim_words($body, 20, '...')) : __('Empty response body', 'rrze-ac')
+            ));
+            return false;
+        }
+
+        delete_site_transient(self::$rewriteCheckErrorTransient);
         return true;
+    }
+
+    protected static function setRewriteCheckError($message)
+    {
+        set_site_transient(self::$rewriteCheckErrorTransient, $message, 300);
+    }
+
+    protected static function getRewriteCheckError()
+    {
+        return get_site_transient(self::$rewriteCheckErrorTransient);
     }
 
     protected static function rewriteRules()
@@ -78,6 +125,9 @@ class Rewrite
         if (is_network_admin() || is_super_admin()) {
             $message .= __("The following rewrite commands must be added in the .htaccess file after the WordPress command &#8222;RewriteRule ^index\\.php$ - [L]&#8220;.", 'rrze-ac');
             $message .= '<p>' . implode('<br>', self::rewriteRules()) . '</p>';
+            if ($rewriteCheckError = self::getRewriteCheckError()) {
+                $message .= '<p>' . esc_html($rewriteCheckError) . '</p>';
+            }
         } else {
             $message .= __("Please contact your system administrator.", 'rrze-ac');
         } ?>

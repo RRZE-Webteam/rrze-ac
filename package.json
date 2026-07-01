@@ -1,28 +1,67 @@
 {
-    "engines": {
-        "node": ">=23.11.0",
-        "npm": ">=10.9.2"
-    },
-    "devDependencies": {
-        "@wordpress/components": "latest",
-        "@wordpress/data": "latest",
-        "@wordpress/env": "latest",
-        "@wordpress/icons": "latest",
-        "@wordpress/plugins": "latest",
-        "@wordpress/scripts": "latest",
-        "ts-loader": "latest",
-        "typescript": "latest"
-    },
-    "browserslist": [
-        "extends @wordpress/browserslist-config"
-    ],
-    "scripts": {
-        "start": "wp-scripts start",
-        "build": "wp-scripts build",
-        "format": "wp-scripts format src",
-        "lint:js": "wp-scripts lint-js src",
-        "check-engines": "wp-scripts check-engines",
-        "check-licenses": "wp-scripts check-licenses --prod --gpl3",
-        "packages-update": "wp-scripts packages-update"
-    }
+  "name": "rrze-ac",
+  "title": "RRZE Access Control",
+  "version": "3.1.9",
+  "description": "Allows protection of files/documents through user and network related functions.",
+  "main": "rrze-ac.php",
+  "textdomain": "rrze-ac",
+  "textDomain": "rrze-ac",
+  "private": true,
+  "engines": {
+    "node": ">=23.11.0",
+    "npm": ">=10.9.2"
+  },
+  "browserslist": [
+    "extends @wordpress/browserslist-config"
+  ],
+  "scripts": {
+    "readme": "node scripts/build-readme.js",
+    "version:dev": "node scripts/build-version.js dev",
+    "version:prod": "node scripts/build-version.js prod",
+    "version:release": "node scripts/build-version.js release",
+    "build:assets": "wp-scripts build",
+    "watch:assets": "wp-scripts start",
+    "start": "npm run watch:assets",
+    "dev": "npm run build:assets && npm run version:dev && npm run readme",
+    "build": "npm run build:assets && npm run version:prod && npm run readme",
+    "prod": "npm run build",
+    "release": "npm run build:assets && npm run version:release && npm run readme",
+    "format": "wp-scripts format src",
+    "lint:js": "wp-scripts lint-js src",
+    "check-engines": "wp-scripts check-engines",
+    "check-licenses": "wp-scripts check-licenses --prod --gpl3",
+    "packages-update": "wp-scripts packages-update",
+    "make-pot": "wp i18n make-pot ./ languages/rrze-ac.pot --domain=rrze-ac --exclude=vendor,node_modules,_tmp",
+    "make-php": "wp i18n make-php languages"
+  },
+  "compatibility": {
+    "wprequires": "6.8",
+    "wptestedup": "7.0",
+    "phprequires": "8.2"
+  },
+  "supports": {
+    "email": "webmaster@fau.de"
+  },
+  "author": {
+    "name": "RRZE Webteam",
+    "url": "https://www.wp.rrze.fau.de/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac",
+    "issues": "https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac/issues"
+  },
+  "license": "GNU General Public License Version 3",
+  "licenseurl": "https://www.gnu.org/licenses/gpl-3.0.html",
+  "tags": "Plugin, WordPress, Multisite, RRZE, FAU, Access Control",
+  "devDependencies": {
+    "@wordpress/api-fetch": "latest",
+    "@wordpress/components": "latest",
+    "@wordpress/data": "latest",
+    "@wordpress/editor": "latest",
+    "@wordpress/element": "latest",
+    "@wordpress/i18n": "latest",
+    "@wordpress/plugins": "latest",
+    "@wordpress/scripts": "latest"
+  }
 }

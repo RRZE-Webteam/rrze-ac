@@ -3,7 +3,7 @@
 /*
 Plugin Name:        RRZE Access Control
 Plugin URI:         https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-Version:            3.1.8
+Version:            3.1.9
 Description:        Allows protection of files/documents through user and network related functions.
 Author:             RRZE Webteam
 Author URI:         https://blogs.fau.de/webworking/
@@ -165,6 +165,8 @@ function systemRequirements(): string
  */
 function loaded()
 {
+    Media\Rewrite::maybeHandleRewriteCheck();
+
     // Trigger the 'loaded' method of the main plugin instance.
     plugin()->loaded();
 
