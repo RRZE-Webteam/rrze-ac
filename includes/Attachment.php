@@ -35,7 +35,7 @@ class Attachment
     {
         wp_nonce_field('attachment_protection_metabox', 'attachment_protection_metabox_nonce');
 
-        $permission = get_post_meta($post->ID, Post::ACCESS_PERMISSION_META_KEY, true);
+        $permission = get_post_meta($post->ID, Post::accessPermissionMetaKey(), true);
 
         $permissions = permissions()->getThePermissions();
 
@@ -161,7 +161,7 @@ class Attachment
             return $formFields;
         }
 
-        $permission = get_post_meta($post->ID, Post::ACCESS_PERMISSION_META_KEY, true);
+        $permission = get_post_meta($post->ID, Post::accessPermissionMetaKey(), true);
 
         $permissions = permissions()->getThePermissions();
 
@@ -224,7 +224,7 @@ class Attachment
                     return $post;
                 }
 
-                delete_post_meta($attachmentId, Post::ACCESS_PERMISSION_META_KEY);
+                delete_post_meta($attachmentId, Post::accessPermissionMetaKey());
 
                 return $post;
 
@@ -246,9 +246,9 @@ class Attachment
                 $permissions = permissions()->getThePermissions();
 
                 if (!isset($permissions[$attachment['access_permission_select']])) {
-                    delete_post_meta($attachmentId, Post::ACCESS_PERMISSION_META_KEY);
+                    delete_post_meta($attachmentId, Post::accessPermissionMetaKey());
                 } else {
-                    update_post_meta($attachmentId, Post::ACCESS_PERMISSION_META_KEY, $attachment['access_permission_select']);
+                    update_post_meta($attachmentId, Post::accessPermissionMetaKey(), $attachment['access_permission_select']);
                 }
 
                 return $post;
@@ -289,7 +289,7 @@ class Attachment
                     return;
                 }
 
-                delete_post_meta($attachmentId, Post::ACCESS_PERMISSION_META_KEY);
+                delete_post_meta($attachmentId, Post::accessPermissionMetaKey());
 
                 break;
 
@@ -311,9 +311,9 @@ class Attachment
                 $permissions = permissions()->getThePermissions();
 
                 if (!isset($permissions[$_POST['access_permission_select']])) {
-                    delete_post_meta($attachmentId, Post::ACCESS_PERMISSION_META_KEY);
+                    delete_post_meta($attachmentId, Post::accessPermissionMetaKey());
                 } else {
-                    update_post_meta($attachmentId, Post::ACCESS_PERMISSION_META_KEY, $_POST['access_permission_select']);
+                    update_post_meta($attachmentId, Post::accessPermissionMetaKey(), $_POST['access_permission_select']);
                 }
 
                 break;
@@ -568,7 +568,7 @@ class Attachment
                         );
                     }
 
-                    delete_post_meta($media_id, Post::ACCESS_PERMISSION_META_KEY);
+                    delete_post_meta($media_id, Post::accessPermissionMetaKey());
 
                     $unprotected++;
                 }

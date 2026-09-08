@@ -6,7 +6,20 @@ defined('ABSPATH') || exit;
 
 class Post
 {
-    const ACCESS_PERMISSION_META_KEY = '_access_permission';
+    public static function accessPermissionMetaKey()
+    {
+        return Config::get('access_permission_meta_key');
+    }
+
+    public static function protectedPostStatus()
+    {
+        return Config::get('protected_post_status');
+    }
+
+    public static function emptyPermissionKey()
+    {
+        return Config::get('empty_permission_key');
+    }
 
     public static function init()
     {
@@ -43,7 +56,7 @@ class Post
 
     public static function registerPostStatus()
     {
-        register_post_status('protected', [
+        register_post_status(self::protectedPostStatus(), [
             'label'                     => __('Protected', 'rrze-ac'),
             'public'                    => false,
             'exclude_from_search'       => true,
@@ -107,26 +120,26 @@ class Post
             AND p.post_status = 'publish'
             AND (" . implode(' OR ', $pt_query) . ")";
 
-        return $wpdb->get_results($wpdb->prepare($query, self::ACCESS_PERMISSION_META_KEY));
+        return $wpdb->get_results($wpdb->prepare($query, self::accessPermissionMetaKey()));
     }
 
     public static function preGetPostsList($query)
     {
         global $postType;
 
-        if (!is_admin() || !isset($query->query_vars['post_status']) || $query->query_vars['post_status'] != 'protected') {
+        if (!is_admin() || !isset($query->query_vars['post_status']) || $query->query_vars['post_status'] != self::protectedPostStatus()) {
             return $query;
         }
 
-        if (!in_array($postType, ['page'])) {
+        if (!in_array($postType, Config::get('restricted_post_types'))) {
             return $query;
         }
 
-        $query->set('post_status', ['publish', 'pending', 'draft', 'future', 'private', 'inherit', 'protected']);
+        $query->set('post_status', ['publish', 'pending', 'draft', 'future', 'private', 'inherit', self::protectedPostStatus()]);
 
         $meta_query = [
             [
-                'key' => self::ACCESS_PERMISSION_META_KEY,
+                'key' => self::accessPermissionMetaKey(),
                 'compare' => 'EXISTS'
             ]
         ];
@@ -140,7 +153,7 @@ class Post
     {
         global $wp_query, $postType;
 
-        if (!in_array($postType, ['page'])) {
+        if (!in_array($postType, Config::get('restricted_post_types'))) {
             return $views;
         }
 
@@ -149,7 +162,7 @@ class Post
                 'post_type'  => $postType,
                 'meta_query' => [
                     [
-                        'key' => self::ACCESS_PERMISSION_META_KEY,
+                        'key' => self::accessPermissionMetaKey(),
                         'compare' => 'EXISTS'
                     ]
                 ]
@@ -157,11 +170,11 @@ class Post
         );
 
         $count = $query->found_posts;
-        $class = isset($wp_query->query['post_status']) && $wp_query->query['post_status'] == 'protected' ? ' class="current"' : '';
+        $class = isset($wp_query->query['post_status']) && $wp_query->query['post_status'] == self::protectedPostStatus() ? ' class="current"' : '';
 
-        $views['protected'] = sprintf(
+        $views[self::protectedPostStatus()] = sprintf(
             '<a href="%s"%s>%s</a>',
-            admin_url(sprintf('edit.php?post_status=protected&post_type=%s', $postType)),
+            admin_url(sprintf('edit.php?post_status=%s&post_type=%s', self::protectedPostStatus(), $postType)),
             $class,
             sprintf(translate_nooped_plural(_n_noop('Protected <span class="count">(%s)</span>', 'Protected <span class="count">(%s)</span>'), $count, 'rrze-ac'), $count)
         );
@@ -190,18 +203,18 @@ class Post
 
     public static function renderMetabox($post)
     {
-        $permission = get_post_meta($post->ID, self::ACCESS_PERMISSION_META_KEY, true);
+        $permission = get_post_meta($post->ID, self::accessPermissionMetaKey(), true);
 
         $permissions = permissions()->getThePermissions();
         $permissions = array_merge([
-            '_none_' => [
+            self::emptyPermissionKey() => [
                 'select' => __("--NONE--", 'rrze-ac'),
                 'active' => 1
             ]
         ], $permissions);
 
         if (empty($permission) || !isset($permissions[$permission]) || !$permissions[$permission]['active']) {
-            $permission = '_none_';
+            $permission = self::emptyPermissionKey();
         }
 
         echo '<select id="access-permission-select" name="access_permission_select">';
@@ -233,12 +246,12 @@ class Post
         $permission = $_POST['access_permission_select'] ?? '';
         $permission = sanitize_text_field($permission);
         $permissions = permissions()->getThePermissions();
-        $permissions = array_merge(['_none_' => []], $permissions);
+        $permissions = array_merge([self::emptyPermissionKey() => []], $permissions);
 
-        if ('_none_' === $permission) {
-            delete_post_meta($postId, self::ACCESS_PERMISSION_META_KEY);
+        if (self::emptyPermissionKey() === $permission) {
+            delete_post_meta($postId, self::accessPermissionMetaKey());
         } elseif (isset($permissions[$permission])) {
-            update_post_meta($postId, self::ACCESS_PERMISSION_META_KEY, $permission);
+            update_post_meta($postId, self::accessPermissionMetaKey(), $permission);
         }
     }
 
@@ -263,12 +276,12 @@ class Post
 
     public static function registerPostMetas()
     {
-        $postTypes = ['page', 'attachment'];
+        $postTypes = Config::get('post_types');
 
         foreach ($postTypes as $postType) {
             register_post_meta(
                 $postType,
-                self::ACCESS_PERMISSION_META_KEY,
+                self::accessPermissionMetaKey(),
                 [
                     'show_in_rest'  => true,
                     'type'          => 'string',
@@ -284,9 +297,9 @@ class Post
 
     public static function updatePostMeta($metaId, $postId, $metaKey, $metaValue)
     {
-        if (self::ACCESS_PERMISSION_META_KEY == $metaKey) {
-            if ('_none_' === $metaValue) {
-                delete_post_meta($postId, self::ACCESS_PERMISSION_META_KEY);
+        if (self::accessPermissionMetaKey() == $metaKey) {
+            if (self::emptyPermissionKey() === $metaValue) {
+                delete_post_meta($postId, self::accessPermissionMetaKey());
             }
         }
     }
@@ -338,7 +351,7 @@ class Post
 
     public static function walkerNavMenuEdit($output, $item, $depth, $args, $id)
     {
-        $permission = get_post_meta($item->object_id, self::ACCESS_PERMISSION_META_KEY, true);
+        $permission = get_post_meta($item->object_id, self::accessPermissionMetaKey(), true);
         $permissions = permissions()->getThePermissions();
         $pos = strpos($output, '<span class="menu-item-title">');
 
@@ -382,7 +395,7 @@ class Post
         $result = $wpdb->get_results("
             SELECT pm.post_id, pm.meta_value FROM {$wpdb->postmeta} pm
             LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id
-            WHERE pm.meta_key = '" . Post::ACCESS_PERMISSION_META_KEY . "'
+            WHERE pm.meta_key = '" . self::accessPermissionMetaKey() . "'
             AND ((p.post_type = 'attachment' AND p.post_status = 'inherit') OR (p.post_type = 'page' AND p.post_status = 'publish'))");
 
         foreach ($result as $r) {
@@ -415,24 +428,24 @@ class Post
             plugin()->getVersion()
         );
 
-        $permission = get_post_meta($post->ID, self::ACCESS_PERMISSION_META_KEY, true);
+        $permission = get_post_meta($post->ID, self::accessPermissionMetaKey(), true);
 
         $permissions = permissions()->getThePermissions();
         $permissions = array_merge([
-            '_none_' => [
+            self::emptyPermissionKey() => [
                 'select' => __("--NONE--", 'rrze-ac'),
                 'active' => 1
             ]
         ], $permissions);
 
         if (empty($permission) || !isset($permissions[$permission]) || !$permissions[$permission]['active']) {
-            $permission = '_none_';
+            $permission = self::emptyPermissionKey();
         }
 
         $localization = [
             'permissions' => $permissions,
             'permission' => $permission,
-            'metaKey' => self::ACCESS_PERMISSION_META_KEY
+            'metaKey' => self::accessPermissionMetaKey()
         ];
 
         wp_localize_script(

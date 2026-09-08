@@ -4,12 +4,10 @@ namespace RRZE\AccessControl\Media;
 
 defined('ABSPATH') || exit;
 
-use RRZE\AccessControl\Options;
+use RRZE\AccessControl\{Config, Options};
 
 class Rewrite
 {
-    protected static $rewriteCheckErrorTransient = 'rrze_ac_rewrite_check_error';
-
     public static function maybeHandleRewriteCheck()
     {
         if (empty($_GET['access_rewrite_test']) || empty($_GET['protected_file'])) {
@@ -81,33 +79,39 @@ class Rewrite
             return false;
         }
 
-        delete_site_transient(self::$rewriteCheckErrorTransient);
+        delete_site_transient(Config::get('rewrite_check_error_transient'));
         return true;
     }
 
     protected static function setRewriteCheckError($message)
     {
-        set_site_transient(self::$rewriteCheckErrorTransient, $message, 300);
+        set_site_transient(
+            Config::get('rewrite_check_error_transient'),
+            $message,
+            Config::get('rewrite_check_error_transient_expiration')
+        );
     }
 
     protected static function getRewriteCheckError()
     {
-        return get_site_transient(self::$rewriteCheckErrorTransient);
+        return get_site_transient(Config::get('rewrite_check_error_transient'));
     }
 
     protected static function rewriteRules()
     {
         $rewriteRules = [];
+        $protectedDirname = preg_quote(Config::get('protected_upload_dirname'), '/');
+
         $rewriteRules[] = '# BEGIN RRZE ACCESS CONTROL WP PLUGIN';
         if (is_subdomain_install()) {
             $rewriteRules[] =
-                'RewriteRule ^wp-content(?:\/uploads(?:\/sites\/[0-9]+)?|\/blogs\.dir\/[0-9]+\/files)(\/_protected\/.*\.\w+)$ index.php?protected_file=$1 [QSA,L]';
+                'RewriteRule ^wp-content(?:\/uploads(?:\/sites\/[0-9]+)?|\/blogs\.dir\/[0-9]+\/files)(\/' . $protectedDirname . '\/.*\.\w+)$ index.php?protected_file=$1 [QSA,L]';
         } else {
             $rewriteRules[] =
-                'RewriteRule ^([_0-9a-zA-Z-]+\/)wp-content(?:\/uploads(?:\/sites\/[0-9]+)?|\/blogs\.dir\/[0-9]+\/files)(\/_protected\/.*\.\w+)$ index.php?protected_file=$1 [QSA,L]';
+                'RewriteRule ^([_0-9a-zA-Z-]+\/)wp-content(?:\/uploads(?:\/sites\/[0-9]+)?|\/blogs\.dir\/[0-9]+\/files)(\/' . $protectedDirname . '\/.*\.\w+)$ index.php?protected_file=$1 [QSA,L]';
         }
         if (get_site_option('ms_files_rewriting')) {
-            $rewriteRules[] = 'RewriteRule ^files(\/_protected\/.*\.\w+)$ index.php?protected_file=$1 [QSA,L]';
+            $rewriteRules[] = 'RewriteRule ^files(\/' . $protectedDirname . '\/.*\.\w+)$ index.php?protected_file=$1 [QSA,L]';
         }
         $rewriteRules[] = '# END RRZE ACCESS CONTROL WP PLUGIN';
 

@@ -4,12 +4,10 @@ namespace RRZE\AccessControl\Media;
 
 defined('ABSPATH') || exit;
 
-use RRZE\AccessControl\{Access, Options};
+use RRZE\AccessControl\{Access, Config, Options};
 
 class Files
 {
-    const PROTECTED_DIRNAME = '_protected';
-
     public static function init()
     {
         add_filter('upload_dir', [__CLASS__, 'changeUploadDirectory'], 999);
@@ -31,7 +29,7 @@ class Files
     public static function protectedUploadDir($path = '', $inUrl = false)
     {
         $dirpath = $inUrl ? '/' : '';
-        $dirpath .= self::PROTECTED_DIRNAME;
+        $dirpath .= Config::get('protected_upload_dirname');
         $dirpath .= $path;
 
         return $dirpath;

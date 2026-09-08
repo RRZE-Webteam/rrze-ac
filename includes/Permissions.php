@@ -11,10 +11,6 @@ use RRZE\AccessControl\Crawler\Siteimprove;
 
 class Permissions
 {
-    const SSO_PLUGIN = 'rrze-sso/rrze-sso.php';
-
-    const SSO_PLUGIN_OPTION_NAME = 'rrze_sso';
-
     public $user_isnt_logged_in = 0;
 
     public $user_ip_isnt_in_range = 1;
@@ -131,7 +127,7 @@ class Permissions
             return $this->getAttachmentPermission($postId);
         }
 
-        $permission = get_post_meta($postId, Post::ACCESS_PERMISSION_META_KEY, true);
+        $permission = get_post_meta($postId, Post::accessPermissionMetaKey(), true);
 
         return !empty($permission) ? $permission : false;
     }
@@ -240,7 +236,7 @@ class Permissions
             return false;
         }
 
-        $permission = get_post_meta($attachmentId, Post::ACCESS_PERMISSION_META_KEY, true);
+        $permission = get_post_meta($attachmentId, Post::accessPermissionMetaKey(), true);
 
         return empty($permission) ? $this->getDefaultPermission() : $permission;
     }
@@ -449,17 +445,21 @@ class Permissions
         return true;
     }
 
+    public function ssoPluginIsAvailableAndActive(): bool {
+        return Utils::isPluginInstalledAndActive(Config::get('sso_plugin'));
+    }
+
     /**
      * SSO: Check if an instance of SimpleSAML can be initialized
      * @return boolean
      */
     public function simplesamlAuth()
     {
-        if (Utils::isPluginActive(self::SSO_PLUGIN)) {
+        if ($this->ssoPluginIsAvailableAndActive()) {
             if (is_multisite()) {
-                $options = get_site_option(self::SSO_PLUGIN_OPTION_NAME);
+                $options = get_site_option(Config::get('sso_plugin_option_name'));
             } else {
-                $options = get_option(self::SSO_PLUGIN_OPTION_NAME);
+                $options = get_option(Config::get('sso_plugin_option_name'));
             }
         } else {
             return false;

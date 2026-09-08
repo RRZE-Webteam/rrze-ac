@@ -1,7 +1,7 @@
 {
   "name": "rrze-ac",
   "title": "RRZE Access Control",
-  "version": "3.1.9",
+  "version": "3.1.9-10",
   "description": "Allows protection of files/documents through user and network related functions.",
   "main": "rrze-ac.php",
   "textdomain": "rrze-ac",
@@ -36,7 +36,7 @@
   },
   "compatibility": {
     "wprequires": "6.8",
-    "wptestedup": "7.0",
+    "wptestedup": "7.1",
     "phprequires": "8.2"
   },
   "supports": {

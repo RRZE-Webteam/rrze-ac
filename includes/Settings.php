@@ -16,17 +16,23 @@ class Settings
 
     protected $listTable;
 
-    protected $settingsErrorTransient = 'rrze-ac-settings-error-';
-    protected $settingsErrorTransientExpiration = 30;
+    protected $settingsErrorTransient;
 
-    protected $notice_transient = 'rrze-ac-notice-';
-    protected $notice_transient_expiration = 30;
+    protected $settingsErrorTransientExpiration;
+
+    protected $notice_transient;
+
+    protected $notice_transient_expiration;
 
     public function __construct(Main $main)
     {
         $this->main = $main;
         $this->optionName = $this->main->optionName;
         $this->options = $this->main->options;
+        $this->settingsErrorTransient = Config::get('settings_error_transient');
+        $this->settingsErrorTransientExpiration = Config::get('settings_error_transient_expiration');
+        $this->notice_transient = Config::get('notice_transient');
+        $this->notice_transient_expiration = Config::get('notice_transient_expiration');
 
         add_action('admin_menu', array($this, 'adminMenu'));
 
@@ -231,7 +237,8 @@ class Settings
         $description = !empty($input['description']) ? sanitize_textarea_field($input['description']) : '';
 
         $logged_in = !empty($input['logged_in']) ? 1 : 0;
-        $ssoLoggedIn = !empty($input['sso_logged_in']) ? 1 : 0;
+        $ssoPluginIsAvailableAndActive = permissions()->ssoPluginIsAvailableAndActive();
+        $ssoLoggedIn = $ssoPluginIsAvailableAndActive && !empty($input['sso_logged_in']) ? 1 : 0;
 
         $siteimprove = !empty($input['siteimprove']) ? 1 : 0;
 
@@ -297,16 +304,23 @@ class Settings
         $permission['password'] = preg_match('/^[a-z0-9]{8,32}$/i', $password) ? $password : '';
 
         $logged_in = !empty($input['logged_in']) ? 1 : 0;
-        $ssoLoggedIn = !empty($input['sso_logged_in']) ? 1 : 0;
+        $ssoPluginIsAvailableAndActive = permissions()->ssoPluginIsAvailableAndActive();
+        $ssoLoggedIn = $ssoPluginIsAvailableAndActive ? (!empty($input['sso_logged_in']) ? 1 : 0) : $permission['sso_logged_in'];
 
         $siteimprove = !empty($input['siteimprove']) ? 1 : 0;
         $permission['siteimprove'] = $siteimprove;
 
-        $affiliation = $ssoLoggedIn && !empty($input['affiliation']) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['affiliation'])))) : '';
-        $permission['affiliation'] = $affiliation;
+        $affiliation = $permission['affiliation'];
+        if ($ssoPluginIsAvailableAndActive) {
+            $affiliation = $ssoLoggedIn && !empty($input['affiliation']) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['affiliation'])))) : '';
+            $permission['affiliation'] = $affiliation;
+        }
 
-        $entitlement = $ssoLoggedIn && !empty($input['entitlement']) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['entitlement'])))) : '';
-        $permission['entitlement'] = $entitlement;
+        $entitlement = $permission['entitlement'];
+        if ($ssoPluginIsAvailableAndActive) {
+            $entitlement = $ssoLoggedIn && !empty($input['entitlement']) ? array_unique(array_map('trim', explode(PHP_EOL, sanitize_textarea_field($input['entitlement'])))) : '';
+            $permission['entitlement'] = $entitlement;
+        }
 
         if ($this->settingsErrors()) {
             $this->addSettingsError('logged_in', $logged_in, '', false);
@@ -323,7 +337,9 @@ class Settings
 
         if (!$permission['core']) {
             $permission['logged_in'] = $logged_in;
-            $permission['sso_logged_in'] = $ssoLoggedIn;
+            if ($ssoPluginIsAvailableAndActive) {
+                $permission['sso_logged_in'] = $ssoLoggedIn;
+            }
         }
 
         $this->options['permissions'][$permissionKey] = $permission;
@@ -470,11 +486,14 @@ class Settings
         $permissionKey = $this->requestVar('permission');
         $permission = permissions()->getPermission($permissionKey);
         $ssoLoggedIn = !empty($permission['sso_logged_in']) ? true : false;
+        $ssoPluginIsAvailableAndActive = permissions()->ssoPluginIsAvailableAndActive();
 
         add_settings_section('rrze-ac-new-section', false, '__return_false', 'rrze-ac-new');
         add_settings_field('permission_key', __("Permission", 'rrze-ac'), array($this, 'permissionKeyField'), 'rrze-ac-new', 'rrze-ac-new-section');
         add_settings_field('logged_in', __("Logged-in", 'rrze-ac'), array($this, 'permissionLoggedInField'), 'rrze-ac-new', 'rrze-ac-new-section');
-        add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permissionSSOLoggedInField'), 'rrze-ac-new', 'rrze-ac-new-section');
+        if ($ssoPluginIsAvailableAndActive) {
+            add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permissionSSOLoggedInField'), 'rrze-ac-new', 'rrze-ac-new-section');
+        }
         add_settings_field('domain', __("Allow domain", 'rrze-ac'), array($this, 'permission_domain_field'), 'rrze-ac-new', 'rrze-ac-new-section');
         add_settings_field('ip_address', __("Allow IP address", 'rrze-ac'), array($this, 'permission_ip_address_field'), 'rrze-ac-new', 'rrze-ac-new-section');
         add_settings_field('password', __("Password", 'rrze-ac'), array($this, 'permission_password_field'), 'rrze-ac-new', 'rrze-ac-new-section');
@@ -485,8 +504,10 @@ class Settings
         add_settings_section('rrze-ac-edit-section', false, '__return_false', 'rrze-ac-edit');
         add_settings_field('permission_key', __("Permission", 'rrze-ac'), array($this, 'permissionKeyField'), 'rrze-ac-edit', 'rrze-ac-edit-section');
         add_settings_field('logged_in', __("Logged-in", 'rrze-ac'), array($this, 'permissionLoggedInField'), 'rrze-ac-edit', 'rrze-ac-edit-section');
-        add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permissionSSOLoggedInField'), 'rrze-ac-edit', 'rrze-ac-edit-section');
-        if ($ssoLoggedIn) {
+        if ($ssoPluginIsAvailableAndActive) {
+            add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permissionSSOLoggedInField'), 'rrze-ac-edit', 'rrze-ac-edit-section');
+        }
+        if ($ssoPluginIsAvailableAndActive && $ssoLoggedIn) {
             add_settings_field('affiliation', '&#8212; ' . __("Person affiliation", 'rrze-ac'), array($this, 'permission_affiliation_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
             add_settings_field('entitlement', '&#8212; ' . __("Person entitlement", 'rrze-ac'), array($this, 'permission_entitlement_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
         }
@@ -499,7 +520,7 @@ class Settings
 
         add_settings_section('rrze-ac-settings-section', false, '__return_false', 'rrze-ac-settings');
         add_settings_field('default_permission', __("Standard Permission", 'rrze-ac'), array($this, 'default_permission_field'), 'rrze-ac-settings', 'rrze-ac-settings-section');
-        if (permissions()->simplesamlAuth() !== false) {
+        if ($ssoPluginIsAvailableAndActive) {
             add_settings_field('automatic_sso_authentication', __("Automatic SSO Authentication", 'rrze-ac'), array($this, 'automatic_sso_authentication_field'), 'rrze-ac-settings', 'rrze-ac-settings-section');
         }
         add_settings_field('contact_admin_name', __("Contact", 'rrze-ac'), [$this, 'contact_admin_name_field'], 'rrze-ac-settings', 'rrze-ac-settings-section');
@@ -508,7 +529,7 @@ class Settings
         add_settings_field('user_isnt_logged_in_title', __("User Is Not Logged In (Title)", 'rrze-ac'), [$this, 'user_isnt_logged_in_title_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
         add_settings_field('user_isnt_logged_in_msg', __("User Is Not Logged In (Message)", 'rrze-ac'), [$this, 'user_isnt_logged_in_msg_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
         add_settings_field('user_isnt_logged_in_link_txt', __("User Is Not Logged In (Link Text)", 'rrze-ac'), [$this, 'user_isnt_logged_in_link_txt_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
-        if (permissions()->simplesamlAuth() !== false) {
+        if ($ssoPluginIsAvailableAndActive) {
             add_settings_field('user_isnt_sso_logged_in_title', __("User Is Not SSO Logged In (Title)", 'rrze-ac'), [$this, 'user_isnt_sso_logged_in_title_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
             add_settings_field('user_isnt_sso_logged_in_msg', __("User Is Not SSO Logged In (Message)", 'rrze-ac'), [$this, 'user_isnt_sso_logged_in_msg_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
             add_settings_field('user_isnt_sso_logged_in_link_txt', __("User Is Not SSO Logged In (Link Text)", 'rrze-ac'), [$this, 'user_isnt_sso_logged_in_link_txt_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
@@ -846,7 +867,9 @@ class Settings
             $this->options['default_permission'] = $input['default_permission'];
         }
 
-        $this->options['automatic_sso_authentication'] = isset($input['automatic_sso_authentication']) ? 1 : 0;
+        if (permissions()->ssoPluginIsAvailableAndActive()) {
+            $this->options['automatic_sso_authentication'] = isset($input['automatic_sso_authentication']) ? 1 : 0;
+        }
 
         $this->options['contact_admin_name'] = esc_html(sanitize_text_field($input['contact_admin_name']));
 
