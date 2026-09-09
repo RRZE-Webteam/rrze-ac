@@ -146,6 +146,29 @@ function setPluginVersion(pluginRoot, pkg, newVersion) {
     }
 }
 
+function setConfigVersion(pluginRoot, newVersion) {
+    var filePath = path.join(pluginRoot, 'includes', 'Config.php');
+    var replacements = 0;
+
+    if (!fs.existsSync(filePath)) {
+        throw new Error('Config file not found: ' + filePath);
+    }
+
+    replaceInFile(filePath, function replaceConfigVersion(content) {
+        return content.replace(
+            /(\s*'version'\s*=>\s*')[^']*(')/,
+            function replaceVersion(match, p1, p2) {
+                replacements++;
+                return p1 + newVersion + p2;
+            }
+        );
+    });
+
+    if (replacements === 0) {
+        throw new Error('No version field found in ' + filePath);
+    }
+}
+
 function setPluginCompatibility(pluginRoot, pkg) {
     if (!pkg.main || typeof pkg.main !== 'string') {
         throw new Error('package.json has no valid "main" entry');
@@ -264,6 +287,7 @@ function main() {
 
     setReadmeTxtVersion(pluginRoot, next);
     setPluginVersion(pluginRoot, pkg, next);
+    setConfigVersion(pluginRoot, next);
     setPluginCompatibility(pluginRoot, pkg);
 
     console.log('Version bumped (' + mode + '): ' + current + ' -> ' + next);

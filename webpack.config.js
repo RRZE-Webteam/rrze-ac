@@ -9,12 +9,9 @@ const webpack = require("webpack");
 module.exports = {
     ...defaults,
     entry: {
-        access: "./src/access/index.js",
-        attachment: "./src/attachment/index.js",
+        "rrze-ac-admin": "./src/js/rrze-ac-admin.js",
+        "rrze-ac": "./src/js/rrze-ac-frontend.js",
         blockeditor: "./src/blockeditor/index.js",
-        media: "./src/media/index.js",
-        page: "./src/page/index.js",
-        upload: "./src/upload/index.js",
     },
     plugins: [
         ...defaults.plugins,

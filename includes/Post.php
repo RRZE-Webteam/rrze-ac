@@ -28,7 +28,8 @@ class Post
         // Anpassung des Abfrageobjekts
         add_filter('pre_get_posts', [__CLASS__, 'preGetPostsSingle']);
         add_filter('pre_get_posts', [__CLASS__, 'preGetPostsList']);
-        add_action('views_edit-page', [__CLASS__, 'viewsEdit']);
+        add_filter('views_edit-page', [__CLASS__, 'viewsEdit']);
+        add_action('restrict_manage_posts', [__CLASS__, 'restrictManagePosts']);
 
         // Metadaten registrieren
         add_action('init', [__CLASS__, 'registerPostMetas']);
@@ -37,7 +38,7 @@ class Post
         add_filter('rest_page_query', [__CLASS__, 'restFilter']);
         add_filter('rest_attachment_query', [__CLASS__, 'restFilter']);
 
-        add_action('add_meta_boxes', [__CLASS__, 'metabox']);
+        add_action('add_meta_boxes', [__CLASS__, 'metabox'], 10, 2);
 
         add_action("save_post_page", [__CLASS__, 'savePost'], 10, 2);
         add_action('updated_postmeta', [__CLASS__, 'updatePostMeta'], 10, 4);
@@ -125,33 +126,53 @@ class Post
 
     public static function preGetPostsList($query)
     {
-        global $postType;
-
-        if (!is_admin() || !isset($query->query_vars['post_status']) || $query->query_vars['post_status'] != self::protectedPostStatus()) {
+        if (!is_admin() || !$query->is_main_query()) {
             return $query;
         }
+
+        $postType = self::currentPostType();
 
         if (!in_array($postType, Config::get('restricted_post_types'))) {
             return $query;
         }
 
-        $query->set('post_status', ['publish', 'pending', 'draft', 'future', 'private', 'inherit', self::protectedPostStatus()]);
+        $filterByView = isset($query->query_vars['post_status']) && $query->query_vars['post_status'] == self::protectedPostStatus();
+        $filterByDropdown = self::accessFilter();
 
-        $meta_query = [
-            [
-                'key' => self::accessPermissionMetaKey(),
-                'compare' => 'EXISTS'
-            ]
-        ];
+        if (!$filterByView && !$filterByDropdown) {
+            return $query;
+        }
 
-        $query->set('meta_query', $meta_query);
+        if ($filterByView || $filterByDropdown == self::protectedPostStatus()) {
+            $query->set('post_status', ['publish', 'pending', 'draft', 'future', 'private', 'inherit', self::protectedPostStatus()]);
+
+            $meta_query = [
+                [
+                    'key' => self::accessPermissionMetaKey(),
+                    'compare' => 'EXISTS'
+                ]
+            ];
+
+            $query->set('meta_query', $meta_query);
+        } elseif ($filterByDropdown == 'unprotected') {
+            $meta_query = [
+                [
+                    'key' => self::accessPermissionMetaKey(),
+                    'compare' => 'NOT EXISTS'
+                ]
+            ];
+
+            $query->set('meta_query', $meta_query);
+        }
 
         return $query;
     }
 
     public static function viewsEdit($views)
     {
-        global $wp_query, $postType;
+        global $wp_query;
+
+        $postType = self::currentPostType();
 
         if (!in_array($postType, Config::get('restricted_post_types'))) {
             return $views;
@@ -160,6 +181,7 @@ class Post
         $query = new \WP_Query(
             [
                 'post_type'  => $postType,
+                'post_status' => ['publish', 'pending', 'draft', 'future', 'private', 'inherit', self::protectedPostStatus()],
                 'meta_query' => [
                     [
                         'key' => self::accessPermissionMetaKey(),
@@ -176,15 +198,64 @@ class Post
             '<a href="%s"%s>%s</a>',
             admin_url(sprintf('edit.php?post_status=%s&post_type=%s', self::protectedPostStatus(), $postType)),
             $class,
-            sprintf(translate_nooped_plural(_n_noop('Protected <span class="count">(%s)</span>', 'Protected <span class="count">(%s)</span>'), $count, 'rrze-ac'), $count)
+            sprintf(translate_nooped_plural(_n_noop('With Access Control <span class="count">(%s)</span>', 'With Access Control <span class="count">(%s)</span>'), $count, 'rrze-ac'), $count)
         );
 
         return $views;
     }
 
-    public static function metabox($postType)
+    public static function restrictManagePosts($postType = '')
+    {
+        $postType = $postType ?: self::currentPostType();
+
+        if (!in_array($postType, Config::get('restricted_post_types'))) {
+            return;
+        }
+
+        $selected = self::accessFilter(); ?>
+        <label class="screen-reader-text" for="rrze-ac-access-filter"><?php esc_html_e('Filter by access control', 'rrze-ac'); ?></label>
+        <select name="rrze_ac_access_filter" id="rrze-ac-access-filter">
+            <option value=""><?php esc_html_e('Access Control', 'rrze-ac'); ?></option>
+            <option value="unprotected" <?php selected($selected, 'unprotected'); ?>>
+                <?php esc_html_e('Without Access Control', 'rrze-ac'); ?>
+            </option>
+            <option value="<?php echo esc_attr(self::protectedPostStatus()); ?>" <?php selected($selected, self::protectedPostStatus()); ?>>
+                <?php esc_html_e('With Access Control', 'rrze-ac'); ?>
+            </option>
+        </select>
+    <?php
+    }
+
+    private static function currentPostType()
+    {
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        if (!empty($screen->post_type)) {
+            return $screen->post_type;
+        }
+
+        if (!empty($_GET['post_type'])) {
+            return sanitize_key(wp_unslash($_GET['post_type']));
+        }
+
+        return 'post';
+    }
+
+    private static function accessFilter()
+    {
+        if (empty($_GET['rrze_ac_access_filter'])) {
+            return '';
+        }
+
+        return sanitize_key(wp_unslash($_GET['rrze_ac_access_filter']));
+    }
+
+    public static function metabox($postType, $post = null)
     {
         if ($postType != 'page') {
+            return;
+        }
+
+        if ($post && !permissions()->currentUserCanViewContentPermission($post->ID)) {
             return;
         }
 
@@ -203,6 +274,10 @@ class Post
 
     public static function renderMetabox($post)
     {
+        if (!permissions()->currentUserCanViewContentPermission($post->ID)) {
+            return;
+        }
+
         $permission = get_post_meta($post->ID, self::accessPermissionMetaKey(), true);
 
         $permissions = permissions()->getThePermissions();
@@ -215,6 +290,15 @@ class Post
 
         if (empty($permission) || !isset($permissions[$permission]) || !$permissions[$permission]['active']) {
             $permission = self::emptyPermissionKey();
+        }
+
+        wp_nonce_field('rrze_ac_post_metabox', 'rrze_ac_post_metabox_nonce');
+
+        if (!permissions()->currentUserCanChangeContentPermission($post->ID)) {
+            echo '<p><strong>', esc_html__('Permission', 'rrze-ac'), ':</strong><br>';
+            echo esc_html(sanitize_text_field($permissions[$permission]['select']));
+            echo '</p>';
+            return;
         }
 
         echo '<select id="access-permission-select" name="access_permission_select">';
@@ -240,6 +324,18 @@ class Post
         }
 
         if ($post->post_type !== 'page') {
+            return;
+        }
+
+        if (!isset($_POST['rrze_ac_post_metabox_nonce']) || !wp_verify_nonce($_POST['rrze_ac_post_metabox_nonce'], 'rrze_ac_post_metabox')) {
+            return;
+        }
+
+        if (!permissions()->currentUserCanChangeContentPermission($postId)) {
+            return;
+        }
+
+        if (!isset($_POST['access_permission_select'])) {
             return;
         }
 
@@ -286,13 +382,16 @@ class Post
                     'show_in_rest'  => true,
                     'type'          => 'string',
                     'single'        => true,
-                    'auth_callback' => function () {
-                        return current_user_can('edit_posts');
-                    },
+                    'auth_callback' => [__CLASS__, 'authAccessPermissionMeta'],
                     'default'       => '',
                 ]
             );
         }
+    }
+
+    public static function authAccessPermissionMeta($allowed, $metaKey, $postId)
+    {
+        return permissions()->currentUserCanChangeContentPermission($postId);
     }
 
     public static function updatePostMeta($metaId, $postId, $metaKey, $metaValue)
@@ -306,7 +405,12 @@ class Post
 
     public static function managePagesColumn($columns)
     {
-        $columns['access_info'] = '<span title="' . esc_attr__('Access Restriction', 'rrze-ac') . '" class="dashicons dashicons-shield"></span>';
+        if (self::accessFilter() == 'unprotected') {
+            unset($columns['access_info']);
+            return $columns;
+        }
+
+        $columns['access_info'] = esc_html__('Access Control', 'rrze-ac');
         return $columns;
     }
 
@@ -338,13 +442,13 @@ class Post
 
         $description = isset($permission['description']) && !empty($permission['description']) ? $permission['description'] : $permission['permission_key'];
         $description = !$error ?
-            '<span title="' . esc_attr__($description) . '" class="' . $class . ' dashicons dashicons-shield"></span>' :
+            '<span title="' . esc_attr__($description) . '" class="' . $class . ' dashicons dashicons-shield"></span><span class="access-permission-name">' . esc_html($description) . '</span>' :
             '<span title="' . sprintf(
                 /* translators: 1: Error message, 2: Default permission. */
                 esc_attr__('An error has occurred: %1$s and has been replaced by the default permission %2$s.', 'rrze-ac'),
                 $error,
                 $description
-            ) . '" class="access-error-icon dashicons dashicons-shield"></span>';
+            ) . '" class="access-error-icon dashicons dashicons-shield"></span><span class="access-permission-name">' . esc_html($description) . '</span>';
 
         echo $description;
     }
@@ -445,7 +549,10 @@ class Post
         $localization = [
             'permissions' => $permissions,
             'permission' => $permission,
-            'metaKey' => self::accessPermissionMetaKey()
+            'metaKey' => self::accessPermissionMetaKey(),
+            'canView' => permissions()->currentUserCanViewContentPermission($post->ID),
+            'canEdit' => permissions()->currentUserCanChangeContentPermission($post->ID),
+            'lockedMessage' => __('You are not allowed to change this access restriction.', 'rrze-ac')
         ];
 
         wp_localize_script(

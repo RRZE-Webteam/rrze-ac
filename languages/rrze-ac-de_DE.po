@@ -18,6 +18,10 @@ msgstr ""
 msgid "RRZE Access Control"
 msgstr "RRZE Access-Control"
 
+#: includes/Settings.php
+msgid "Access Control"
+msgstr "Zugriffsschutz"
+
 #. Plugin URI of the plugin
 #: rrze-ac.php
 msgid "https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac"
@@ -189,15 +193,27 @@ msgstr "Beschreibung"
 msgid "Logged-in"
 msgstr "Angemeldet"
 
+#: includes/ListTable.php
+msgid "Yes"
+msgstr "Ja"
+
 #: includes/ListTable.php:99 includes/Settings.php:477
 #: includes/Settings.php:488
 msgid "SSO"
 msgstr "SSO"
 
+#: includes/ListTable.php
+msgid "Network Access"
+msgstr "Netzwerkzugriff"
+
+#: includes/ListTable.php
+msgid "Crawler"
+msgstr "Crawler"
+
 #: includes/ListTable.php:100 includes/Settings.php:478
 #: includes/Settings.php:493
-msgid "Allow domain"
-msgstr "Domäne zulassen"
+msgid "Allow hostname"
+msgstr "Hostnamen zulassen"
 
 #: includes/ListTable.php:101 includes/Settings.php:479
 #: includes/Settings.php:494
@@ -207,6 +223,46 @@ msgstr "IP-Adresse zulassen"
 #: includes/Main.php:38 includes/Settings.php:46 includes/Settings.php:448
 msgid "Settings"
 msgstr "Einstellungen"
+
+#: includes/Settings.php
+msgid "General"
+msgstr "Allgemein"
+
+#: includes/Settings.php
+msgid "Advanced"
+msgstr "Erweitert"
+
+#: includes/Settings.php
+msgid "Debugging"
+msgstr "Debugging"
+
+#: includes/Settings.php
+msgid "Logging"
+msgstr "Protokollierung"
+
+#: includes/Settings.php
+msgid "Send informational messages to the info channel."
+msgstr "Informative Meldungen an den Info-Kanal senden."
+
+#: includes/Settings.php
+msgid "Name"
+msgstr "Name"
+
+#: includes/Settings.php
+msgid "Access Conditions"
+msgstr "Zugangsbedingungen"
+
+#: includes/Settings.php
+msgid "Access is granted when at least one of the following conditions is fulfilled. The conditions are evaluated as OR rules, not as AND rules."
+msgstr "Der Zugriff wird gewährt, wenn mindestens eine der folgenden Bedingungen erfüllt ist. Die Bedingungen werden als ODER-Regeln ausgewertet, nicht als UND-Regeln."
+
+#: includes/Settings.php
+msgid "Crawler and Monitoring Systems"
+msgstr "Crawler und Monitoring-Systeme"
+
+#: includes/Settings.php
+msgid "Independent of the access conditions above, known crawlers, bots, and monitoring systems may need access to the websites. These can be allowed through the following selection."
+msgstr "Unabhängig von obigen Zugangsbedingungen können bekannte Crawler, Bots und Monitoring-Systeme einen Zugang zu den Webseiten benötigen. Diese können durch die folgende Auswahl zugelassen werden."
 
 #: includes/Main.php:120 includes/Media/Files.php:371
 msgid "Login is required"
@@ -282,9 +338,17 @@ msgstr "Bitte wenden Sie sich an den Systemadministrator."
 msgid "Public"
 msgstr "Öffentlich"
 
+#: includes/Config.php includes/ListTable.php includes/Settings.php
+msgid "Publicly accessible"
+msgstr "Öffentlich zugänglich"
+
 #: includes/Options.php:38 includes/Options.php:39
 msgid "Logged-in user"
 msgstr "Angemeldeten Benutzer"
+
+#: includes/Config.php includes/ListTable.php includes/Settings.php
+msgid "Login required"
+msgstr "Anmeldung erforderlich"
 
 #: includes/Options.php:56 includes/Options.php:60
 msgid "Log in with your IdM ID"
@@ -331,9 +395,9 @@ msgstr ""
 "Wenn Sie ein Passwort für den Zugriff auf diese Ressource haben, geben Sie "
 "es bitte in das folgende Feld ein."
 
-#: includes/Permissions.php:77
-msgid "Unauthorized access to the REST API."
-msgstr "Unbefugter Zugriff auf die REST-API."
+#: includes/Permissions.php:116
+msgid "Unauthorized access to the protected resource."
+msgstr "Unbefugter Zugriff auf die geschützte Ressource."
 
 #: includes/Post.php:47
 msgid "Protected"
@@ -346,6 +410,29 @@ msgid "Protected <span class=\"count\">(%s)</span>"
 msgid_plural "Protected <span class=\"count\">(%s)</span>"
 msgstr[0] "Geschützt <span class=\"count\">(%s)</span>"
 msgstr[1] "Geschützt <span class=\"count\">(%s)</span>"
+
+#: includes/Post.php
+#, php-format
+msgid "With Access Control <span class=\"count\">(%s)</span>"
+msgid_plural "With Access Control <span class=\"count\">(%s)</span>"
+msgstr[0] "Mit Zugriffsschutz <span class=\"count\">(%s)</span>"
+msgstr[1] "Mit Zugriffsschutz <span class=\"count\">(%s)</span>"
+
+#: includes/Post.php
+msgid "Filter by access control"
+msgstr "Nach Zugriffsschutz filtern"
+
+#: includes/Post.php
+msgid "All access control states"
+msgstr "Alle Zugriffsschutz-Status"
+
+#: includes/Post.php
+msgid "Without Access Control"
+msgstr "Ohne Zugriffsschutz"
+
+#: includes/Post.php
+msgid "With Access Control"
+msgstr "Mit Zugriffsschutz"
 
 #: includes/Post.php:198 includes/Post.php:423
 msgid "--NONE--"
@@ -445,6 +532,10 @@ msgstr "Personenberechtigung"
 msgid "Standard Permission"
 msgstr "Standardberechtigung"
 
+#: includes/Settings.php
+msgid "This permission is used as a fallback when a protected page or media file does not have a valid assigned permission, for example when the assigned permission has been deleted or disabled. It does not automatically protect all unprotected content."
+msgstr "Diese Berechtigung wird als Fallback verwendet, wenn eine geschützte Seite oder Mediendatei keine gültig zugewiesene Berechtigung hat, zum Beispiel weil die zugewiesene Berechtigung gelöscht oder deaktiviert wurde. Sie schützt nicht automatisch alle ungeschützten Inhalte."
+
 #: includes/Settings.php:503
 msgid "Automatic SSO Authentication"
 msgstr "Automatische SSO-Authentifizierung"
@@ -536,8 +627,8 @@ msgstr ""
 "Zugriff aufgeführt."
 
 #: includes/Settings.php:726
-msgid "Enter one domain per line."
-msgstr "Eine Domain pro Zeile eingeben."
+msgid "Enter one hostname per line."
+msgstr "Einen Hostnamen pro Zeile eingeben."
 
 #: includes/Settings.php:738
 msgid "Enter one IP address per line."
@@ -612,3 +703,19 @@ msgstr "Die Wordpress-Instanz ist keine Multisite."
 #: build/blockeditor.js:1 src/blockeditor/blockeditor.js:80
 msgid "Permission updated successfully."
 msgstr "Berechtigung erfolgreich aktualisiert."
+
+#: src/blockeditor/blockeditor.js
+msgid "Permission could not be updated."
+msgstr "Berechtigung konnte nicht aktualisiert werden."
+
+#: includes/Settings.php
+msgid "Minimum Role for Access Control"
+msgstr "Mindestrolle für Zugriffsschutz"
+
+#: includes/Settings.php
+msgid "Users with this role or a role with a higher WordPress level may select and change access restrictions for content they can edit."
+msgstr "Benutzer mit dieser Rolle oder einer Rolle mit höherem WordPress-Level dürfen Zugriffsschutz-Einstellungen für Inhalte auswählen und ändern, die sie bearbeiten können."
+
+#: includes/Post.php
+msgid "You are not allowed to change this access restriction."
+msgstr "Sie dürfen diese Zugriffsbeschränkung nicht ändern."

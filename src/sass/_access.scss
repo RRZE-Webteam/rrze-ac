@@ -1,18 +1,21 @@
-.default-permission .check-column {
-    background-color: #d3e4ed !important;
+.rrzeacs tr.default-permission {
+    th,
+    td {
+        background-color: #f0f0f1;
+    }
 }
 
 span {
     &.access-icon:before {
-        color: #c00c0c;
+        color: var(--rrze-ac-access-color);
     }
 
     &.access-all-icon:before {
-        color: #6fc94e;
+        color: var(--rrze-ac-access-all-color);
     }
 
     &.access-error-icon:before {
-        color: #f08f06;
+        color: var(--rrze-ac-access-error-color);
     }
 }
 
@@ -29,16 +32,16 @@ select.field-invalid {
     }
 }
 
-/* Columns */
-
-.fixed .column-access_info {
-    width: 2.5em;
-}
-
 /* List Table */
 
-.wp-list-table.rrzeacs {
-    padding-right: 12px;
+body.edit-php .wp-list-table.fixed {
+    .column-access_info {
+        text-align: left;
+    }
+
+    .access-permission-name {
+        margin-left: 4px;
+    }
 }
 
 td.column-permission_key strong {
@@ -62,11 +65,6 @@ td.column-permission_key strong {
 .rrzeacs .active {
     th.check-column {
         border-left: 4px solid #00a0d2;
-    }
-
-    td,
-    th {
-        background-color: #f7fcfe;
     }
 }
 
@@ -120,8 +118,14 @@ td.column-permission_key strong {
         }
     }
 
-    th,
-    td {
-        background: #fff none repeat scroll 0 0;
+    .column-logged_in,
+    .column-password,
+    .column-sso_logged_in {
+        text-align: center;
+    }
+
+    .rrze-ac-network-access {
+        margin: 0;
+        white-space: pre-wrap;
     }
 }

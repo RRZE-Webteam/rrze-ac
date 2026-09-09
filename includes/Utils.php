@@ -119,6 +119,6 @@ class Utils
             }
         }
 
-        return add_query_arg($atts, get_admin_url(null, 'admin.php'));
+        return add_query_arg($atts, get_admin_url(null, 'options-general.php'));
     }
 }

@@ -5,6 +5,7 @@ namespace RRZE\AccessControl\Media;
 defined('ABSPATH') || exit;
 
 use RRZE\AccessControl\{Access, Config, Options};
+use function RRZE\AccessControl\permissions;
 
 class Files
 {
@@ -37,7 +38,7 @@ class Files
 
     public static function changeUploadDirectory($param)
     {
-        if (isset($_POST['access_protected']) && 'on' == $_POST['access_protected']) {
+        if (isset($_POST['access_protected']) && 'on' == $_POST['access_protected'] && permissions()->currentUserCanChangeContentPermission()) {
             $param['subdir'] = self::protectedUploadDir($param['subdir'], true);
             $param['path'] = $param['basedir'] . $param['subdir'];
             $param['url'] = $param['baseurl'] . $param['subdir'];

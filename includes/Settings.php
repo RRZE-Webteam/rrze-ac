@@ -34,26 +34,35 @@ class Settings
         $this->notice_transient = Config::get('notice_transient');
         $this->notice_transient_expiration = Config::get('notice_transient_expiration');
 
-        add_action('admin_menu', array($this, 'adminMenu'));
+        add_action('admin_menu', array($this, 'sub_page_menu'));
 
         add_action('admin_init', array($this, 'adminActions'));
         add_action('admin_init', array($this, 'adminSettings'));
     }
 
-    public function adminMenu()
+    public function sub_page_menu()
     {
         $this->validateActions();
 
-        $accessPage = add_menu_page(__("Access Restriction", 'rrze-ac'), __("Access Restriction", 'rrze-ac'), 'manage_options', 'rrze-ac', array($this, 'access_permissions_page'), 'dashicons-shield');
-        add_submenu_page('rrze-ac', __("Permissions", 'rrze-ac'), __("Permissions", 'rrze-ac'), 'manage_options', 'rrze-ac', array($this, 'access_permissions_page'));
+        $accessPage = add_submenu_page(
+            'options-general.php',
+            __("Access Control", 'rrze-ac'),
+            __("Access Control", 'rrze-ac'),
+            'manage_options',
+            'rrze-ac',
+            array($this, 'accessControlPage'),
+            90
+        );
         add_action("load-{$accessPage}", array($this, 'loadAccessPage'));
         add_action("load-{$accessPage}", array($this, 'accessScreenOptions'));
-
-        add_submenu_page('rrze-ac', __("Settings", 'rrze-ac'), __("Settings", 'rrze-ac'), 'manage_options', 'rrze-ac-settings', array($this, 'accessSettingsPage'));
     }
 
     public function loadAccessPage()
     {
+        if ($this->currentTab() != 'permissions') {
+            return;
+        }
+
         require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
         $this->listTable = new ListTable($this->main);
         $this->listTable->prepare_items();
@@ -61,6 +70,10 @@ class Settings
 
     public function accessScreenOptions()
     {
+        if ($this->currentTab() != 'permissions') {
+            return;
+        }
+
         $option = 'per_page';
         $args = array(
             'label' => __("Items per page:", 'rrze-ac'),
@@ -71,28 +84,97 @@ class Settings
         add_screen_option($option, $args);
     }
 
-    public function access_permissions_page()
+    public function accessControlPage()
     {
-        $action = $this->requestVar('action');
-        $option_page = $this->requestVar('option_page'); ?>
+    ?>
         <div class="wrap">
-            <h2>
-                <?php echo esc_html(__("Permissions", 'rrze-ac')); ?>
-                <?php if (empty($action)) : ?>
-                    <a href="<?php echo Utils::actionUrl(array('action' => 'new')); ?>" class="add-new-h2"><?php _e("Add New Permission", 'rrze-ac'); ?></a>
-                <?php endif; ?>
-            </h2>
+            <h1><?php echo esc_html(__("Access Control", 'rrze-ac')); ?></h1>
             <?php
-            if ($action == 'new' || $option_page == 'rrze-ac-new') {
-                $this->setNewPage();
-            } elseif ($action == 'edit' || $option_page == 'rrze-ac-edit') {
-                $this->setEditPage();
-            } else {
-                $this->setDefaultPage();
+            $this->renderTabs();
+            switch ($this->currentTab()) {
+                case 'permissions':
+                    $this->permissionsPage();
+                    break;
+                case 'advanced':
+                    $this->settingsPage('rrze-ac-advanced');
+                    break;
+                default:
+                    $this->settingsPage();
+                    break;
             } ?>
         </div>
     <?php
         $this->deleteSettingsErrors();
+    }
+
+    public function access_permissions_page()
+    {
+    ?>
+        <div class="wrap">
+            <h1><?php echo esc_html(__("Access Control", 'rrze-ac')); ?></h1>
+            <?php
+            $this->renderTabs('permissions');
+            $this->permissionsPage(); ?>
+        </div>
+    <?php
+        $this->deleteSettingsErrors();
+    }
+
+    private function permissionsPage()
+    {
+        $action = $this->requestVar('action');
+        $option_page = $this->requestVar('option_page'); ?>
+        <h2>
+            <?php echo esc_html(__("Permissions", 'rrze-ac')); ?>
+            <?php if (empty($action)) : ?>
+                <a href="<?php echo esc_url(Utils::actionUrl(array('tab' => 'permissions', 'action' => 'new'))); ?>" class="add-new-h2"><?php _e("Add New Permission", 'rrze-ac'); ?></a>
+            <?php endif; ?>
+        </h2>
+        <?php
+        if ($action == 'new' || $option_page == 'rrze-ac-new') {
+            $this->setNewPage();
+        } elseif ($action == 'edit' || $option_page == 'rrze-ac-edit') {
+            $this->setEditPage();
+        } else {
+            $this->setDefaultPage();
+        }
+    }
+
+    private function currentTab()
+    {
+        $tab = $this->requestVar('tab', 'general');
+        $action = $this->requestVar('action');
+        $option_page = $this->requestVar('option_page');
+
+        if ($action == 'new' || $action == 'edit' || $option_page == 'rrze-ac-new' || $option_page == 'rrze-ac-edit') {
+            return 'permissions';
+        }
+
+        if ($tab == 'settings') {
+            return 'general';
+        }
+
+        if (in_array($tab, array('general', 'permissions', 'advanced'))) {
+            return $tab;
+        }
+
+        return 'general';
+    }
+
+    private function renderTabs($activeTab = '')
+    {
+        $activeTab = $activeTab ? $activeTab : $this->currentTab();
+        $tabs = array(
+            'general' => __("General", 'rrze-ac'),
+            'permissions' => __("Permissions", 'rrze-ac'),
+            'advanced' => __("Advanced", 'rrze-ac')
+        ); ?>
+        <nav class="nav-tab-wrapper" aria-label="<?php echo esc_attr(__("Access Control", 'rrze-ac')); ?>">
+            <?php foreach ($tabs as $tab => $label) : ?>
+                <a href="<?php echo esc_url(Utils::actionUrl(array('tab' => $tab))); ?>" class="nav-tab <?php echo $activeTab == $tab ? 'nav-tab-active' : ''; ?>"><?php echo esc_html($label); ?></a>
+            <?php endforeach; ?>
+        </nav>
+    <?php
     }
 
     private function validateActions()
@@ -104,8 +186,8 @@ class Settings
             $this->validateNewAction();
         } elseif ($option_page == 'rrze-ac-edit') {
             $this->validateEditAction();
-        } elseif ($option_page == 'rrze-ac-settings') {
-            $this->validateSettingsAction();
+        } elseif (in_array($option_page, array('rrze-ac-settings', 'rrze-ac-advanced'))) {
+            $this->validateSettingsAction($option_page);
         }
     }
 
@@ -125,12 +207,12 @@ class Settings
                     $this->addAdminNotice($error['message'], 'error');
                 }
             }
-            wp_redirect(Utils::actionUrl(array('action' => 'new')));
+            wp_redirect(Utils::actionUrl(array('tab' => 'permissions', 'action' => 'new')));
             exit();
         }
 
         $this->addAdminNotice(__("The permission has been added.", 'rrze-ac'));
-        wp_redirect(Utils::actionUrl(array('action' => 'edit', 'permission' => $permissionKey)));
+        wp_redirect(Utils::actionUrl(array('tab' => 'permissions', 'action' => 'edit', 'permission' => $permissionKey)));
         exit();
     }
 
@@ -161,7 +243,7 @@ class Settings
                     $this->addAdminNotice($error['message'], 'error');
                 }
             }
-            wp_redirect(Utils::actionUrl(array('action' => 'edit', 'permission' => $permissionKey)));
+            wp_redirect(Utils::actionUrl(array('tab' => 'permissions', 'action' => 'edit', 'permission' => $permissionKey)));
             exit();
         }
 
@@ -169,20 +251,21 @@ class Settings
             $this->addAdminNotice(__("The permission has been updated.", 'rrze-ac'));
         }
 
-        wp_redirect(Utils::actionUrl(array('action' => 'edit', 'permission' => $permissionKey)));
+        wp_redirect(Utils::actionUrl(array('tab' => 'permissions', 'action' => 'edit', 'permission' => $permissionKey)));
         exit();
     }
 
-    private function validateSettingsAction()
+    private function validateSettingsAction($optionPage = 'rrze-ac-settings')
     {
         $input = (array) $this->requestVar($this->optionName);
         $nonce = $this->requestVar('_wpnonce');
 
-        if (!wp_verify_nonce($nonce, 'rrze-ac-settings-options')) {
+        if (!wp_verify_nonce($nonce, $optionPage . '-options')) {
             wp_die(__("Something went wrong.", 'rrze-ac'));
         }
 
-        $validation = $this->validate_settings($input);
+        $validation = $this->validate_settings($input, $optionPage);
+        $tab = $this->tabFromOptionPage($optionPage);
 
         if ($this->settingsErrors()) {
             foreach ($this->settingsErrors() as $error) {
@@ -190,7 +273,7 @@ class Settings
                     $this->addAdminNotice($error['message'], 'error');
                 }
             }
-            wp_redirect(Utils::actionUrl(array('page' => 'rrze-ac-settings')));
+            wp_redirect(Utils::actionUrl(array('tab' => $tab)));
             exit();
         }
 
@@ -198,8 +281,18 @@ class Settings
             $this->addAdminNotice(__("The settings have been updated.", 'rrze-ac'));
         }
 
-        wp_redirect(Utils::actionUrl(array('page' => 'rrze-ac-settings')));
+        wp_redirect(Utils::actionUrl(array('tab' => $tab)));
         exit();
+    }
+
+    private function tabFromOptionPage($optionPage)
+    {
+        switch ($optionPage) {
+            case 'rrze-ac-advanced':
+                return 'advanced';
+            default:
+                return 'general';
+        }
     }
 
     private function validateNew($input)
@@ -418,7 +511,7 @@ class Settings
     {
     ?>
         <h2><?php echo esc_html(__("Add New Permission", 'rrze-ac')); ?></h2>
-        <form action="<?php echo Utils::actionUrl(array('action' => 'new')); ?>" method="post">
+        <form action="<?php echo esc_url(Utils::actionUrl(array('tab' => 'permissions', 'action' => 'new'))); ?>" method="post">
             <?php
             settings_fields('rrze-ac-new');
             do_settings_sections('rrze-ac-new');
@@ -431,7 +524,7 @@ class Settings
     {
     ?>
         <h2><?php echo esc_html(__("Edit permission", 'rrze-ac')); ?></h2>
-        <form action="<?php echo Utils::actionUrl(array('action' => 'edit')) ?>" method="post">
+        <form action="<?php echo esc_url(Utils::actionUrl(array('tab' => 'permissions', 'action' => 'edit'))); ?>" method="post">
             <?php
             settings_fields('rrze-ac-edit');
             do_settings_sections('rrze-ac-edit');
@@ -443,11 +536,6 @@ class Settings
     private function setDefaultPage()
     {
     ?>
-        <form method="get">
-            <input type="hidden" name="page" value="rrze-ac">
-            <?php
-            $this->listTable->search_box(__("Search", 'rrze-ac'), 'search_id'); ?>
-        </form>
         <form method="post">
             <?php
             $this->listTable->views();
@@ -460,22 +548,21 @@ class Settings
     {
     ?>
         <div class="wrap">
-            <h2>
-                <?php echo esc_html(__("Settings", 'rrze-ac')); ?>
-            </h2>
+            <h1><?php echo esc_html(__("Access Control", 'rrze-ac')); ?></h1>
+            <?php $this->renderTabs('general'); ?>
             <?php $this->settingsPage(); ?>
         </div>
     <?php
         $this->deleteSettingsErrors();
     }
 
-    public function settingsPage()
+    public function settingsPage($settingsPage = 'rrze-ac-settings')
     {
     ?>
         <form method="post">
             <?php
-            settings_fields('rrze-ac-settings');
-            do_settings_sections('rrze-ac-settings');
+            settings_fields($settingsPage);
+            do_settings_sections($settingsPage);
             submit_button(); ?>
         </form>
     <?php
@@ -490,58 +577,86 @@ class Settings
 
         add_settings_section('rrze-ac-new-section', false, '__return_false', 'rrze-ac-new');
         add_settings_field('permission_key', __("Permission", 'rrze-ac'), array($this, 'permissionKeyField'), 'rrze-ac-new', 'rrze-ac-new-section');
-        add_settings_field('logged_in', __("Logged-in", 'rrze-ac'), array($this, 'permissionLoggedInField'), 'rrze-ac-new', 'rrze-ac-new-section');
-        if ($ssoPluginIsAvailableAndActive) {
-            add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permissionSSOLoggedInField'), 'rrze-ac-new', 'rrze-ac-new-section');
-        }
-        add_settings_field('domain', __("Allow domain", 'rrze-ac'), array($this, 'permission_domain_field'), 'rrze-ac-new', 'rrze-ac-new-section');
-        add_settings_field('ip_address', __("Allow IP address", 'rrze-ac'), array($this, 'permission_ip_address_field'), 'rrze-ac-new', 'rrze-ac-new-section');
-        add_settings_field('password', __("Password", 'rrze-ac'), array($this, 'permission_password_field'), 'rrze-ac-new', 'rrze-ac-new-section');
-        add_settings_field('siteimprove', __("Siteimprove", 'rrze-ac'), array($this, 'permission_siteimprove_field'), 'rrze-ac-new', 'rrze-ac-new-section');
         add_settings_field('select', __("Short Description", 'rrze-ac'), array($this, 'permission_select_field'), 'rrze-ac-new', 'rrze-ac-new-section');
         add_settings_field('description', __("Description", 'rrze-ac'), array($this, 'permission_description_field'), 'rrze-ac-new', 'rrze-ac-new-section');
 
+        add_settings_section('rrze-ac-new-access-section', __("Access Conditions", 'rrze-ac'), [$this, 'accessConditionsSection'], 'rrze-ac-new');
+        add_settings_field('logged_in', __("Logged-in", 'rrze-ac'), array($this, 'permissionLoggedInField'), 'rrze-ac-new', 'rrze-ac-new-access-section');
+        if ($ssoPluginIsAvailableAndActive) {
+            add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permissionSSOLoggedInField'), 'rrze-ac-new', 'rrze-ac-new-access-section');
+        }
+        add_settings_field('domain', __("Allow hostname", 'rrze-ac'), array($this, 'permission_domain_field'), 'rrze-ac-new', 'rrze-ac-new-access-section');
+        add_settings_field('ip_address', __("Allow IP address", 'rrze-ac'), array($this, 'permission_ip_address_field'), 'rrze-ac-new', 'rrze-ac-new-access-section');
+        add_settings_field('password', __("Password", 'rrze-ac'), array($this, 'permission_password_field'), 'rrze-ac-new', 'rrze-ac-new-access-section');
+
+        add_settings_section('rrze-ac-new-crawler-section', __("Crawler and Monitoring Systems", 'rrze-ac'), [$this, 'crawlerAndMonitoringSection'], 'rrze-ac-new');
+        add_settings_field('siteimprove', __("Siteimprove", 'rrze-ac'), array($this, 'permission_siteimprove_field'), 'rrze-ac-new', 'rrze-ac-new-crawler-section');
+
         add_settings_section('rrze-ac-edit-section', false, '__return_false', 'rrze-ac-edit');
         add_settings_field('permission_key', __("Permission", 'rrze-ac'), array($this, 'permissionKeyField'), 'rrze-ac-edit', 'rrze-ac-edit-section');
-        add_settings_field('logged_in', __("Logged-in", 'rrze-ac'), array($this, 'permissionLoggedInField'), 'rrze-ac-edit', 'rrze-ac-edit-section');
-        if ($ssoPluginIsAvailableAndActive) {
-            add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permissionSSOLoggedInField'), 'rrze-ac-edit', 'rrze-ac-edit-section');
-        }
-        if ($ssoPluginIsAvailableAndActive && $ssoLoggedIn) {
-            add_settings_field('affiliation', '&#8212; ' . __("Person affiliation", 'rrze-ac'), array($this, 'permission_affiliation_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
-            add_settings_field('entitlement', '&#8212; ' . __("Person entitlement", 'rrze-ac'), array($this, 'permission_entitlement_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
-        }
-        add_settings_field('domain', __("Allow domain", 'rrze-ac'), array($this, 'permission_domain_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
-        add_settings_field('ip_address', __("Allow IP address", 'rrze-ac'), array($this, 'permission_ip_address_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
-        add_settings_field('password', __("Password", 'rrze-ac'), array($this, 'permission_password_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
-        add_settings_field('siteimprove', __("Siteimprove", 'rrze-ac'), array($this, 'permission_siteimprove_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
         add_settings_field('select', __("Short Description", 'rrze-ac'), array($this, 'permission_select_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
         add_settings_field('description', __("Description", 'rrze-ac'), array($this, 'permission_description_field'), 'rrze-ac-edit', 'rrze-ac-edit-section');
 
+        add_settings_section('rrze-ac-edit-access-section', __("Access Conditions", 'rrze-ac'), [$this, 'accessConditionsSection'], 'rrze-ac-edit');
+        add_settings_field('logged_in', __("Logged-in", 'rrze-ac'), array($this, 'permissionLoggedInField'), 'rrze-ac-edit', 'rrze-ac-edit-access-section');
+        if ($ssoPluginIsAvailableAndActive) {
+            add_settings_field('sso_logged_in', __('SSO', 'rrze-ac'), array($this, 'permissionSSOLoggedInField'), 'rrze-ac-edit', 'rrze-ac-edit-access-section');
+        }
+        if ($ssoPluginIsAvailableAndActive && $ssoLoggedIn) {
+            add_settings_field('affiliation', '&#8212; ' . __("Person affiliation", 'rrze-ac'), array($this, 'permission_affiliation_field'), 'rrze-ac-edit', 'rrze-ac-edit-access-section');
+            add_settings_field('entitlement', '&#8212; ' . __("Person entitlement", 'rrze-ac'), array($this, 'permission_entitlement_field'), 'rrze-ac-edit', 'rrze-ac-edit-access-section');
+        }
+        add_settings_field('domain', __("Allow hostname", 'rrze-ac'), array($this, 'permission_domain_field'), 'rrze-ac-edit', 'rrze-ac-edit-access-section');
+        add_settings_field('ip_address', __("Allow IP address", 'rrze-ac'), array($this, 'permission_ip_address_field'), 'rrze-ac-edit', 'rrze-ac-edit-access-section');
+        add_settings_field('password', __("Password", 'rrze-ac'), array($this, 'permission_password_field'), 'rrze-ac-edit', 'rrze-ac-edit-access-section');
+
+        add_settings_section('rrze-ac-edit-crawler-section', __("Crawler and Monitoring Systems", 'rrze-ac'), [$this, 'crawlerAndMonitoringSection'], 'rrze-ac-edit');
+        add_settings_field('siteimprove', __("Siteimprove", 'rrze-ac'), array($this, 'permission_siteimprove_field'), 'rrze-ac-edit', 'rrze-ac-edit-crawler-section');
+
         add_settings_section('rrze-ac-settings-section', false, '__return_false', 'rrze-ac-settings');
         add_settings_field('default_permission', __("Standard Permission", 'rrze-ac'), array($this, 'default_permission_field'), 'rrze-ac-settings', 'rrze-ac-settings-section');
+        add_settings_field('permission_editor_role', __("Minimum Role for Access Control", 'rrze-ac'), array($this, 'permission_editor_role_field'), 'rrze-ac-settings', 'rrze-ac-settings-section');
         if ($ssoPluginIsAvailableAndActive) {
             add_settings_field('automatic_sso_authentication', __("Automatic SSO Authentication", 'rrze-ac'), array($this, 'automatic_sso_authentication_field'), 'rrze-ac-settings', 'rrze-ac-settings-section');
         }
         add_settings_field('contact_admin_name', __("Contact", 'rrze-ac'), [$this, 'contact_admin_name_field'], 'rrze-ac-settings', 'rrze-ac-settings-section');
 
-        add_settings_section('rrze-ac-settings-msg-section', false, [$this, 'settingsMsgSection'], 'rrze-ac-settings');
-        add_settings_field('user_isnt_logged_in_title', __("User Is Not Logged In (Title)", 'rrze-ac'), [$this, 'user_isnt_logged_in_title_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
-        add_settings_field('user_isnt_logged_in_msg', __("User Is Not Logged In (Message)", 'rrze-ac'), [$this, 'user_isnt_logged_in_msg_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
-        add_settings_field('user_isnt_logged_in_link_txt', __("User Is Not Logged In (Link Text)", 'rrze-ac'), [$this, 'user_isnt_logged_in_link_txt_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
+        add_settings_section('rrze-ac-advanced-msg-section', false, [$this, 'settingsMsgSection'], 'rrze-ac-advanced');
+        add_settings_field('user_isnt_logged_in_title', __("User Is Not Logged In (Title)", 'rrze-ac'), [$this, 'user_isnt_logged_in_title_field'], 'rrze-ac-advanced', 'rrze-ac-advanced-msg-section');
+        add_settings_field('user_isnt_logged_in_msg', __("User Is Not Logged In (Message)", 'rrze-ac'), [$this, 'user_isnt_logged_in_msg_field'], 'rrze-ac-advanced', 'rrze-ac-advanced-msg-section');
+        add_settings_field('user_isnt_logged_in_link_txt', __("User Is Not Logged In (Link Text)", 'rrze-ac'), [$this, 'user_isnt_logged_in_link_txt_field'], 'rrze-ac-advanced', 'rrze-ac-advanced-msg-section');
         if ($ssoPluginIsAvailableAndActive) {
-            add_settings_field('user_isnt_sso_logged_in_title', __("User Is Not SSO Logged In (Title)", 'rrze-ac'), [$this, 'user_isnt_sso_logged_in_title_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
-            add_settings_field('user_isnt_sso_logged_in_msg', __("User Is Not SSO Logged In (Message)", 'rrze-ac'), [$this, 'user_isnt_sso_logged_in_msg_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
-            add_settings_field('user_isnt_sso_logged_in_link_txt', __("User Is Not SSO Logged In (Link Text)", 'rrze-ac'), [$this, 'user_isnt_sso_logged_in_link_txt_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
+            add_settings_field('user_isnt_sso_logged_in_title', __("User Is Not SSO Logged In (Title)", 'rrze-ac'), [$this, 'user_isnt_sso_logged_in_title_field'], 'rrze-ac-advanced', 'rrze-ac-advanced-msg-section');
+            add_settings_field('user_isnt_sso_logged_in_msg', __("User Is Not SSO Logged In (Message)", 'rrze-ac'), [$this, 'user_isnt_sso_logged_in_msg_field'], 'rrze-ac-advanced', 'rrze-ac-advanced-msg-section');
+            add_settings_field('user_isnt_sso_logged_in_link_txt', __("User Is Not SSO Logged In (Link Text)", 'rrze-ac'), [$this, 'user_isnt_sso_logged_in_link_txt_field'], 'rrze-ac-advanced', 'rrze-ac-advanced-msg-section');
         }
-        add_settings_field('access_denied_default_title', __("Access Denied Default (Title)", 'rrze-ac'), [$this, 'access_denied_default_title_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
-        add_settings_field('access_denied_default_msg', __("Access Denied Default (Message)", 'rrze-ac'), [$this, 'access_denied_default_msg_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
-        add_settings_field('access_denied_password_msg', __("Access Denied Password (Message)", 'rrze-ac'), [$this, 'access_denied_password_msg_field'], 'rrze-ac-settings', 'rrze-ac-settings-msg-section');
+        add_settings_field('access_denied_default_title', __("Access Denied Default (Title)", 'rrze-ac'), [$this, 'access_denied_default_title_field'], 'rrze-ac-advanced', 'rrze-ac-advanced-msg-section');
+        add_settings_field('access_denied_default_msg', __("Access Denied Default (Message)", 'rrze-ac'), [$this, 'access_denied_default_msg_field'], 'rrze-ac-advanced', 'rrze-ac-advanced-msg-section');
+        add_settings_field('access_denied_password_msg', __("Access Denied Password (Message)", 'rrze-ac'), [$this, 'access_denied_password_msg_field'], 'rrze-ac-advanced', 'rrze-ac-advanced-msg-section');
+
+        if ($this->canManageDebuggingSettings()) {
+            add_settings_section('rrze-ac-advanced-debugging-section', __("Debugging", 'rrze-ac'), '__return_false', 'rrze-ac-advanced');
+            add_settings_field('log_info_messages', __("Logging", 'rrze-ac'), [$this, 'log_info_messages_field'], 'rrze-ac-advanced', 'rrze-ac-advanced-debugging-section');
+        }
     }
 
     public function settingsMsgSection()
     {
         echo '<h2>', __('Messages', 'rrze-ac'), '</h2>';
+    }
+
+    public function accessConditionsSection()
+    {
+        echo '<p class="description">';
+        esc_html_e('Access is granted when at least one of the following conditions is fulfilled. The conditions are evaluated as OR rules, not as AND rules.', 'rrze-ac');
+        echo '</p>';
+    }
+
+    public function crawlerAndMonitoringSection()
+    {
+        echo '<p class="description">';
+        esc_html_e('Independent of the access conditions above, known crawlers, bots, and monitoring systems may need access to the websites. These can be allowed through the following selection.', 'rrze-ac');
+        echo '</p>';
     }
 
     public function permissionKeyField()
@@ -640,11 +755,47 @@ class Settings
                     continue;
                 } ?>
                 <option value="<?php echo esc_attr($key); ?>" <?php selected($default_permission, $key); ?>>
-                    <?php echo sanitize_text_field($data['select']); ?>
+                    <?php echo esc_html($this->permissionSelectLabel($key, $data)); ?>
                 </option>
             <?php endforeach; ?>
         </select>
+        <p class="description">
+            <?php esc_html_e('This permission is used as a fallback when a protected page or media file does not have a valid assigned permission, for example when the assigned permission has been deleted or disabled. It does not automatically protect all unprotected content.', 'rrze-ac'); ?>
+        </p>
     <?php
+    }
+
+    public function permission_editor_role_field()
+    {
+        $selectedRole = permissions()->getPermissionEditorRole();
+        $roles = wp_roles()->roles; ?>
+        <select id="permission_editor_role" name="<?php printf('%s[permission_editor_role]', $this->optionName); ?>">
+            <?php foreach ($roles as $role => $data) : ?>
+                <option value="<?php echo esc_attr($role); ?>" <?php selected($selectedRole, $role); ?>>
+                    <?php echo esc_html(translate_user_role($data['name'])); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <p class="description">
+            <?php esc_html_e('Users with this role or a role with a higher WordPress level may select and change access restrictions for content they can edit.', 'rrze-ac'); ?>
+        </p>
+    <?php
+    }
+
+    private function permissionSelectLabel($key, $permission)
+    {
+        if (!empty($permission['core'])) {
+            switch ($key) {
+                case 'public':
+                    return __('Publicly accessible', 'rrze-ac');
+                case 'logged-in':
+                    return __('Login required', 'rrze-ac');
+                default:
+                    break;
+            }
+        }
+
+        return !empty($permission['select']) ? sanitize_text_field($permission['select']) : '';
     }
 
     public function automatic_sso_authentication_field()
@@ -670,6 +821,15 @@ class Settings
                 __('If this field is left empty, all users with the administrator role will be listed as contacts in all access denied messages.', 'rrze-ac')
             ); ?>
         </p>
+    <?php
+    }
+
+    public function log_info_messages_field()
+    {
+        $checked = !empty($this->options['log_info_messages']) ? true : false; ?>
+        <label for="log_info_messages">
+            <input id="log_info_messages" type="checkbox" <?php checked($checked); ?> name="<?php printf('%s[log_info_messages]', $this->optionName); ?>" value="1"> <?php _e("Send informational messages to the info channel.", 'rrze-ac'); ?>
+        </label>
     <?php
     }
 
@@ -744,7 +904,7 @@ class Settings
         $domain = !empty($permission['domain']) ? implode(PHP_EOL, (array) $permission['domain']) : '';
         $domain = isset($settingsErrors['domain']['value']) ? implode(PHP_EOL, (array) $settingsErrors['domain']['value']) : $domain; ?>
         <textarea id="domain" cols="50" rows="3" name="<?php printf('%s[domain]', $this->optionName); ?>"><?php echo $domain; ?></textarea>
-        <p class="description"><?php _e('Enter one domain per line.', 'rrze-ac'); ?></p>
+        <p class="description"><?php _e('Enter one hostname per line.', 'rrze-ac'); ?></p>
     <?php
     }
 
@@ -802,7 +962,7 @@ class Settings
                     }
                     if ($this->action_activate($permission)) {
                         $this->addAdminNotice(__("The permission has been enabled.", 'rrze-ac'));
-                        wp_redirect(Utils::actionUrl());
+                        wp_redirect(Utils::actionUrl(array('tab' => 'permissions')));
                         exit();
                     }
                     break;
@@ -812,7 +972,7 @@ class Settings
                     }
                     if ($this->action_activate($permission, 0)) {
                         $this->addAdminNotice(__("The permission has been disabled.", 'rrze-ac'));
-                        wp_redirect(Utils::actionUrl());
+                        wp_redirect(Utils::actionUrl(array('tab' => 'permissions')));
                         exit();
                     }
                     break;
@@ -822,7 +982,7 @@ class Settings
                     }
                     if ($this->action_delete($permission)) {
                         $this->addAdminNotice(__("The permission has been deleted.", 'rrze-ac'));
-                        wp_redirect(Utils::actionUrl());
+                        wp_redirect(Utils::actionUrl(array('tab' => 'permissions')));
                         exit();
                     }
                     break;
@@ -857,7 +1017,7 @@ class Settings
         return update_option($this->optionName, $this->options);
     }
 
-    private function validate_settings($input)
+    private function validate_settings($input, $optionPage = 'rrze-ac-settings')
     {
         if (
             isset($input['default_permission'])
@@ -867,35 +1027,64 @@ class Settings
             $this->options['default_permission'] = $input['default_permission'];
         }
 
-        if (permissions()->ssoPluginIsAvailableAndActive()) {
+        if (permissions()->ssoPluginIsAvailableAndActive() && $optionPage == 'rrze-ac-settings') {
             $this->options['automatic_sso_authentication'] = isset($input['automatic_sso_authentication']) ? 1 : 0;
         }
 
-        $this->options['contact_admin_name'] = esc_html(sanitize_text_field($input['contact_admin_name']));
+        if ($optionPage == 'rrze-ac-settings' && isset($input['permission_editor_role'])) {
+            $role = sanitize_key($input['permission_editor_role']);
+            if (wp_roles()->is_role($role)) {
+                $this->options['permission_editor_role'] = $role;
+            }
+        }
 
-        $title = esc_html(sanitize_text_field($input['user_isnt_logged_in_title']));
-        $this->options['user_isnt_logged_in_title'] = $title ?: $this->options['user_isnt_logged_in_title'];
-        $msg = esc_html(sanitize_textarea_field($input['user_isnt_logged_in_msg']));
-        $this->options['user_isnt_logged_in_msg'] = $msg ?: $this->options['user_isnt_logged_in_msg'];
-        $link_txt = esc_html(sanitize_textarea_field($input['user_isnt_logged_in_link_txt']));
-        $this->options['user_isnt_logged_in_link_txt'] = $link_txt ?: $this->options['user_isnt_logged_in_link_txt'];
+        if (isset($input['contact_admin_name'])) {
+            $this->options['contact_admin_name'] = esc_html(sanitize_text_field($input['contact_admin_name']));
+        }
 
-        $title = esc_html(sanitize_text_field($input['user_isnt_sso_logged_in_title']));
-        $this->options['user_isnt_sso_logged_in_title'] = $title ?: $this->options['user_isnt_sso_logged_in_title'];
-        $msg = esc_html(sanitize_textarea_field($input['user_isnt_sso_logged_in_msg']));
-        $this->options['user_isnt_sso_logged_in_msg'] = $msg ?: $this->options['user_isnt_sso_logged_in_msg'];
-        $link_txt = esc_html(sanitize_textarea_field($input['user_isnt_sso_logged_in_link_txt']));
-        $this->options['user_isnt_sso_logged_in_link_txt'] = $link_txt ?: $this->options['user_isnt_sso_logged_in_link_txt'];
+        if ($optionPage == 'rrze-ac-advanced' && $this->canManageDebuggingSettings()) {
+            $this->options['log_info_messages'] = isset($input['log_info_messages']) ? 1 : 0;
+        }
 
-        $title = esc_html(sanitize_text_field($input['access_denied_default_title']));
-        $this->options['access_denied_default_title'] = $title ?: $this->options['access_denied_default_title'];
-        $msg = esc_html(sanitize_textarea_field($input['access_denied_default_msg']));
-        $this->options['access_denied_default_msg'] = $msg ?: $this->options['access_denied_default_msg'];
+        $this->updateTextOption($input, 'user_isnt_logged_in_title', 'text');
+        $this->updateTextOption($input, 'user_isnt_logged_in_msg', 'textarea');
+        $this->updateTextOption($input, 'user_isnt_logged_in_link_txt', 'textarea');
+        $this->updateTextOption($input, 'user_isnt_sso_logged_in_title', 'text');
+        $this->updateTextOption($input, 'user_isnt_sso_logged_in_msg', 'textarea');
+        $this->updateTextOption($input, 'user_isnt_sso_logged_in_link_txt', 'textarea');
+        $this->updateTextOption($input, 'access_denied_default_title', 'text');
+        $this->updateTextOption($input, 'access_denied_default_msg', 'textarea');
+        $this->updateTextOption($input, 'access_denied_password_msg', 'textarea');
 
-        $msg = esc_html(sanitize_textarea_field($input['access_denied_password_msg']));
-        $this->options['access_denied_password_msg'] = $msg ?: $this->options['access_denied_password_msg'];
+        if ($this->settingsErrors()) {
+            return false;
+        }
 
         return update_option($this->optionName, $this->options);
+    }
+
+    private function updateTextOption($input, $key, $type = 'text')
+    {
+        if (!isset($input[$key])) {
+            return;
+        }
+
+        if ($type == 'textarea') {
+            $value = esc_html(sanitize_textarea_field($input[$key]));
+        } else {
+            $value = esc_html(sanitize_text_field($input[$key]));
+        }
+
+        $this->options[$key] = $value ?: $this->options[$key];
+    }
+
+    private function canManageDebuggingSettings()
+    {
+        if (is_multisite()) {
+            return is_super_admin();
+        }
+
+        return current_user_can('manage_options');
     }
 
     public function adminNotices()

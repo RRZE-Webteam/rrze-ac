@@ -7,6 +7,7 @@ defined('ABSPATH') || exit;
 class Config
 {
     private static array $config = [
+        'version' => '3.1.10',
         'option_name' => 'rrze_ac',
         'enabled_option_name' => 'rrze_ac_enabled',
         'access_permission_meta_key' => '_access_permission',
@@ -60,8 +61,8 @@ class Config
             'permissions' => [
                 'public' =>  [
                     'permission_key' => 'public',
-                    'description'    => __('Public', 'rrze-ac'),
-                    'select'         => __('Public', 'rrze-ac'),
+                    'description'    => __('Publicly accessible', 'rrze-ac'),
+                    'select'         => __('Publicly accessible', 'rrze-ac'),
                     'logged_in'      => 0,
                     'sso_logged_in'  => 0,
                     'affiliation'    => '',
@@ -75,8 +76,8 @@ class Config
                 ],
                 'logged-in' => [
                     'permission_key' => 'logged-in',
-                    'description'    => __('Logged-in user', 'rrze-ac'),
-                    'select'         => __('Logged-in user', 'rrze-ac'),
+                    'description'    => __('Login required', 'rrze-ac'),
+                    'select'         => __('Login required', 'rrze-ac'),
                     'logged_in'      => 1,
                     'sso_logged_in'  => 0,
                     'affiliation'    => '',
@@ -90,7 +91,9 @@ class Config
                 ]
             ],
             'default_permission' => 'logged-in',
+            'permission_editor_role' => 'administrator',
             'automatic_sso_authentication' => 1,
+            'log_info_messages' => 0,
             'contact_admin_name' => '',
             'user_isnt_logged_in_title' => __('Log in with your IdM ID', 'rrze-ac'),
             'user_isnt_logged_in_msg' => __('Access to this resource is only available to members of this website.', 'rrze-ac'),
