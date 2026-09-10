@@ -4,78 +4,76 @@ namespace RRZE\AccessControl\Network;
 
 defined('ABSPATH') || exit;
 
+/**
+ * Resolve client addresses using an explicit infrastructure proxy allowlist.
+ *
+ * Kept equivalent in Settings, Private Site and AC for independent plugin use.
+ */
 class RemoteAddress
 {
-    /**
-     * List of trusted proxy IPs or CIDR ranges.
-     * Only these proxies are allowed to set X-Forwarded-For.
-     * 
-     * @var array
-     */
-    protected $trustedProxies = [];
+    protected $trustedProxies;
 
     /**
-     * Constructor to set trusted proxies.
-     * 
-     * @param array $trustedProxies List of trusted proxy IPs or CIDR ranges.
-     * @return void
+     * @param array|null $trustedProxies Explicit IPs/CIDRs, or null to use the filter.
      */
-    public function __construct(array $trustedProxies = [])
+    public function __construct(?array $trustedProxies = null)
     {
-        $this->trustedProxies = $trustedProxies;
+        /**
+         * Infrastructure-owned proxies, shared by Settings, Private Site and AC.
+         * Never populate this from a visitor access allowlist.
+         *
+         * @param string[] $trustedProxies Trusted proxy IP addresses or CIDRs.
+         */
+        $trustedProxies = $trustedProxies ?? apply_filters('rrze_trusted_proxies', []);
+        $this->trustedProxies = is_array($trustedProxies) ? $trustedProxies : [];
     }
 
     /**
-     * Get the real client IP address.
-     * - If the request comes from a trusted proxy, check X-Forwarded-For.
-     * - Otherwise, fall back to REMOTE_ADDR.
-     * 
-     * @return string The real client IP address.
+     * Return the nearest untrusted hop, or an empty string if it cannot be resolved.
      */
     public function getIpAddress()
     {
         $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
+        if (!$this->isValidIp($remoteAddr)) {
+            return '';
+        }
 
-        // Only trust X-Forwarded-For if the remote address is a trusted proxy
-        if ($this->ipInTrustedProxies($remoteAddr)) {
-            $ipFromProxy = $this->getIpAddressFromProxy();
-            if ($ipFromProxy) {
-                return $ipFromProxy;
+        if (!$this->ipInTrustedProxies($remoteAddr)) {
+            // A direct client cannot assert its own identity through headers.
+            return $remoteAddr;
+        }
+
+        $forwarded = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
+        if (!is_string($forwarded) || trim($forwarded) === '') {
+            // A trusted proxy is a transport, not an authorized visitor.
+            return '';
+        }
+
+        // Trusted proxies must append the address of their immediate peer or
+        // overwrite an incoming header. Stop before any client-controlled prefix.
+        foreach (array_reverse(explode(',', $forwarded)) as $hop) {
+            $hop = trim($hop);
+            if (!$this->isValidIp($hop)) {
+                return '';
+            }
+            if (!$this->ipInTrustedProxies($hop)) {
+                return $hop;
             }
         }
 
-        // Default: use the direct remote address
-        return $remoteAddr;
+        // All hops are infrastructure; no visitor address was established.
+        return '';
     }
 
-    /**
-     * Extract the original client IP from X-Forwarded-For header.
-     * By convention, the left-most IP is the original client.
-     * 
-     * @return string|false The original client IP or false if not set.
-     */
-    protected function getIpAddressFromProxy()
+    protected function isValidIp($ip)
     {
-        if (empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            return false;
-        }
-
-        $ips = array_map('trim', explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']));
-
-        // Return the first IP in the list (original client IP)
-        return $ips[0];
+        return is_string($ip) && filter_var($ip, FILTER_VALIDATE_IP) !== false;
     }
 
-    /**
-     * Check if an IP address belongs to any trusted proxy range.
-     * 
-     * @param string $ip The IP address to check.
-     * @return boolean True if the IP is in a trusted proxy range, false otherwise.
-     */
     protected function ipInTrustedProxies($ip)
     {
-        foreach ($this->trustedProxies as $cidr) {
-            if ($this->ipInRange($ip, $cidr)) {
+        foreach ($this->trustedProxies as $range) {
+            if ($this->ipInRange($ip, $range)) {
                 return true;
             }
         }
@@ -83,26 +81,27 @@ class RemoteAddress
     }
 
     /**
-     * Check if an IP is inside a CIDR range (IPv4 or IPv6).
-     * 
-     * @param string $ip The IP address to check.
-     * @param string $cidr The CIDR range.
-     * @return boolean True if the IP is in the CIDR range, false otherwise.
+     * Validate IPs and CIDRs before using the existing bit-accurate range matcher.
+     * Single IPv4/IPv6 addresses represent /32 and /128 respectively.
      */
-    protected function ipInRange($ip, $cidr)
+    protected function ipInRange($ip, $range)
     {
-        if (strpos($cidr, ':') !== false) {
-            // IPv6 handling
-            list($subnet, $mask) = explode('/', $cidr);
-            $mask = intval($mask);
-            $ipBin = inet_pton($ip);
-            $subnetBin = inet_pton($subnet);
-            return substr($ipBin, 0, $mask / 8) === substr($subnetBin, 0, $mask / 8);
-        } else {
-            // IPv4 handling
-            list($subnet, $mask) = explode('/', $cidr);
-            $mask = 32 - intval($mask);
-            return (ip2long($ip) >> $mask) === (ip2long($subnet) >> $mask);
+        if (!$this->isValidIp($ip) || !is_string($range)) {
+            return false;
         }
+
+        $parts = explode('/', trim($range));
+        $subnet = $parts[0];
+        if (count($parts) > 2 || !$this->isValidIp($subnet)) {
+            return false;
+        }
+
+        $maxBits = str_contains($subnet, ':') ? 128 : 32;
+        $bits = $parts[1] ?? (string) $maxBits;
+        if (!ctype_digit($bits) || (int) $bits > $maxBits) {
+            return false;
+        }
+
+        return IP::fromStringIP($ip)->isInRange($subnet . '/' . (int) $bits);
     }
 }

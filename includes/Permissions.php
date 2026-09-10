@@ -530,7 +530,7 @@ class Permissions
             return false;
         }
 
-        $remoteAddr = $this->getRemoteIpAddress($ipAddress);
+        $remoteAddr = $this->getRemoteIpAddress();
 
         if (!$remoteAddr) {
             $this->logInfo([
@@ -555,9 +555,15 @@ class Permissions
         return false;
     }
 
+    /**
+     * Resolve the visitor using the infrastructure's rrze_trusted_proxies filter.
+     *
+     * @param array $ipAddress Legacy argument, ignored. Visitor ranges never establish proxy trust.
+     * @return string Client IP, or an empty string if it cannot be resolved safely.
+     */
     public function getRemoteIpAddress($ipAddress = [])
     {
-        $remoteAddress = new RemoteAddress($ipAddress);
+        $remoteAddress = new RemoteAddress();
         return $remoteAddress->getIpAddress();
     }
 
