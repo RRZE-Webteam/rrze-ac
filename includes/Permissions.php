@@ -95,17 +95,17 @@ class Permissions
             return $response;
         }
 
-        $urlParams = $request->get_url_params();
-        $postId = isset($urlParams['id']) ? absint($urlParams['id']) : 0;
-
-        if (!$postId) {
+        if (!in_array($request->get_method(), ['GET', 'HEAD'], true)) {
             return $response;
         }
 
-        $postType = get_post_type($postId);
-        if (!in_array($postType, Config::get('post_types'), true)) {
+        $resource = $this->getRestCoreResource($request);
+
+        if (empty($resource)) {
             return $response;
         }
+
+        $postId = $resource['post_id'];
 
         if (Access::try($postId)) {
             return $response;
@@ -116,6 +116,36 @@ class Permissions
             __('Unauthorized access to the protected resource.', 'rrze-ac'),
             ['status' => rest_authorization_required_code()]
         );
+    }
+
+    /**
+     * Return a WordPress Core REST resource that can be access protected.
+     *
+     * @param \WP_REST_Request $request The current REST request.
+     * @return array
+     */
+    private function getRestCoreResource($request)
+    {
+        $route = $request->get_route();
+
+        if (!preg_match('#^/wp/v2/(pages|media)/([1-9][0-9]*)$#', $route, $matches)) {
+            return [];
+        }
+
+        $postType = $matches[1] === 'pages' ? 'page' : 'attachment';
+        $postId = absint($matches[2]);
+
+        if (!$postId) {
+            return [];
+        }
+
+        if (get_post_type($postId) !== $postType) {
+            return [];
+        }
+
+        return [
+            'post_id' => $postId
+        ];
     }
 
     public function getDefaultPermission()
@@ -240,10 +270,10 @@ class Permissions
 
     public function getPermissionEditorRole()
     {
-        $role = !empty($this->options['permission_editor_role']) ? sanitize_key($this->options['permission_editor_role']) : 'administrator';
+        $role = !empty($this->options['permission_editor_role']) ? sanitize_key($this->options['permission_editor_role']) : 'editor';
 
         if (!wp_roles()->is_role($role)) {
-            return 'administrator';
+            return 'editor';
         }
 
         return $role;
@@ -367,7 +397,7 @@ class Permissions
 
         $authors = [];
 
-        $workflowAuthors = $wpdb->get_col(
+        $workflowAuthors = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Workflow taxonomy data must reflect the current post immediately.
             $wpdb->prepare(
                 "SELECT t.name
                 FROM $wpdb->terms AS t
@@ -440,11 +470,22 @@ class Permissions
         if ('publish' != get_post_status($postId) || $allowedPassword === '') {
             return true;
         }
-        $cookieName = 'rrze_ac_password_' . $postId;
+        $cookieName = Config::get('password_cookie_name_prefix') . $postId;
         if (isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'rrze_ac_submit_password_wpnonce')) {
             $password = isset($_POST[$cookieName]) ? sanitize_text_field($_POST[$cookieName]) : '';
             if (preg_match('/^[a-z0-9]{8,32}$/i', $password) && $password == $allowedPassword) {
-                setcookie($cookieName, Utils::crypt($password), strtotime('+1 hour'), COOKIEPATH, COOKIE_DOMAIN, true);
+                setcookie(
+                    $cookieName,
+                    Utils::crypt($password),
+                    [
+                        'expires' => time() + Config::get('password_cookie_expiration'),
+                        'path' => COOKIEPATH,
+                        'domain' => COOKIE_DOMAIN,
+                        'secure' => true,
+                        'httponly' => true,
+                        'samesite' => 'Lax'
+                    ]
+                );
                 $location = site_url(add_query_arg([], (string) wp_get_raw_referer()));
                 wp_safe_redirect($location);
                 exit;

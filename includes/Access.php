@@ -33,6 +33,7 @@ class Access
         }
 
         $permissions = permissions()->getThePermissions();
+        $ssoPluginIsAvailableAndActive = permissions()->ssoPluginIsAvailableAndActive();
 
         // Set permission to default permission if not exist or not active.
         if (!isset($permissions[$permission]) || !$permissions[$permission]['active']) {
@@ -45,8 +46,18 @@ class Access
             $allowed = true;
         }
 
-        if ($permission == 'logged-in' && is_user_logged_in()) {
-            $allowed = true;
+        $ssoLoggedIn = false;
+        if ($permission == 'logged-in') {
+            if ($ssoPluginIsAvailableAndActive) {
+                if (!permissions()->checkSSOLoggedIn()) {
+                    permissions()->set_permission_status(permissions()->user_isnt_sso_logged_in);
+                } else {
+                    $ssoLoggedIn = true;
+                    $allowed = true;
+                }
+            } elseif (is_user_logged_in()) {
+                $allowed = true;
+            }
         }
 
         // Check if permission is set to domain.
@@ -84,7 +95,7 @@ class Access
         }
 
         // Check if permission is set to be logged in.
-        if (!$allowed && !empty($permissions[$permission]['logged_in'])) {
+        if (!$allowed && !$ssoPluginIsAvailableAndActive && !empty($permissions[$permission]['logged_in'])) {
             if (!permissions()->isUserMember()) {
                 permissions()->set_permission_status(permissions()->user_isnt_logged_in);
             } else {
@@ -93,7 +104,6 @@ class Access
         }
 
         // Check if permission is set to be sso logged in.
-        $ssoLoggedIn = false;
         if (!$allowed && !empty($permissions[$permission]['sso_logged_in'])) {
             if (!permissions()->checkSSOLoggedIn()) {
                 permissions()->set_permission_status(permissions()->user_isnt_sso_logged_in);
@@ -156,22 +166,115 @@ class Access
         return self::templatePermissionMessage($postId, $options);
     }
 
+    public static function allowedErrorHtml()
+    {
+        return [
+            'a' => [
+                'aria-current' => true,
+                'class' => true,
+                'href' => true,
+                'rel' => true,
+                'target' => true
+            ],
+            'br' => [],
+            'div' => [
+                'class' => true,
+                'id' => true
+            ],
+            'form' => [
+                'method' => true
+            ],
+            'h1' => [
+                'id' => true
+            ],
+            'h2' => [],
+            'input' => [
+                'class' => true,
+                'name' => true,
+                'type' => true,
+                'value' => true
+            ],
+            'li' => [
+                'class' => true,
+                'id' => true
+            ],
+            'p' => [
+                'class' => true
+            ],
+            'span' => [
+                'aria-hidden' => true,
+                'class' => true
+            ],
+            'ul' => [
+                'class' => true,
+                'id' => true
+            ]
+        ];
+    }
+
+    /**
+     * Register the plugin-specific wp_die() handler.
+     *
+     * @param callable $handler The existing wp_die() handler.
+     * @return array
+     */
+    public static function filterDieHandler($handler)
+    {
+        return [self::class, 'dieHandler'];
+    }
+
+    /**
+     * Render plugin-specific access denied pages passed to wp_die().
+     *
+     * @param string|\WP_Error $message The error message.
+     * @param string $title The error title.
+     * @param array $args Arguments passed to wp_die().
+     * @return void
+     */
+    public static function dieHandler($message, $title = '', $args = [])
+    {
+        if (empty($args['rrze_ac_permission_error'])) {
+            _default_wp_die_handler($message, $title, $args);
+            return;
+        }
+
+        $response = isset($args['response']) ? absint($args['response']) : 403;
+        $charset = get_bloginfo('charset') ?: 'utf-8';
+
+        if (!headers_sent()) {
+            header('Content-Type: text/html; charset=' . $charset);
+            status_header($response);
+            nocache_headers();
+        }
+
+        $content = is_string($message) ? $message : '';
+        $styles = self::frontendStyles();
+        $template = plugin()->getPath('template') . 'permission-error.php';
+
+        include $template;
+
+        if (!isset($args['exit']) || $args['exit']) {
+            die();
+        }
+    }
+
     protected static function templatePermissionMessage($postId, $options)
     {
+        $options = self::messageTextOptions($options);
         $postType = get_post_type($postId);
         $permalink = $postType == 'attachment' && !wp_attachment_is_image($postId)
             ? wp_get_attachment_url($postId)
             : get_permalink($postId);
-        $loginUrl = wp_login_url($permalink);
+        $ssoPluginIsAvailableAndActive = permissions()->ssoPluginIsAvailableAndActive();
         $loginMethods = [];
 
-        if (permissions()->getPermissionStatus(permissions()->user_isnt_logged_in)) {
+        if (!$ssoPluginIsAvailableAndActive && permissions()->getPermissionStatus(permissions()->user_isnt_logged_in)) {
             $loginMethods[] = [
                 'type' => 'login',
                 'class' => 'wordpress-login',
                 'title' => $options['user_isnt_logged_in_title'],
                 'message' => $options['user_isnt_logged_in_msg'],
-                'link_url' => $loginUrl,
+                'link_url' => wp_login_url($permalink),
                 'link_text' => $options['user_isnt_logged_in_link_txt']
             ];
         }
@@ -191,18 +294,13 @@ class Access
             $loginMethods[] = [
                 'type' => 'password',
                 'class' => 'password',
-                'title' => __('Login via Access Password', 'rrze-ac'),
+                'title' => $options['access_denied_password_title'],
                 'message' => $options['access_denied_password_msg'],
-                'field_name' => 'rrze_ac_password_' . $postId,
-                'link_text' => __('Send password', 'rrze-ac')
+                'field_name' => Config::get('password_cookie_name_prefix') . $postId,
+                'link_text' => $options['access_denied_password_link_txt']
             ];
         }
 
-        $styles = self::frontendStyles();
-        $defaultLogin = [
-            'link_url' => $loginUrl,
-            'link_text' => $options['user_isnt_logged_in_link_txt']
-        ];
         $defaultMessage = $options['access_denied_default_msg'];
         $defaultTitle = $options['access_denied_default_title'];
         $contact = self::getContact($options);
@@ -213,18 +311,53 @@ class Access
         return ob_get_clean();
     }
 
+    private static function messageTextOptions($options)
+    {
+        $defaults = Config::get('default_options');
+        $groups = [
+            'access_denied' => ['access_denied_default_title', 'access_denied_default_msg'],
+            'login' => ['user_isnt_logged_in_title', 'user_isnt_logged_in_msg', 'user_isnt_logged_in_link_txt'],
+            'sso' => ['user_isnt_sso_logged_in_title', 'user_isnt_sso_logged_in_msg', 'user_isnt_sso_logged_in_link_txt'],
+            'password' => ['access_denied_password_title', 'access_denied_password_msg', 'access_denied_password_link_txt']
+        ];
+
+        foreach ($groups as $group => $keys) {
+            if (empty($options['use_default_' . $group . '_texts'])) {
+                continue;
+            }
+
+            foreach ($keys as $key) {
+                $options[$key] = $defaults[$key];
+            }
+        }
+
+        return $options;
+    }
+
     protected static function frontendStyles()
     {
-        wp_enqueue_style(
-            'rrze-ac-frontend',
-            plugins_url('build/rrze-ac.css', plugin()->getBasename()),
-            [],
-            Config::get('version')
+        $stylesheet = plugin()->getPath('build') . 'rrze-ac.css';
+
+        if (!is_readable($stylesheet)) {
+            return '';
+        }
+
+        $styles = file_get_contents($stylesheet);
+
+        if ($styles === false) {
+            return '';
+        }
+
+        $styles = preg_replace(
+            [
+                '/\/\*![\s\S]*?\*\//',
+                '/\/\*# sourceMappingURL=.*?\*\//'
+            ],
+            '',
+            $styles
         );
 
-        ob_start();
-        wp_print_styles(['rrze-ac-frontend']);
-        return ob_get_clean();
+        return $styles === null ? '' : $styles;
     }
 
     protected static function getContact($options)
@@ -243,7 +376,7 @@ class Access
                     $contact[] = sprintf(
                         '<a href="mailto:%1$s">%2$s</a>',
                         Utils::encodeEmail($user->data->user_email),
-                        $user->data->display_name
+                        esc_html($user->data->display_name)
                     );
                 }
             }
@@ -252,7 +385,7 @@ class Access
             $contact[] = sprintf(
                 '<a href="mailto:%1$s">%2$s</a>',
                 Utils::encodeEmail($siteAdminEmail),
-                $siteAdminName
+                esc_html($siteAdminName)
             );
         }
 

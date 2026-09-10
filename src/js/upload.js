@@ -1,7 +1,8 @@
+/* global jQuery */
+
 jQuery( document ).ready( function ( $ ) {
-	var vals = {},
-		postId,
-		permissionsField;
+	const vals = {};
+	let postId, permissionsField;
 
 	$( 'body' )
 		.on(
@@ -11,18 +12,26 @@ jQuery( document ).ready( function ( $ ) {
 				postId = id;
 				permissionsField = $( '#access-attachment-permissions-field' );
 
-				if ( vals.hasOwnProperty( postId ) ) {
+				if ( Object.prototype.hasOwnProperty.call( vals, postId ) ) {
 					$( this )
 						.find(
 							'.access-protection-toggle, .access-permission-select'
 						)
 						.each( function () {
-							if ( ! vals[ postId ].hasOwnProperty( this.name ) )
+							if (
+								! Object.prototype.hasOwnProperty.call(
+									vals[ postId ],
+									this.name
+								)
+							) {
 								return;
+							}
 
-							if ( 'checkbox' === this.type )
+							if ( 'checkbox' === this.type ) {
 								this.checked = vals[ postId ][ this.name ];
-							else this.value = vals[ postId ][ this.name ];
+							} else {
+								this.value = vals[ postId ][ this.name ];
+							}
 						} );
 				}
 
@@ -36,10 +45,13 @@ jQuery( document ).ready( function ( $ ) {
 			'change',
 			'.access-protection-toggle',
 			function ( event, justLoaded ) {
-				duration = 'accessJustLoaded' !== justLoaded ? 400 : 0;
+				const duration = 'accessJustLoaded' !== justLoaded ? 400 : 0;
 
-				if ( this.checked ) permissionsField.slideDown( duration );
-				else permissionsField.slideUp( duration );
+				if ( this.checked ) {
+					permissionsField.slideDown( duration );
+				} else {
+					permissionsField.slideUp( duration );
+				}
 			}
 		)
 
@@ -47,9 +59,13 @@ jQuery( document ).ready( function ( $ ) {
 			'change',
 			'.access-protection-toggle, .access-permission-select',
 			function ( event, justLoaded ) {
-				if ( 'accessJustLoaded' === justLoaded ) return;
+				if ( 'accessJustLoaded' === justLoaded ) {
+					return;
+				}
 
-				if ( ! vals.hasOwnProperty( postId ) ) vals[ postId ] = {};
+				if ( ! Object.prototype.hasOwnProperty.call( vals, postId ) ) {
+					vals[ postId ] = {};
+				}
 
 				vals[ postId ][ this.name ] =
 					'checkbox' === this.type ? this.checked : this.value;

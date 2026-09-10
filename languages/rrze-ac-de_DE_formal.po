@@ -350,9 +350,13 @@ msgstr "Angemeldeten Benutzer"
 msgid "Login required"
 msgstr "Anmeldung erforderlich"
 
-#: includes/Options.php:56 includes/Options.php:60
-msgid "Log in with your IdM ID"
-msgstr "Loggen Sie sich mit Ihrer IdM-Kennung ein"
+#: includes/Config.php
+msgid "Log in with the WordPress login"
+msgstr "Mit dem WordPress-Login anmelden"
+
+#: includes/Config.php
+msgid "Log in with your SSO Login"
+msgstr "Mit Ihrem SSO-Login anmelden"
 
 #: includes/Options.php:57
 msgid "Access to this resource is only available to members of this website."
@@ -719,3 +723,35 @@ msgstr "Benutzer mit dieser Rolle oder einer Rolle mit höherem WordPress-Level 
 #: includes/Post.php
 msgid "You are not allowed to change this access restriction."
 msgstr "Sie dürfen diese Zugriffsbeschränkung nicht ändern."
+
+#: includes/Settings.php
+msgid "General Notice"
+msgstr "Allgemeine Meldung"
+
+#: includes/Settings.php
+msgid "Use default texts"
+msgstr "Standardtexte verwenden"
+
+#: includes/Settings.php
+msgid "Title"
+msgstr "Titel"
+
+#: includes/Settings.php
+msgid "Reason"
+msgstr "Begründung"
+
+#: includes/Settings.php
+msgid "Call to action"
+msgstr "Handlungsaufforderung"
+
+#: includes/Settings.php
+msgid "Single Sign-On"
+msgstr "Single Sign-On"
+
+#: includes/Settings.php
+msgid "Use translated default texts"
+msgstr "Übersetzte Standardtexte verwenden"
+
+#: includes/Settings.php
+msgid "Custom texts are shown exactly as entered, regardless of the website language. Only the default texts are translated to match the active website language."
+msgstr "Eigene Texte werden unabhängig von der Sprache der Website genau so angezeigt, wie sie eingegeben wurden. Nur die Standardtexte werden passend zur aktiven Sprache der Website übersetzt."

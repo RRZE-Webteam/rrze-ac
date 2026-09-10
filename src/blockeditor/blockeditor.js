@@ -1,12 +1,10 @@
 /* global acObject */
 
 import { registerPlugin } from '@wordpress/plugins';
-// eslint-disable-next-line import/no-unresolved
 import { PluginDocumentSettingPanel } from '@wordpress/editor';
 import { SelectControl } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 import { dispatch, useSelect } from '@wordpress/data';
-// eslint-disable-next-line import/no-unresolved
 import apiFetch from '@wordpress/api-fetch';
 import { __ } from '@wordpress/i18n';
 
@@ -36,14 +34,11 @@ function ACSettingPanel() {
 
 	useEffect(
 		function syncStoredPermission() {
-			if (
-				storedPermission !== '' &&
-				storedPermission !== selectedPermission
-			) {
-				setSelectedPermission( storedPermission );
-			}
+			setSelectedPermission(
+				storedPermission || acObject.permission || ''
+			);
 		},
-		[ storedPermission, selectedPermission ]
+		[ storedPermission ]
 	);
 
 	const permissionsArray = Object.keys( permissions ).map(
@@ -99,7 +94,23 @@ function ACSettingPanel() {
 				},
 			},
 		} )
-			.then( function permissionUpdated() {
+			.then( function permissionUpdated( updatedPost ) {
+				const updatedMeta = updatedPost.meta || {};
+				const updatedPermission = Object.prototype.hasOwnProperty.call(
+					updatedMeta,
+					metaKey
+				)
+					? updatedMeta[ metaKey ]
+					: newPermission;
+
+				dispatch( 'core/editor' ).editPost( {
+					meta: {
+						...( postMeta || {} ),
+						[ metaKey ]: updatedPermission,
+					},
+				} );
+				setSelectedPermission( updatedPermission );
+
 				const notice = __(
 					'Permission updated successfully.',
 					'rrze-ac'
@@ -111,6 +122,10 @@ function ACSettingPanel() {
 				} );
 			} )
 			.catch( function permissionUpdateFailed() {
+				setSelectedPermission(
+					storedPermission || acObject.permission || ''
+				);
+
 				dispatch( 'core/notices' ).createErrorNotice(
 					__( 'Permission could not be updated.', 'rrze-ac' ),
 					{
@@ -130,7 +145,7 @@ function ACSettingPanel() {
 		<PluginDocumentSettingPanel
 			name="rrze-ac-setting-panel"
 			title={ __( 'Access Restriction', 'rrze-ac' ) }
-			className="rrze-ac-setting-panel"
+			className="rrze-ac rrze-ac-setting-panel"
 		>
 			<SelectControl
 				label={ __( 'Permission', 'rrze-ac' ) }

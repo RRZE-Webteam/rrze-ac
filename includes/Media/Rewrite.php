@@ -41,7 +41,7 @@ class Rewrite
             global $pagenow;
             if (self::checkRewriteRules()) {
                 update_site_option($enabledOptionName, 1);
-                wp_redirect(admin_url($pagenow ? $pagenow : ''));
+                wp_safe_redirect(admin_url($pagenow ? $pagenow : ''));
                 exit();
             }
         }
@@ -135,8 +135,8 @@ class Rewrite
         } else {
             $message .= __("Please contact your system administrator.", 'rrze-ac');
         } ?>
-        <div class="error">
-            <p><?php echo $message; ?></p>
+        <div class="rrze-ac error">
+            <p><?php echo wp_kses_post($message); ?></p>
         </div>
 <?php
     }

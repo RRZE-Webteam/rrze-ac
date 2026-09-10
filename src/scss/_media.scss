@@ -1,55 +1,43 @@
-.js .js-visuallyhidden,
-.visuallyhidden {
-    border: 0;
-    clip: rect(0 0 0 0);
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    padding: 0;
-    position: absolute;
-    width: 1px;
-}
-
-#plupload-upload-ui {
+#plupload-upload-ui.rrze-ac {
     position: relative;
 
-    .access-tag {
+    .rrze-ac-upload-notice {
+        background: #0073aa;
+        border: 1px solid #21759b;
+        color: #fff;
         display: none;
-        position: absolute;
-        top: 25px;
         left: 50%;
         margin-left: -102px;
-        border: 1px solid #21759b;
         padding: 8px 15px;
-        color: #fff;
-        background: #0073aa;
+        position: absolute;
+        top: 25px;
     }
 
-    &.access-checked {
+    &.rrze-ac-upload-checked {
         #drag-drop-area {
             -webkit-transition: border 0.1s;
             -webkit-transition-delay: 1.75s;
-            transition: border 0.1s 1.75s;
             border-color: #21759b;
+            transition: border 0.1s 1.75s;
         }
 
-        .access-tag {
-            display: block;
+        .rrze-ac-upload-notice {
             -webkit-animation: appear-and-land 2s;
             animation: appear-and-land 2s;
+            display: block;
         }
     }
 
-    &.access-unchecked {
+    &.rrze-ac-upload-unchecked {
         #drag-drop-area {
             -webkit-transition: border 0.7s;
             transition: border 0.7s;
         }
 
-        .access-tag {
+        .rrze-ac-upload-notice {
+            -webkit-transition: opacity 0.7s;
             display: block;
             opacity: 0;
-            -webkit-transition: opacity 0.7s;
             transition: opacity 0.7s;
         }
     }

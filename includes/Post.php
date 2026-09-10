@@ -4,6 +4,8 @@ namespace RRZE\AccessControl;
 
 defined('ABSPATH') || exit;
 
+use RRZE\AccessControl\Media\Files;
+
 class Post
 {
     public static function accessPermissionMetaKey()
@@ -63,8 +65,8 @@ class Post
             'exclude_from_search'       => true,
             'show_in_admin_all_list'    => false,
             'show_in_admin_status_list' => false,
+            /* translators: %s: label count. */
             'label_count'               => _n_noop(
-                /* translators: %s: label count */
                 'Protected <span class="count">(%s)</span>',
                 'Protected <span class="count">(%s)</span>',
                 'rrze-ac'
@@ -99,29 +101,26 @@ class Post
     {
         global $wpdb;
 
-        $pt_query = [
-            'page' => "p.post_type = 'page'",
-            'attachment' => "p.post_type = 'attachment'"
-        ];
+        $query = "SELECT pm.post_id, pm.meta_value, p.post_type FROM {$wpdb->postmeta} pm
+            LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+            WHERE pm.meta_key = %s
+            AND ((p.post_type = 'page' AND p.post_status = 'publish')
+                OR (p.post_type = 'attachment' AND p.post_status = 'inherit'))";
 
-        switch ($postType) {
-            case 'page':
-                unset($pt_query['attachment']);
-                break;
-            case 'attachment':
-                unset($pt_query['page']);
-                break;
-            default:
-                break;
+        $results = $wpdb->get_results($wpdb->prepare($query, self::accessPermissionMetaKey())); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+        if (!$postType) {
+            return $results;
         }
 
-        $query = "SELECT pm.post_id, pm.meta_value FROM {$wpdb->postmeta} pm
-            LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id
-            WHERE pm.meta_key = '%s'
-            AND p.post_status = 'publish'
-            AND (" . implode(' OR ', $pt_query) . ")";
+        $filteredResults = [];
+        foreach ($results as $result) {
+            if ($result->post_type === $postType) {
+                $filteredResults[] = $result;
+            }
+        }
 
-        return $wpdb->get_results($wpdb->prepare($query, self::accessPermissionMetaKey()));
+        return $filteredResults;
     }
 
     public static function preGetPostsList($query)
@@ -198,7 +197,15 @@ class Post
             '<a href="%s"%s>%s</a>',
             admin_url(sprintf('edit.php?post_status=%s&post_type=%s', self::protectedPostStatus(), $postType)),
             $class,
-            sprintf(translate_nooped_plural(_n_noop('With Access Control <span class="count">(%s)</span>', 'With Access Control <span class="count">(%s)</span>'), $count, 'rrze-ac'), $count)
+            sprintf(
+                translate_nooped_plural(
+                    /* translators: %s: number of protected posts. */
+                    _n_noop('With Access Control <span class="count">(%s)</span>', 'With Access Control <span class="count">(%s)</span>', 'rrze-ac'),
+                    $count,
+                    'rrze-ac'
+                ),
+                $count
+            )
         );
 
         return $views;
@@ -294,10 +301,13 @@ class Post
 
         wp_nonce_field('rrze_ac_post_metabox', 'rrze_ac_post_metabox_nonce');
 
+        echo '<div class="rrze-ac">';
+
         if (!permissions()->currentUserCanChangeContentPermission($post->ID)) {
             echo '<p><strong>', esc_html__('Permission', 'rrze-ac'), ':</strong><br>';
             echo esc_html(sanitize_text_field($permissions[$permission]['select']));
             echo '</p>';
+            echo '</div>';
             return;
         }
 
@@ -307,10 +317,11 @@ class Post
                 continue;
             }
             echo '<option value="', esc_attr($key), '" ', selected($permission, $key), '>';
-            echo sanitize_text_field($data['select']);
+            echo esc_html(sanitize_text_field($data['select']));
             echo '</option>';
         endforeach;
         echo '</select>';
+        echo '</div>';
     }
 
     public static function savePost($postId, $post)
@@ -353,21 +364,57 @@ class Post
 
     public static function restFilter($args)
     {
-        $postNotIn = [];
-        $permissions = permissions()->getThePermissions();
-        $permissionMetas = Post::getPermissionMetas($args['post_type']);
+        $postType = $args['post_type'] ?? '';
 
-        foreach ($permissionMetas as $pm) {
-            if (isset($permissions[$pm->meta_value]) && $permissions[$pm->meta_value]['active'] && !permissions()->checkAuthorPermission($pm->post_id)) {
-                $postNotIn[] = $pm->post_id;
+        if (!in_array($postType, Config::get('post_types'), true)) {
+            return $args;
+        }
+
+        $postNotIn = [];
+        $permissionMetas = self::getPermissionMetas($postType);
+        $postIds = wp_list_pluck($permissionMetas, 'post_id');
+
+        if ($postType === 'attachment') {
+            $postIds = array_merge($postIds, self::getProtectedAttachmentIds());
+        }
+
+        foreach (array_unique(array_map('absint', $postIds)) as $postId) {
+            if (!Access::try($postId)) {
+                $postNotIn[] = $postId;
             }
         }
 
         if (!empty($postNotIn)) {
-            $args['post__not_in'] = $postNotIn;
+            $args['post__not_in'] = array_unique(array_merge($args['post__not_in'] ?? [], $postNotIn));
         }
 
         return $args;
+    }
+
+    /**
+     * Return attachments stored in the protected upload directory.
+     *
+     * @return array
+     */
+    private static function getProtectedAttachmentIds()
+    {
+        global $wpdb;
+
+        $protectedUploadDir = ltrim(Files::protectedUploadDir('/'), '/');
+        $query = "SELECT pm.post_id FROM {$wpdb->postmeta} pm
+            INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+            WHERE pm.meta_key = %s
+            AND pm.meta_value LIKE %s
+            AND p.post_type = 'attachment'
+            AND p.post_status = 'inherit'";
+
+        return $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->prepare(
+                $query,
+                '_wp_attached_file',
+                $wpdb->esc_like($protectedUploadDir) . '/%'
+            )
+        );
     }
 
     public static function registerPostMetas()
@@ -441,16 +488,22 @@ class Post
         $permission = $permissions[$permission];
 
         $description = isset($permission['description']) && !empty($permission['description']) ? $permission['description'] : $permission['permission_key'];
-        $description = !$error ?
-            '<span title="' . esc_attr__($description) . '" class="' . $class . ' dashicons dashicons-shield"></span><span class="access-permission-name">' . esc_html($description) . '</span>' :
-            '<span title="' . sprintf(
+        $title = $description;
+        if ($error) {
+            $title = sprintf(
                 /* translators: 1: Error message, 2: Default permission. */
-                esc_attr__('An error has occurred: %1$s and has been replaced by the default permission %2$s.', 'rrze-ac'),
+                __('An error has occurred: %1$s and has been replaced by the default permission %2$s.', 'rrze-ac'),
                 $error,
                 $description
-            ) . '" class="access-error-icon dashicons dashicons-shield"></span><span class="access-permission-name">' . esc_html($description) . '</span>';
+            );
+        }
 
-        echo $description;
+        printf(
+            '<span class="rrze-ac rrze-ac-access-info"><span title="%1$s" class="%2$s dashicons dashicons-shield"></span><span class="access-permission-name">%3$s</span></span>',
+            esc_attr($title),
+            esc_attr($error ? 'access-error-icon' : $class),
+            esc_html($description)
+        );
     }
 
     public static function walkerNavMenuEdit($output, $item, $depth, $args, $id)
@@ -496,11 +549,15 @@ class Post
 
         $metas = [];
 
-        $result = $wpdb->get_results("
-            SELECT pm.post_id, pm.meta_value FROM {$wpdb->postmeta} pm
-            LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id
-            WHERE pm.meta_key = '" . self::accessPermissionMetaKey() . "'
-            AND ((p.post_type = 'attachment' AND p.post_status = 'inherit') OR (p.post_type = 'page' AND p.post_status = 'publish'))");
+        $result = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->prepare(
+                "SELECT pm.post_id, pm.meta_value FROM {$wpdb->postmeta} pm
+                LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+                WHERE pm.meta_key = %s
+                AND ((p.post_type = 'attachment' AND p.post_status = 'inherit') OR (p.post_type = 'page' AND p.post_status = 'publish'))",
+                self::accessPermissionMetaKey()
+            )
+        );
 
         foreach ($result as $r) {
             $metas[$r->post_id] = $r->meta_value;

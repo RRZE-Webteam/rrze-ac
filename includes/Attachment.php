@@ -25,6 +25,8 @@ class Attachment
             return;
         }
 
+        add_filter('postbox_classes_attachment_attachment-protection-metabox', [__CLASS__, 'metaboxClasses']);
+
         add_meta_box(
             'attachment-protection-metabox',
             __("Access Restriction", 'rrze-ac'),
@@ -33,6 +35,13 @@ class Attachment
             'side',
             'high'
         );
+    }
+
+    public static function metaboxClasses($classes)
+    {
+        $classes[] = 'rrze-ac';
+
+        return array_unique($classes);
     }
 
     public static function renderMetabox($post)
@@ -50,32 +59,34 @@ class Attachment
         if (empty($permission) || !isset($permissions[$permission]) || !$permissions[$permission]['active']) {
             $permission = permissions()->getDefaultPermission();
         } ?>
-        <?php if (!permissions()->currentUserCanChangeContentPermission($post->ID)) : ?>
-            <p><strong><?php esc_html_e("Permission", 'rrze-ac'); ?>:</strong><br>
-                <?php echo esc_html(sanitize_text_field($permissions[$permission]['select'])); ?>
-            </p>
-            <?php return; ?>
-        <?php endif; ?>
-        <input type="hidden" name="access_protection_toggle" value="off">
-        <input type="checkbox" id="access-protection-toggle" name="access_protection_toggle" <?php checked(Files::isAttachmentProtected($post->ID)); ?>>
-        <label class="access-protection-toggle" for="access-protection-toggle">
-            <span aria-role="hidden" class="access-on button button-primary" data-access-content="<?php esc_attr_e("Enable permission", 'rrze-ac'); ?>"></span>
-            <span aria-role="hidden" class="access-off" data-access-content="<?php esc_attr_e("Remove permission", 'rrze-ac'); ?>"></span>
-        </label>
-        <div class="access-permission-select">
-            <label for="access-permission-select">
-                <span class="description"><?php esc_html_e("Permission", 'rrze-ac'); ?></span>
-            </label>
-            <select id="access-permission-select" name="access_permission_select">
-                <?php foreach ($permissions as $key => $data) : ?>
-                    <?php if (!$data['active']) {
-                        continue;
-                    } ?>
-                    <option value="<?php echo esc_attr($key); ?>" <?php selected($permission, $key); ?>>
-                        <?php echo sanitize_text_field($data['select']); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
+        <div class="rrze-ac">
+            <?php if (!permissions()->currentUserCanChangeContentPermission($post->ID)) : ?>
+                <p><strong><?php esc_html_e("Permission", 'rrze-ac'); ?>:</strong><br>
+                    <?php echo esc_html(sanitize_text_field($permissions[$permission]['select'])); ?>
+                </p>
+            <?php else : ?>
+                <input type="hidden" name="access_protection_toggle" value="off">
+                <input type="checkbox" id="access-protection-toggle" name="access_protection_toggle" <?php checked(Files::isAttachmentProtected($post->ID)); ?>>
+                <label class="access-protection-toggle" for="access-protection-toggle">
+                    <span aria-role="hidden" class="access-on button button-primary" data-access-content="<?php esc_attr_e("Enable permission", 'rrze-ac'); ?>"></span>
+                    <span aria-role="hidden" class="access-off" data-access-content="<?php esc_attr_e("Remove permission", 'rrze-ac'); ?>"></span>
+                </label>
+                <div class="access-permission-select">
+                    <label for="access-permission-select">
+                        <span class="description"><?php esc_html_e("Permission", 'rrze-ac'); ?></span>
+                    </label>
+                    <select id="access-permission-select" name="access_permission_select">
+                        <?php foreach ($permissions as $key => $data) : ?>
+                            <?php if (!$data['active']) {
+                                continue;
+                            } ?>
+                            <option value="<?php echo esc_attr($key); ?>" <?php selected($permission, $key); ?>>
+                                <?php echo esc_html(sanitize_text_field($data['select'])); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            <?php endif; ?>
         </div>
         <?php
     }
@@ -140,25 +151,27 @@ class Attachment
         $screen = get_current_screen();
         if ('media' == $screen->base && 'add' == $screen->action) :
         ?>
-            <table class="form-table">
-                <tbody>
-                    <tr>
-                        <th scope="row">
-                            <label for="access_protected">
-                                <?php esc_html_e("Access Restriction", 'rrze-ac'); ?>
-                            </label>
-                        </th>
-                        <td>
-                            <label for="access_protected">
-                                <input type="checkbox" id="access_protected" name="access_protected">
-                                <span class="description">
-                                    <?php esc_html_e("Activate", 'rrze-ac'); ?>
-                                </span>
-                            </label>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="rrze-ac">
+                <table class="form-table">
+                    <tbody>
+                        <tr>
+                            <th scope="row">
+                                <label for="access_protected">
+                                    <?php esc_html_e("Access Restriction", 'rrze-ac'); ?>
+                                </label>
+                            </th>
+                            <td>
+                                <label for="access_protected">
+                                    <input type="checkbox" id="access_protected" name="access_protected">
+                                    <span class="description">
+                                        <?php esc_html_e("Activate", 'rrze-ac'); ?>
+                                    </span>
+                                </label>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         <?php
         endif;
     }
@@ -171,9 +184,9 @@ class Attachment
 
         $screen = get_current_screen();
         if (isset($screen->base) && 'media' == $screen->base && 'add' == $screen->action) {
-            echo '<div class="access-tag">';
+            echo '<div class="rrze-ac rrze-ac-upload-notice">';
             echo '<span aria-role="hidden" class="dashicons dashicons-shield"></span>';
-            _e("New files are protected", 'rrze-ac');
+            esc_html_e("New files are protected", 'rrze-ac');
             echo '</div>';
         }
     }
@@ -197,9 +210,9 @@ class Attachment
         }
 
         ob_start(); ?>
-        <tr id="access-attachment-fields">
+        <tr id="access-attachment-fields" class="rrze-ac">
             <th class="label" scope="row">
-                <label for="attachments-<?php echo $post->ID ?>">
+                <label for="attachments-<?php echo esc_attr($post->ID); ?>">
                     <span class="alignleft"><?php esc_html_e("Access Restriction", 'rrze-ac'); ?></span>
                     <br class="clear">
                 </label>
@@ -210,21 +223,21 @@ class Attachment
                         <?php echo esc_html(sanitize_text_field($permissions[$permission]['select'])); ?>
                     </p>
                 <?php else : ?>
-                <input type="hidden" name="attachments[<?php echo $post->ID ?>][access_protection_toggle]" value="off">
-                <input class="radio access-protection-toggle" type="checkbox" id="attachments[<?php echo $post->ID; ?>][access_protection_toggle]" name="attachments[<?php echo $post->ID; ?>][access_protection_toggle]" <?php checked(Files::isAttachmentProtected($post->ID)); ?>>
+                <input type="hidden" name="attachments[<?php echo esc_attr($post->ID); ?>][access_protection_toggle]" value="off">
+                <input class="radio access-protection-toggle" type="checkbox" id="attachments[<?php echo esc_attr($post->ID); ?>][access_protection_toggle]" name="attachments[<?php echo esc_attr($post->ID); ?>][access_protection_toggle]" <?php checked(Files::isAttachmentProtected($post->ID)); ?>>
                 <p id="access-attachment-permissions-field">
-                    <label for="attachments[<?php echo $post->ID; ?>][access_permission_select]"><?php esc_html_e("Permission", 'rrze-ac'); ?></label><br>
-                    <select class="access-permission-select" id="attachments[<?php echo $post->ID; ?>][access_permission_select]" name="attachments[<?php echo $post->ID; ?>][access_permission_select]">
+                    <label for="attachments[<?php echo esc_attr($post->ID); ?>][access_permission_select]"><?php esc_html_e("Permission", 'rrze-ac'); ?></label><br>
+                    <select class="access-permission-select" id="attachments[<?php echo esc_attr($post->ID); ?>][access_permission_select]" name="attachments[<?php echo esc_attr($post->ID); ?>][access_permission_select]">
                         <?php foreach ($permissions as $key => $data) : ?>
                             <option value="<?php echo esc_attr($key); ?>" <?php selected($permission, $key); ?>>
-                                <?php echo sanitize_text_field($data['select']); ?>
+                                <?php echo esc_html(sanitize_text_field($data['select'])); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
                 </p>
                 <script>
                     jQuery(document).ready(function($) {
-                        $('#access-attachment-fields').trigger('accessLoaded', <?php echo $post->ID; ?>);
+                        $('#access-attachment-fields').trigger('accessLoaded', <?php echo absint($post->ID); ?>);
                     });
                 </script>
                 <?php endif; ?>
@@ -411,11 +424,22 @@ class Attachment
         $permission = $permissions[$permission];
 
         $description = isset($permission['description']) && !empty($permission['description']) ? $permission['description'] : $permission['permission_key'];
-        $description = !$error ?
-            '<span title="' . esc_attr__($description) . '" class="' . $class . ' dashicons dashicons-shield"></span><span class="access-permission-name">' . esc_html($description) . '</span>' :
-            '<span title="' . sprintf(esc_attr__('An error has occurred: %1$s and has been replaced by the default permission %2$s.', 'rrze-ac'), $error, $description) . '" class="access-error-icon dashicons dashicons-shield"></span><span class="access-permission-name">' . esc_html($description) . '</span>';
+        $title = $description;
+        if ($error) {
+            $title = sprintf(
+                /* translators: 1: Error message, 2: Default permission. */
+                __('An error has occurred: %1$s and has been replaced by the default permission %2$s.', 'rrze-ac'),
+                $error,
+                $description
+            );
+        }
 
-        echo $description;
+        printf(
+            '<span class="rrze-ac rrze-ac-access-info"><span title="%1$s" class="%2$s dashicons dashicons-shield"></span><span class="access-permission-name">%3$s</span></span>',
+            esc_attr($title),
+            esc_attr($error ? 'access-error-icon' : $class),
+            esc_html($description)
+        );
     }
 
     public static function restrictManagePosts($postType = '')
@@ -526,8 +550,8 @@ class Attachment
         if ('upload' === $screen->id) {
             if (isset($_REQUEST['access-protected']) && (int) $_REQUEST['access-protected']) {
                 $message = sprintf(
+                    /* translators: %s: number of media files. */
                     _n(
-                        /* translators: %s: number of media files */
                         "%s media file is now protected.",
                         "%s media files are now protected.",
                         $_REQUEST['access-protected'],
@@ -535,14 +559,14 @@ class Attachment
                     ),
                     number_format_i18n($_REQUEST['access-protected'])
                 );
-                echo '<div class="updated"><p>' . esc_html($message) . '</p></div>';
+                echo '<div class="rrze-ac updated"><p>' . esc_html($message) . '</p></div>';
                 $_SERVER['REQUEST_URI'] = remove_query_arg('access-protected', $_SERVER['REQUEST_URI']);
             }
 
             if (isset($_REQUEST['access-unprotected']) && (int) $_REQUEST['access-unprotected']) {
                 $message = sprintf(
+                    /* translators: %s: number of media files. */
                     _n(
-                        /* translators: %s: number of media files */
                         "Data protection on %s Media file has been removed.",
                         "Data protection on %s Media files has been removed.",
                         $_REQUEST['access-unprotected'],
@@ -550,7 +574,7 @@ class Attachment
                     ),
                     number_format_i18n($_REQUEST['access-unprotected'])
                 );
-                echo '<div class="updated"><p>' . esc_html($message) . '</p></div>';
+                echo '<div class="rrze-ac updated"><p>' . esc_html($message) . '</p></div>';
                 $_SERVER['REQUEST_URI'] = remove_query_arg('access-unprotected', $_SERVER['REQUEST_URI']);
             }
         }
@@ -599,8 +623,8 @@ class Attachment
             case 'access-protect':
                 if (!permissions()->currentUserCanChangeContentPermission()) {
                     wp_die(
-                        __('You are not allowed to add media files to the protected directory.', 'rrze-ac'),
-                        __('Forbidden', 'rrze-ac'),
+                        esc_html__('You are not allowed to add media files to the protected directory.', 'rrze-ac'),
+                        esc_html__('Forbidden', 'rrze-ac'),
                         [
                             'response' => '403',
                             'back_link' => true
@@ -622,8 +646,8 @@ class Attachment
 
                     if (is_wp_error($moveAttachment)) {
                         wp_die(
-                            __('An error has occurred while moving the media files in the protected directory.', 'rrze-ac') . '<br/>' . $moveAttachment->get_error_message(),
-                            __('Internal Server Error', 'rrze-ac'),
+                            esc_html__('An error has occurred while moving the media files in the protected directory.', 'rrze-ac') . '<br>' . esc_html($moveAttachment->get_error_message()),
+                            esc_html__('Internal Server Error', 'rrze-ac'),
                             [
                                 'response' => '500',
                                 'back_link' => true
@@ -643,8 +667,8 @@ class Attachment
             case 'access-unprotect':
                 if (!permissions()->currentUserCanManageContentPermissions()) {
                     wp_die(
-                        __('You are not allowed to remove media files from the protected directory.', 'rrze-ac'),
-                        __('Forbidden', 'rrze-ac'),
+                        esc_html__('You are not allowed to remove media files from the protected directory.', 'rrze-ac'),
+                        esc_html__('Forbidden', 'rrze-ac'),
                         [
                             'response' => '403',
                             'back_link' => true
@@ -666,8 +690,8 @@ class Attachment
 
                     if (is_wp_error($moveAttachment)) {
                         wp_die(
-                            __('An error has occurred while removing the media files from the protected directory.', 'rrze-ac') . '<br/>' . $moveAttachment->get_error_message(),
-                            __('Internal Server Error', 'rrze-ac'),
+                            esc_html__('An error has occurred while removing the media files from the protected directory.', 'rrze-ac') . '<br>' . esc_html($moveAttachment->get_error_message()),
+                            esc_html__('Internal Server Error', 'rrze-ac'),
                             [
                                 'response' => '500',
                                 'back_link' => true
@@ -692,7 +716,7 @@ class Attachment
 
         $location = remove_query_arg(array('action', 'action2', 'media'), $location);
 
-        wp_redirect($location);
+        wp_safe_redirect($location);
         exit();
     }
 }

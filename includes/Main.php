@@ -34,6 +34,8 @@ class Main
 
         Attachment::init();
 
+        permissions()->loaded();
+
         add_filter('plugin_action_links_' . plugin()->getBaseName(), function ($links) {
             $settings_link = '<a href="' . esc_url(Utils::actionUrl(['tab' => 'general'])) . '">' . esc_html(__("Settings", 'rrze-ac')) . '</a>';
             array_unshift($links, $settings_link);
@@ -47,6 +49,8 @@ class Main
         add_action('template_redirect', [$this, 'templateRedirect'], 0);
 
         add_filter('body_class', [$this, 'bodyClasses']);
+
+        add_filter('wp_die_handler', [Access::class, 'filterDieHandler']);
     }
 
     public function adminEnqueueScripts()
@@ -92,11 +96,12 @@ class Main
             global $post;
             if (!Access::try($post->ID)) {
                 wp_die(
-                    Access::permissionMessage($post->ID, $this->options),
-                    __('Login is required', 'rrze-ac'),
+                    wp_kses(Access::permissionMessage($post->ID, $this->options), Access::allowedErrorHtml()),
+                    esc_html__('Login is required', 'rrze-ac'),
                     [
                         'response' => '403',
-                        'back_link' => false
+                        'back_link' => false,
+                        'rrze_ac_permission_error' => true
                     ]
                 );
             }

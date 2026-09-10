@@ -1,0 +1,314 @@
+@use 'custom-properties';
+
+html:has(body.rrze-ac) {
+    background: var(--rrze-ac-color-background);
+}
+
+body.rrze-ac {
+    background: var(--rrze-ac-color-background);
+    color: var(--rrze-ac-color-text);
+    font-family: var(--rrze-ac-font-family);
+    font-size: var(--rrze-ac-font-size);
+    line-height: var(--rrze-ac-line-height);
+    margin: 0;
+    min-height: 100vh;
+}
+
+.rrze-ac {
+    .rrze-ac-page {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+
+    .rrze-ac-site-header {
+        background: var(--rrze-ac-color-surface);
+        border-bottom: 1px solid var(--rrze-ac-color-page-border);
+    }
+
+    .rrze-ac-header-inner,
+    .rrze-ac-footer-inner {
+        box-sizing: border-box;
+        margin: 0 auto;
+        max-width: var(--rrze-ac-layout-max-width);
+        width: calc(100% - 2.5rem);
+    }
+
+    .rrze-ac-header-inner {
+        align-items: center;
+        display: flex;
+        min-height: 5.75rem;
+    }
+
+    .rrze-ac-site-brand {
+        align-items: center;
+        display: flex;
+        min-width: 0;
+    }
+
+    .rrze-ac-site-brand .custom-logo-link {
+        display: block;
+        flex: 0 0 auto;
+    }
+
+    .rrze-ac-site-brand .custom-logo {
+        display: block;
+        height: auto;
+        max-height: 3.5rem;
+        max-width: 18rem;
+        width: auto;
+    }
+
+    .rrze-ac-site-title {
+        color: var(--rrze-ac-color-heading);
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .rrze-ac-site-brand.rrze-ac-has-logo .rrze-ac-site-title {
+        border-left: 1px solid var(--rrze-ac-color-page-border);
+        margin-left: 1.75rem;
+        padding-left: 1.75rem;
+    }
+
+    .rrze-ac-error-main {
+        align-items: center;
+        box-sizing: border-box;
+        display: flex;
+        flex: 1;
+        justify-content: center;
+        padding: clamp(2.625rem, 8vw, 5.375rem) 1.25rem;
+    }
+
+    .rrze-ac-error-page {
+        background: var(--rrze-ac-color-page-background);
+        border: 1px solid var(--rrze-ac-color-page-border);
+        border-radius: var(--rrze-ac-error-page-border-radius);
+        box-shadow: var(--rrze-ac-error-page-shadow);
+        box-sizing: border-box;
+        max-width: var(--rrze-ac-error-page-max-width);
+        overflow: hidden;
+        width: 100%;
+    }
+
+    .rrze-ac-panel-head {
+        background: var(--rrze-ac-color-primary);
+        color: var(--rrze-ac-color-primary-contrast);
+        padding: var(--rrze-ac-panel-header-padding);
+
+        h1 {
+            font-size: var(--rrze-ac-heading-font-size);
+            line-height: var(--rrze-ac-heading-line-height);
+            margin: 0;
+        }
+    }
+
+    .rrze-ac-panel-content {
+        padding: var(--rrze-ac-panel-content-padding);
+    }
+
+    .rrze-ac-denied {
+        color: inherit;
+
+        .login-methods {
+            display: grid;
+            gap: var(--rrze-ac-spacing-lg);
+        }
+
+        .rrze-ac-denied-details + .login-methods,
+        .login-methods + p {
+            margin-top: var(--rrze-ac-spacing-lg);
+        }
+
+        .password,
+        .wordpress-login,
+        .sso-login {
+            border-bottom: 1px solid var(--rrze-ac-color-border);
+            padding-bottom: var(--rrze-ac-spacing-lg);
+        }
+
+        .password:last-of-type,
+        .wordpress-login:last-of-type,
+        .sso-login:last-of-type {
+            border-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        svg {
+            color: var(--rrze-ac-color-primary);
+            height: 1.5rem;
+            width: 1.5rem;
+        }
+
+        h2 {
+            color: var(--rrze-ac-color-heading);
+            font-size: var(--rrze-ac-method-heading-font-size);
+            line-height: var(--rrze-ac-heading-line-height);
+            margin: var(--rrze-ac-spacing-sm) 0 0;
+        }
+
+        p {
+            margin: var(--rrze-ac-spacing-sm) 0 0;
+            max-width: var(--rrze-ac-content-max-width);
+        }
+
+        form {
+            display: grid;
+            gap: var(--rrze-ac-spacing-sm);
+            margin-top: var(--rrze-ac-spacing-md);
+        }
+
+        input[type="password"] {
+            background: var(--rrze-ac-color-surface);
+            border: 1px solid var(--rrze-ac-color-form-border);
+            border-radius: var(--rrze-ac-control-border-radius);
+            box-sizing: border-box;
+            color: var(--rrze-ac-color-text);
+            font: inherit;
+            min-height: var(--rrze-ac-control-min-height);
+            padding: var(--rrze-ac-control-padding-block) var(--rrze-ac-input-padding-inline);
+            width: 100%;
+        }
+
+        input[type="submit"],
+        a.sso-link,
+        a.wp-link {
+            background: var(--rrze-ac-color-primary);
+            border: 1px solid var(--rrze-ac-color-primary);
+            border-radius: var(--rrze-ac-control-border-radius);
+            box-sizing: border-box;
+            color: var(--rrze-ac-color-primary-contrast);
+            display: inline-flex;
+            font: inherit;
+            font-weight: 700;
+            justify-content: center;
+            min-height: var(--rrze-ac-control-min-height);
+            padding: var(--rrze-ac-control-padding-block) var(--rrze-ac-control-padding-inline);
+            text-decoration: none;
+            width: fit-content;
+
+            &:hover {
+                background: var(--rrze-ac-color-primary-dark);
+                border-color: var(--rrze-ac-color-primary-dark);
+            }
+        }
+
+        a.sso-link,
+        a.wp-link {
+            align-items: center;
+            margin-top: var(--rrze-ac-spacing-md);
+        }
+
+        .rrze-ac-denied-details {
+            color: var(--rrze-ac-color-text);
+        }
+
+        input[type="password"]:focus,
+        input[type="submit"]:focus,
+        a:focus {
+            outline: var(--rrze-ac-focus-outline);
+            outline-offset: var(--rrze-ac-focus-outline-offset);
+        }
+    }
+
+    .rrze-ac-site-footer {
+        background: var(--rrze-ac-color-footer);
+        color: var(--rrze-ac-color-primary-contrast);
+    }
+
+    .rrze-ac-footer-inner {
+        align-items: center;
+        display: grid;
+        gap: var(--rrze-ac-spacing-lg);
+        grid-template-columns: 1fr auto;
+        min-height: 9.5rem;
+    }
+
+    .rrze-ac-footer-logo-slot {
+        min-height: 1px;
+    }
+
+    .rrze-ac-footer-nav {
+        justify-content: flex-end;
+    }
+
+    .rrze-ac-footer-nav,
+    .rrze-ac-footer-menu {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--rrze-ac-spacing-md);
+    }
+
+    .rrze-ac-footer-menu {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .rrze-ac-footer-nav a {
+        color: var(--rrze-ac-color-footer-link);
+        text-decoration: none;
+        text-underline-offset: 0.2em;
+
+        &:hover,
+        &:focus {
+            text-decoration: underline;
+        }
+
+        &:focus {
+            outline: var(--rrze-ac-focus-outline);
+            outline-offset: var(--rrze-ac-focus-outline-offset);
+        }
+    }
+}
+
+@media (max-width: 700px) {
+    .rrze-ac {
+        .rrze-ac-header-inner,
+        .rrze-ac-footer-inner {
+            min-height: auto;
+            padding-bottom: 1.375rem;
+            padding-top: 1.375rem;
+            width: calc(100% - 1.75rem);
+        }
+
+        .rrze-ac-site-brand {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: var(--rrze-ac-spacing-md);
+        }
+
+        .rrze-ac-site-brand.rrze-ac-has-logo .rrze-ac-site-title {
+            border-left: 0;
+            margin-left: 0;
+            padding-left: 0;
+        }
+
+        .rrze-ac-error-main {
+            padding: 1.875rem 0.875rem 2.875rem;
+        }
+
+        .rrze-ac-panel-head,
+        .rrze-ac-panel-content {
+            padding-left: 1.375rem;
+            padding-right: 1.375rem;
+        }
+
+        .rrze-ac-denied input[type="submit"],
+        .rrze-ac-denied a.sso-link,
+        .rrze-ac-denied a.wp-link {
+            width: 100%;
+        }
+
+        .rrze-ac-footer-inner {
+            align-items: start;
+            grid-template-columns: 1fr;
+        }
+
+        .rrze-ac-footer-nav {
+            justify-content: flex-start;
+        }
+    }
+}

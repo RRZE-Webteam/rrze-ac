@@ -40,6 +40,75 @@ function getCsv(value) {
     return '';
 }
 
+function replacePluginHeaderField(content, field, value) {
+    var pattern = new RegExp(
+        '^(\\s*(?:\\*\\s*)?' + field + ':\\s*)(.+)$',
+        'm'
+    );
+
+    if (!pattern.test(content)) {
+        throw new Error('Plugin header field not found: ' + field);
+    }
+
+    return content.replace(pattern, function replaceHeaderField(match, prefix) {
+        return prefix + value;
+    });
+}
+
+function synchronizePluginHeader(pkg) {
+    var author = pkg.author && typeof pkg.author === 'object' ? pkg.author : {};
+    var repository = pkg.repository && typeof pkg.repository === 'object' ? pkg.repository : {};
+    var compatibility = pkg.compatibility && typeof pkg.compatibility === 'object' ? pkg.compatibility : {};
+    var mainFile = getString(pkg, 'main', '');
+    var headerFields = [
+        ['Plugin Name', getString(pkg, 'title', getString(pkg, 'name', ''))],
+        ['Plugin URI', getString(repository, 'url', '')],
+        ['Version', getString(pkg, 'version', '')],
+        ['Description', getString(pkg, 'description', '')],
+        ['Author', getString(author, 'name', '')],
+        ['Author URI', getString(author, 'url', '')],
+        ['License', getString(pkg, 'license', '')],
+        ['License URI', getString(pkg, 'licenseurl', '')],
+        ['Text Domain', getString(pkg, 'textdomain', '')],
+        ['Domain Path', getString(pkg, 'domainPath', '')],
+        ['Requires at least', getString(compatibility, 'wprequires', '')],
+        ['Requires PHP', getString(compatibility, 'phprequires', '')]
+    ];
+    var root = process.cwd();
+    var filePath;
+    var content;
+    var updated;
+    var i;
+
+    if (!mainFile) {
+        throw new Error('package.json has no valid "main" entry');
+    }
+
+    filePath = path.join(root, mainFile);
+    if (!fs.existsSync(filePath)) {
+        throw new Error('Plugin main file not found: ' + filePath);
+    }
+
+    content = fs.readFileSync(filePath, 'utf8');
+    updated = content;
+
+    for (i = 0; i < headerFields.length; i++) {
+        if (!headerFields[i][1]) {
+            throw new Error('package.json has no value for plugin header field: ' + headerFields[i][0]);
+        }
+
+        updated = replacePluginHeaderField(
+            updated,
+            headerFields[i][0],
+            headerFields[i][1]
+        );
+    }
+
+    if (updated !== content) {
+        fs.writeFileSync(filePath, updated, 'utf8');
+    }
+}
+
 function buildReadme(pkg) {
     var authorObj = pkg.author && typeof pkg.author === 'object' ? pkg.author : {};
     var repository = pkg.repository && typeof pkg.repository === 'object' ? pkg.repository : {};
@@ -54,7 +123,7 @@ function buildReadme(pkg) {
 
     var license = getString(pkg, 'license', '');
     var licenseUri = getString(pkg, 'licenseurl', '');
-    var textDomain = getString(pkg, 'textDomain', getString(pkg, 'textdomain', ''));
+    var textDomain = getString(pkg, 'textdomain', '');
 
     var githubURL = getString(repository, 'url', '');
     var githubIssue = getString(repository, 'issues', '');
@@ -104,6 +173,8 @@ function main() {
     var root = process.cwd();
     var pkgPath = path.join(root, 'package.json');
     var pkg = readJson(pkgPath);
+
+    synchronizePluginHeader(pkg);
 
     var readme = buildReadme(pkg);
     var outPath = path.join(root, 'readme.txt');

@@ -21,8 +21,8 @@ class ListTable extends \WP_List_Table
         }
 
         parent::__construct([
-            'singular' => 'rrzeac',
-            'plural' => 'rrzeacs',
+            'singular' => 'rrze-ac-permission',
+            'plural' => 'rrze-ac-permissions',
             'ajax' => false
         ]);
     }
@@ -178,12 +178,13 @@ class ListTable extends \WP_List_Table
         $columns = array(
             'permission_key' => __("Permission", 'rrze-ac'),
             'select' => __("Short Description", 'rrze-ac'),
-            'logged_in' => __("Login", 'rrze-ac'),
             'password' => __("Password", 'rrze-ac')
         );
 
         if (permissions()->ssoPluginIsAvailableAndActive()) {
             $columns['sso_logged_in'] = __('SSO', 'rrze-ac');
+        } else {
+            $columns['logged_in'] = __("Login", 'rrze-ac');
         }
 
         $columns['crawler'] = __("Crawler", 'rrze-ac');

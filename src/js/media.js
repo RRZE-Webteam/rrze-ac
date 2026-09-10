@@ -1,16 +1,25 @@
+/* global jQuery, wpUploaderInit */
+
 jQuery( document ).ready( function ( $ ) {
 	'use strict';
-	var input = $( 'input[name="access_protected"]' ),
+	const input = $( 'input[name="access_protected"]' ),
 		ctrl = document.getElementById( 'access_protected' ),
 		ui = $( '#plupload-upload-ui' );
 
+	ui.addClass( 'rrze-ac' );
+	if ( ! input.length || ! ctrl || typeof wpUploaderInit === 'undefined' ) {
+		return;
+	}
+
+	wpUploaderInit.multipart_params = wpUploaderInit.multipart_params || {};
+
 	function state( check ) {
-		return 'access-' + ( check == 'on' ? '' : 'un' ) + 'checked';
+		return 'rrze-ac-upload-' + ( check === 'on' ? '' : 'un' ) + 'checked';
 	}
 
 	input.on( 'change', function () {
-		var check = ctrl.checked ? 'on' : 'off';
-		ui.removeClass( state( check == 'on' ? 'off' : 'on' ) ).addClass(
+		const check = ctrl.checked ? 'on' : 'off';
+		ui.removeClass( state( check === 'on' ? 'off' : 'on' ) ).addClass(
 			state( check )
 		);
 

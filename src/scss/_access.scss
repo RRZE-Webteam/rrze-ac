@@ -1,0 +1,144 @@
+.rrze-ac {
+    .rrze-ac-permissions {
+        tr.default-permission {
+            th,
+            td {
+                background-color: #f0f0f1;
+            }
+        }
+
+        .inactive th.check-column,
+        tfoot td.check-column,
+        thead td.check-column {
+            padding-left: 6px;
+        }
+
+        .active {
+            td,
+            th {
+                box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.1) inset;
+            }
+
+            th.check-column {
+                border-left: 4px solid #00a0d2;
+            }
+        }
+
+        .inactive {
+            td,
+            th {
+                box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.1) inset;
+            }
+        }
+
+        tr.active + tr.inactive {
+            td,
+            th {
+                border-top: 1px solid rgba(0, 0, 0, 0.03);
+                box-shadow:
+                    0 1px 0 rgba(0, 0, 0, 0.02) inset,
+                    0 -1px 0 #e1e1e1 inset;
+            }
+        }
+
+        .column-logged_in,
+        .column-password,
+        .column-sso_logged_in {
+            text-align: center;
+        }
+
+        .rrze-ac-network-access {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+
+        td.column-permission_key strong {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 0.2em;
+        }
+    }
+
+    .access-icon::before {
+        color: var(--rrze-ac-access-color);
+    }
+
+    .access-all-icon::before {
+        color: var(--rrze-ac-access-all-color);
+    }
+
+    .access-error-icon::before {
+        color: var(--rrze-ac-access-error-color);
+    }
+
+    .access-permission-name {
+        margin-left: 4px;
+    }
+
+    input.field-invalid,
+    select.field-invalid {
+        border-color: #dc3232 !important;
+        box-shadow: 0 0 2px rgba(204, 0, 0, 0.8);
+
+        &:focus {
+            border-color: #dc3232 !important;
+            box-shadow: 0 0 2px rgba(204, 0, 0, 0.8);
+        }
+    }
+
+    .rrze-ac-pill-switch {
+        align-items: center;
+        display: inline-flex;
+        gap: 0.5rem;
+
+        input {
+            height: 1px;
+            margin: -1px;
+            overflow: hidden;
+            position: absolute;
+            width: 1px;
+        }
+
+        span {
+            background: #8c8f94;
+            border-radius: 1rem;
+            height: 1.25rem;
+            position: relative;
+            transition: background-color 0.15s ease;
+            width: 2.25rem;
+
+            &::after {
+                background: #fff;
+                border-radius: 50%;
+                content: '';
+                height: 1rem;
+                left: 0.125rem;
+                position: absolute;
+                top: 0.125rem;
+                transition: transform 0.15s ease;
+                width: 1rem;
+            }
+        }
+
+        input:checked + span {
+            background: #2271b1;
+
+            &::after {
+                transform: translateX(1rem);
+            }
+        }
+
+        input:focus-visible + span {
+            outline: 2px solid #2271b1;
+            outline-offset: 2px;
+        }
+    }
+
+    .rrze-ac-message-text.is-readonly {
+        input,
+        textarea {
+            background: #f0f0f1;
+            color: #646970;
+        }
+    }
+}

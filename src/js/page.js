@@ -49,8 +49,33 @@ function rrzeAcInitPostProtection() {
 	).on( 'click', rrzeAcHandlePostProtectionClick );
 }
 
+function rrzeAcToggleMessageTextFields( toggle ) {
+	const $ = jQuery;
+	const group = $( toggle ).data( 'rrze-ac-text-group' );
+	const fields = $(
+		'.rrze-ac-message-text[data-rrze-ac-text-group="' + group + '"]'
+	);
+	const useDefaults = $( toggle ).is( ':checked' );
+
+	fields.toggleClass( 'is-readonly', useDefaults );
+	fields.find( 'input, textarea' ).prop( 'readonly', useDefaults );
+}
+
+function rrzeAcInitMessageTextToggles() {
+	const $ = jQuery;
+	const toggles = $( '.rrze-ac-default-text-toggle' );
+
+	toggles.each( function initializeMessageTextToggle() {
+		rrzeAcToggleMessageTextFields( this );
+	} );
+	toggles.on( 'change', function changeMessageTextToggle() {
+		rrzeAcToggleMessageTextFields( this );
+	} );
+}
+
 function rrzeAcInitPage() {
 	rrzeAcInitPostProtection();
+	rrzeAcInitMessageTextToggles();
 }
 
 jQuery( document ).ready( rrzeAcInitPage );
