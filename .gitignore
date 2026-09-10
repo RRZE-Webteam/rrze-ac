@@ -1,9 +1,9 @@
-### vscode ###
-.vscode/
-### NetBeans ###
-**/nbproject/
-### PhpStorm ###
-.idea/
+# IDEs and othees
+.DS_Store
+.vscode/sftp.json
+node_modules
+package-lock.json
+nbproject
 ### macOS ###
 .DS_Store
 ### Node ###
@@ -11,7 +11,6 @@ node_modules/
 package-lock.json
 ### Composer ###
 composer.lock
-### WordPress ###
-*.pot
 ### Tmp ###
 _tmp/
+*.map

@@ -11,10 +11,6 @@ use RRZE\AccessControl\Crawler\Siteimprove;
 
 class Permissions
 {
-    const SSO_PLUGIN = 'rrze-sso/rrze-sso.php';
-
-    const SSO_PLUGIN_OPTION_NAME = 'rrze_sso';
-
     public $user_isnt_logged_in = 0;
 
     public $user_ip_isnt_in_range = 1;
@@ -66,19 +62,90 @@ class Permissions
         $this->options = Options::getOptions();
     }
 
+    public function logInfo($data)
+    {
+        if (!$this->infoLoggingEnabled()) {
+            return;
+        }
+
+        $message = $data['message'] ?? '';
+
+        if (empty($message)) {
+            return;
+        }
+
+        unset($data['plugin'], $data['message']);
+
+        do_action('rrze.log.info', 'RRZE-AC: ' . $message, $data);
+    }
+
+    public function infoLoggingEnabled()
+    {
+        return !empty($this->options['log_info_messages']);
+    }
+
     public function loaded()
     {
-        // WP-REST-API
-        add_filter(
-            'rest_authentication_errors',
-            fn ($result) => empty($result) && !is_user_logged_in()
-                ? new \WP_Error(
-                    'rest_cannot_access',
-                    __('Unauthorized access to the REST API.', 'rrze-ac'),
-                    ['status' => rest_authorization_required_code()]
-                )
-                : $result
+        add_filter('rest_request_before_callbacks', [$this, 'restRequestBeforeCallbacks'], 10, 3);
+    }
+
+    public function restRequestBeforeCallbacks($response, $handler, $request)
+    {
+        if ($response instanceof \WP_Error || $response instanceof \WP_REST_Response) {
+            return $response;
+        }
+
+        if (!in_array($request->get_method(), ['GET', 'HEAD'], true)) {
+            return $response;
+        }
+
+        $resource = $this->getRestCoreResource($request);
+
+        if (empty($resource)) {
+            return $response;
+        }
+
+        $postId = $resource['post_id'];
+
+        if (Access::try($postId)) {
+            return $response;
+        }
+
+        return new \WP_Error(
+            'rest_cannot_access',
+            __('Unauthorized access to the protected resource.', 'rrze-ac'),
+            ['status' => rest_authorization_required_code()]
         );
+    }
+
+    /**
+     * Return a WordPress Core REST resource that can be access protected.
+     *
+     * @param \WP_REST_Request $request The current REST request.
+     * @return array
+     */
+    private function getRestCoreResource($request)
+    {
+        $route = $request->get_route();
+
+        if (!preg_match('#^/wp/v2/(pages|media)/(\d+)/?$#i', $route, $matches)) {
+            return [];
+        }
+
+        $postType = strtolower($matches[1]) === 'pages' ? 'page' : 'attachment';
+        $postId = absint($matches[2]);
+
+        if (!$postId) {
+            return [];
+        }
+
+        if (get_post_type($postId) !== $postType) {
+            return [];
+        }
+
+        return [
+            'post_id' => $postId
+        ];
     }
 
     public function getDefaultPermission()
@@ -131,12 +198,12 @@ class Permissions
             return $this->getAttachmentPermission($postId);
         }
 
-        $permission = get_post_meta($postId, Post::ACCESS_PERMISSION_META_KEY, true);
+        $permission = get_post_meta($postId, Post::accessPermissionMetaKey(), true);
 
         return !empty($permission) ? $permission : false;
     }
 
-    public function checkAuthorPermission($postId)
+    public function checkPrivilegedAccess()
     {
         if (!is_user_logged_in()) {
             return false;
@@ -146,9 +213,146 @@ class Permissions
             return true;
         }
 
+        if (current_user_can('rrze_websupport_site_admin')) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function currentUserCanViewContentPermission($postId)
+    {
+        if (!current_user_can('edit_post', $postId)) {
+            return false;
+        }
+
+        if ($this->currentUserCanChangeContentPermission($postId)) {
+            return true;
+        }
+
+        return $this->contentPermissionIsSet($postId);
+    }
+
+    public function currentUserCanChangeContentPermission($postId = 0)
+    {
+        if ($this->currentUserCanManageContentPermissions()) {
+            return true;
+        }
+
+        if ($postId && !current_user_can('edit_post', $postId)) {
+            return false;
+        }
+
+        return $this->currentUserMeetsPermissionEditorRole();
+    }
+
+    public function currentUserCanManageContentPermissions()
+    {
+        return is_super_admin() || current_user_can('manage_options');
+    }
+
+    public function currentUserMeetsPermissionEditorRole()
+    {
+        if (!is_user_logged_in()) {
+            return false;
+        }
+
+        $selectedRole = $this->getPermissionEditorRole();
+        $selectedLevel = $this->roleLevel($selectedRole);
+        $user = wp_get_current_user();
+
+        if (!$this->roleHasLevelCapability($selectedRole)) {
+            return in_array($selectedRole, (array) $user->roles, true);
+        }
+
+        return $this->currentUserRoleLevel() >= $selectedLevel;
+    }
+
+    public function getPermissionEditorRole()
+    {
+        $role = !empty($this->options['permission_editor_role']) ? sanitize_key($this->options['permission_editor_role']) : 'editor';
+
+        if (!wp_roles()->is_role($role)) {
+            return 'editor';
+        }
+
+        return $role;
+    }
+
+    public function roleLevel($role)
+    {
+        $roleObject = get_role($role);
+
+        if (!$roleObject) {
+            return 10;
+        }
+
+        $level = 0;
+        foreach ($roleObject->capabilities as $capability => $enabled) {
+            if (!$enabled || !preg_match('/^level_([0-9]+)$/', $capability, $matches)) {
+                continue;
+            }
+
+            $level = max($level, (int) $matches[1]);
+        }
+
+        return $level;
+    }
+
+    private function roleHasLevelCapability($role)
+    {
+        $roleObject = get_role($role);
+
+        if (!$roleObject) {
+            return false;
+        }
+
+        foreach ($roleObject->capabilities as $capability => $enabled) {
+            if ($enabled && preg_match('/^level_([0-9]+)$/', $capability)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function currentUserRoleLevel()
+    {
+        $user = wp_get_current_user();
+        $level = 0;
+
+        foreach ((array) $user->roles as $role) {
+            $level = max($level, $this->roleLevel($role));
+        }
+
+        return $level;
+    }
+
+    private function contentPermissionIsSet($postId)
+    {
+        if (empty($postId)) {
+            return false;
+        }
+
+        if (get_post_type($postId) == 'attachment' && Files::isAttachmentProtected($postId)) {
+            return true;
+        }
+
+        return !empty(get_post_meta($postId, Post::accessPermissionMetaKey(), true));
+    }
+
+    public function checkAuthorPermission($postId)
+    {
+        if (!is_user_logged_in()) {
+            return false;
+        }
+
         $current_user = wp_get_current_user();
 
         $post = get_post($postId);
+        if (!$post) {
+            return false;
+        }
 
         $post_author = $post->post_author;
 
@@ -193,7 +397,7 @@ class Permissions
 
         $authors = [];
 
-        $workflowAuthors = $wpdb->get_col(
+        $workflowAuthors = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Workflow taxonomy data must reflect the current post immediately.
             $wpdb->prepare(
                 "SELECT t.name
                 FROM $wpdb->terms AS t
@@ -224,7 +428,7 @@ class Permissions
             return false;
         }
 
-        $permission = get_post_meta($attachmentId, Post::ACCESS_PERMISSION_META_KEY, true);
+        $permission = get_post_meta($attachmentId, Post::accessPermissionMetaKey(), true);
 
         return empty($permission) ? $this->getDefaultPermission() : $permission;
     }
@@ -266,15 +470,36 @@ class Permissions
         if ('publish' != get_post_status($postId) || $allowedPassword === '') {
             return true;
         }
-        $cookieName = 'rrze_ac_password_' . $postId;
+        $cookieName = Config::get('password_cookie_name_prefix') . $postId;
         if (isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'rrze_ac_submit_password_wpnonce')) {
             $password = isset($_POST[$cookieName]) ? sanitize_text_field($_POST[$cookieName]) : '';
             if (preg_match('/^[a-z0-9]{8,32}$/i', $password) && $password == $allowedPassword) {
-                setcookie($cookieName, Utils::crypt($password), strtotime('+1 hour'), COOKIEPATH, COOKIE_DOMAIN, true);
+                setcookie(
+                    $cookieName,
+                    Utils::crypt($password),
+                    [
+                        'expires' => time() + Config::get('password_cookie_expiration'),
+                        'path' => COOKIEPATH,
+                        'domain' => COOKIE_DOMAIN,
+                        'secure' => true,
+                        'httponly' => true,
+                        'samesite' => 'Lax'
+                    ]
+                );
                 $location = site_url(add_query_arg([], (string) wp_get_raw_referer()));
                 wp_safe_redirect($location);
                 exit;
             }
+            do_action(
+                'rrze.log.warning',
+                'RRZE-AC: Wrong password submitted.',
+                [
+                    'plugin' => 'rrze-ac',
+                    'method' => __METHOD__,
+                    'postID' => $postId,
+                    'permalink' => get_permalink($postId)
+                ]
+            );
             return false;
         }
 
@@ -301,28 +526,17 @@ class Permissions
         }
 
         if (!is_array($ipAddress)) {
-            do_action(
-                'rrze.log.warning',
-                [
-                    'plugin' => 'rrze-ac',
-                    'method' => __METHOD__,
-                    'message' => 'Wrong IP address range type. Must be an array.'
-                ]
-            );
             return false;
         }
 
-        $remoteAddr = $this->getRemoteIpAddress($ipAddress);
+        $remoteAddr = $this->getRemoteIpAddress();
 
         if (!$remoteAddr) {
-            do_action(
-                'rrze.log.warning',
-                [
-                    'plugin' => 'rrze-ac',
-                    'method' => __METHOD__,
-                    'message' => 'Remote IP address is UNKNOWN.'
-                ]
-            );
+            $this->logInfo([
+                'plugin' => 'rrze-ac',
+                'method' => __METHOD__,
+                'message' => 'Remote IP address is UNKNOWN.'
+            ]);
             return false;
         }
 
@@ -332,20 +546,17 @@ class Permissions
             return true;
         }
 
-        do_action(
-            'rrze.log.notice',
-            [
-                'plugin' => 'rrze-ac',
-                'method' => __METHOD__,
-                'message' => sprintf('Remote IP address %s is not in range.', $remoteAddr)
-            ]
-        );
+        $this->logInfo([
+            'plugin' => 'rrze-ac',
+            'method' => __METHOD__,
+            'message' => sprintf('Remote IP address %s is not in range.', $remoteAddr)
+        ]);
         return false;
     }
 
-    public function getRemoteIpAddress($ipAddress = [])
+    public function getRemoteIpAddress()
     {
-        $remoteAddress = new RemoteAddress($ipAddress);
+        $remoteAddress = new RemoteAddress();
         return $remoteAddress->getIpAddress();
     }
 
@@ -363,15 +574,11 @@ class Permissions
         $remoteAddr = $this->getRemoteIpAddress();
 
         if (!$remoteAddr) {
-            do_action(
-                'rrze.log.warning',
-                [
-                    'plugin' => 'rrze-ac',
-                    'method' => __METHOD__,
-                    'message' =>
-                    'Remote IP address is UNKNOWN.'
-                ]
-            );
+            $this->logInfo([
+                'plugin' => 'rrze-ac',
+                'method' => __METHOD__,
+                'message' => 'Remote IP address is UNKNOWN.'
+            ]);
             return false;
         }
 
@@ -379,39 +586,46 @@ class Permissions
         $hostname = $ip->getHostname();
 
         if ($hostname === null) {
-            do_action(
-                'rrze.log.notice',
-                [
-                    'plugin' => 'rrze-ac',
-                    'method' => __METHOD__,
-                    'message' => sprintf('Cannot get hostname from remote IP address %s.', $remoteAddr)
-                ]
-            );
+            $this->logInfo([
+                'plugin' => 'rrze-ac',
+                'method' => __METHOD__,
+                'message' => sprintf('Cannot get hostname from remote IP address %s.', $remoteAddr)
+            ]);
             return false;
         }
 
+        $hostname = strtolower(rtrim($hostname, '.'));
+
         foreach ($allowedDomains as $domain) {
-            if (strrpos($domain, $hostname) !== false) {
+            $domain = strtolower(rtrim(trim((string) $domain), '.'));
+
+            if (
+                $domain !== ''
+                && ($hostname === $domain || str_ends_with($hostname, '.' . $domain))
+            ) {
                 return true;
             }
         }
 
-        do_action(
-            'rrze.log.notice',
-            [
-                'plugin' => 'rrze-ac',
-                'method' => __METHOD__,
-                'message' => sprintf('Remote hostname %s is not allowed.', $hostname)
-            ]
-        );
+        $this->logInfo([
+            'plugin' => 'rrze-ac',
+            'method' => __METHOD__,
+            'message' => sprintf('Remote hostname %s is not allowed.', $hostname)
+        ]);
         return false;
     }
 
     /**
-     * Check if user is SSO logged in
-     * @return boolean
+     * Check if user is SSO logged in.
+     *
+     * The authentication flow is intentionally optional. Callers that offer
+     * another interactive access method, such as a password, must be able to
+     * render that method before starting an SSO redirect.
+     *
+     * @param bool $startAutomaticAuthentication Whether to start the configured automatic SSO flow.
+     * @return bool
      */
-    public function checkSSOLoggedIn()
+    public function checkSSOLoggedIn($startAutomaticAuthentication = false)
     {
         if (!$this->simplesamlAuth()) {
             return false;
@@ -419,7 +633,7 @@ class Permissions
 
         if (!$this->simplesamlAuth->isAuthenticated()) {
             \SimpleSAML\Session::getSessionFromRequest()->cleanup();
-            if ($this->options['automatic_sso_authentication']) {
+            if ($startAutomaticAuthentication && !empty($this->options['automatic_sso_authentication'])) {
                 $this->simplesamlAuth->requireAuth();
                 \SimpleSAML\Session::getSessionFromRequest()->cleanup();
             }
@@ -433,17 +647,21 @@ class Permissions
         return true;
     }
 
+    public function ssoPluginIsAvailableAndActive(): bool {
+        return Utils::isPluginInstalledAndActive(Config::get('sso_plugin'));
+    }
+
     /**
      * SSO: Check if an instance of SimpleSAML can be initialized
      * @return boolean
      */
     public function simplesamlAuth()
     {
-        if (Utils::isPluginActive(self::SSO_PLUGIN)) {
+        if ($this->ssoPluginIsAvailableAndActive()) {
             if (is_multisite()) {
-                $options = get_site_option(self::SSO_PLUGIN_OPTION_NAME);
+                $options = get_site_option(Config::get('sso_plugin_option_name'));
             } else {
-                $options = get_option(self::SSO_PLUGIN_OPTION_NAME);
+                $options = get_option(Config::get('sso_plugin_option_name'));
             }
         } else {
             return false;
@@ -478,15 +696,6 @@ class Permissions
         }
 
         if (!is_array($affiliation)) {
-            do_action(
-                'rrze.log.warning',
-                [
-                    'plugin' => 'rrze-ac',
-                    'method' => __METHOD__,
-                    'message' => 'Wrong person affiliation attribute value. Must be an array.',
-                    'person_atributes' => $this->personAttributes
-                ]
-            );
             return false;
         }
 
@@ -496,15 +705,12 @@ class Permissions
             }
         }
 
-        do_action(
-            'rrze.log.warning',
-            [
-                'plugin' => 'rrze-ac',
-                'method' => __METHOD__,
-                'message' => 'Wrong person affiliation attribute.',
-                'person_atributes' => $this->personAttributes
-            ]
-        );
+        $this->logInfo([
+            'plugin' => 'rrze-ac',
+            'method' => __METHOD__,
+            'message' => 'Wrong person affiliation attribute.',
+            'person_atributes' => $this->personAttributes
+        ]);
         return false;
     }
 
@@ -520,15 +726,6 @@ class Permissions
         }
 
         if (!is_array($entitlement)) {
-            do_action(
-                'rrze.log.warning',
-                [
-                    'plugin' => 'rrze-ac',
-                    'method' => __METHOD__,
-                    'message' => 'Wrong person entitlement attribute value. Must be an array.',
-                    'person_atributes' => $this->personAttributes
-                ]
-            );
             return false;
         }
 
@@ -538,15 +735,12 @@ class Permissions
             }
         }
 
-        do_action(
-            'rrze.log.warning',
-            [
-                'plugin' => 'rrze-ac',
-                'method' => __METHOD__,
-                'message' => 'Wrong person entitlement attribute.',
-                'person_atributes' => $this->personAttributes
-            ]
-        );
+        $this->logInfo([
+            'plugin' => 'rrze-ac',
+            'method' => __METHOD__,
+            'message' => 'Wrong person entitlement attribute.',
+            'person_atributes' => $this->personAttributes
+        ]);
         return false;
     }
 
@@ -559,14 +753,11 @@ class Permissions
         $ipAddresses = Siteimprove::getIpAddresses();
         if (!empty($ipAddresses)) {
             if (!permissions()->checkIpAddressRange($ipAddresses)) {
-                do_action(
-                    'rrze.log.notice',
-                    [
-                        'plugin' => 'rrze-ac',
-                        'type' => __METHOD__,
-                        'message' => 'Crawler IP address is not in range.'
-                    ]
-                );
+                $this->logInfo([
+                    'plugin' => 'rrze-ac',
+                    'method' => __METHOD__,
+                    'message' => 'Crawler IP address is not in range.'
+                ]);
                 return false;
             }
         }

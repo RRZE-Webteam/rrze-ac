@@ -73,6 +73,20 @@ class IPUtils {
             return null;
         }
 
+        // IPv4 prefixes such as 131.188. represent the corresponding subnet.
+        $prefixBits = null;
+        if (preg_match('/^(\d{1,3}\.){1,3}$/', $ipRangeString)) {
+            $parts = explode('.', rtrim($ipRangeString, '.'));
+            foreach ($parts as $part) {
+                if ((int) $part > 255) {
+                    return null;
+                }
+            }
+
+            $prefixBits = count($parts) * 8;
+            $ipRangeString = implode('.', array_pad($parts, 4, '0'));
+        }
+
         // IP address with wildcards '*'
         if (strpos($ipRangeString, '*') !== false) {
             // Disallow prefixed wildcards and anything other than wildcards
@@ -100,7 +114,7 @@ class IPUtils {
 
         $maxbits = strlen($ip) * 8;
         if (!isset($bits)) {
-            $bits = $maxbits;
+            $bits = $prefixBits ?? $maxbits;
 
             if (isset($numWildcards)) {
                 $bits -= ($maxbits === 32 ? 8 : 16) * $numWildcards;

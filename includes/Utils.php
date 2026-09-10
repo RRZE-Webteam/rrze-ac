@@ -27,6 +27,28 @@ class Utils
     }
 
     /**
+     * Check if the plugin file exists.
+     * @return boolean
+     */
+    public static function isPluginInstalled(string $plugin): bool {
+        return file_exists(WP_PLUGIN_DIR . '/' . $plugin);
+    }
+
+    /**
+     * Check if the plugin is installed and active locally or network-wide.
+     * @return boolean
+     */
+    public static function isPluginInstalledAndActive(string $plugin): bool {
+        include_once ABSPATH . 'wp-admin/includes/plugin.php';
+
+        if (!self::isPluginInstalled($plugin)) {
+            return false;
+        }
+
+        return is_plugin_active($plugin) || is_plugin_active_for_network($plugin);
+    }
+
+    /**
      * Encode email address
      * @param string $email
      * @return string
@@ -97,6 +119,6 @@ class Utils
             }
         }
 
-        return add_query_arg($atts, get_admin_url(null, 'admin.php'));
+        return add_query_arg($atts, get_admin_url(null, 'options-general.php'));
     }
 }

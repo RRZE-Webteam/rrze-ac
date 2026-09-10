@@ -4,12 +4,11 @@ namespace RRZE\AccessControl\Media;
 
 defined('ABSPATH') || exit;
 
-use RRZE\AccessControl\{Access, Options};
+use RRZE\AccessControl\{Access, Config, Options};
+use function RRZE\AccessControl\permissions;
 
 class Files
 {
-    const PROTECTED_DIRNAME = '_protected';
-
     public static function init()
     {
         add_filter('upload_dir', [__CLASS__, 'changeUploadDirectory'], 999);
@@ -31,7 +30,7 @@ class Files
     public static function protectedUploadDir($path = '', $inUrl = false)
     {
         $dirpath = $inUrl ? '/' : '';
-        $dirpath .= self::PROTECTED_DIRNAME;
+        $dirpath .= Config::get('protected_upload_dirname');
         $dirpath .= $path;
 
         return $dirpath;
@@ -39,7 +38,7 @@ class Files
 
     public static function changeUploadDirectory($param)
     {
-        if (isset($_POST['access_protected']) && 'on' == $_POST['access_protected']) {
+        if (isset($_POST['access_protected']) && 'on' == $_POST['access_protected'] && permissions()->currentUserCanChangeContentPermission()) {
             $param['subdir'] = self::protectedUploadDir($param['subdir'], true);
             $param['path'] = $param['basedir'] . $param['subdir'];
             $param['url'] = $param['baseurl'] . $param['subdir'];
@@ -228,7 +227,7 @@ class Files
         $permalink = site_url('/wp-content/' . $path[1]);
 
         global $wpdb;
-        $wpdb->update($wpdb->posts, array('guid' => $permalink), array('ID' => $attachmentId), array('%s'), array('%d'));
+        $wpdb->update($wpdb->posts, array('guid' => $permalink), array('ID' => $attachmentId), array('%s'), array('%d')); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- WordPress has no API for updating the attachment GUID after moving the file.
 
         return true;
     }
@@ -259,8 +258,8 @@ class Files
 
         if (empty($uploadDir['basedir'])) {
             wp_die(
-                __('The requested file was not found.', 'rrze-ac'),
-                __('Not Found', 'rrze-ac'),
+                esc_html__('The requested file was not found.', 'rrze-ac'),
+                esc_html__('Not Found', 'rrze-ac'),
                 [
                     'response' => '404',
                     'back_link' => false
@@ -275,8 +274,8 @@ class Files
             $file = $uploadDir['basedir'] . $relFile;
             if (!is_file($file)) {
                 wp_die(
-                    __('The requested file was not found.', 'rrze-ac'),
-                    __('Not Found', 'rrze-ac'),
+                    esc_html__('The requested file was not found.', 'rrze-ac'),
+                    esc_html__('Not Found', 'rrze-ac'),
                     [
                         'response' => '404',
                         'back_link' => false
@@ -291,8 +290,8 @@ class Files
             $mimetype = $mime['type'];
         } else {
             wp_die(
-                __('The request was due lack of client permission not performed.', 'rrze-ac'),
-                __('Forbidden', 'rrze-ac'),
+                esc_html__('The request was due lack of client permission not performed.', 'rrze-ac'),
+                esc_html__('Forbidden', 'rrze-ac'),
                 [
                     'response' => '403',
                     'back_link' => false
@@ -304,8 +303,8 @@ class Files
 
         if (0 !== stripos($fileInfo['dirname'], self::protectedUploadDir('/', true))) {
             wp_die(
-                __('The requested file was not found.', 'rrze-ac'),
-                __('Not Found', 'rrze-ac'),
+                esc_html__('The requested file was not found.', 'rrze-ac'),
+                esc_html__('Not Found', 'rrze-ac'),
                 [
                     'response' => '404',
                     'back_link' => false
@@ -329,7 +328,7 @@ class Files
         $attachmentDirname = trim($fileInfo['dirname'], '/\\');
         $attachmentFile = $attachmentDirname . '/' . $fileInfo['basename'];
 
-        $attachment = $wpdb->get_row(
+        $attachment = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- The protected-file request must resolve the current attachment immediately.
             $wpdb->prepare(
                 "SELECT post_id FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value = %s",
                 '_wp_attached_file',
@@ -338,7 +337,7 @@ class Files
         );
 
         if (is_null($attachment)) {
-            $attachment = $wpdb->get_row(
+            $attachment = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- The protected-file request must resolve the current attachment immediately.
                 $wpdb->prepare(
                     "SELECT post_id "
                         . "FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value LIKE %s "
@@ -353,8 +352,8 @@ class Files
 
         if (is_null($attachment)) {
             wp_die(
-                __('The requested attachment was not found.', 'rrze-ac'),
-                __('Not Found', 'rrze-ac'),
+                    esc_html__('The requested attachment was not found.', 'rrze-ac'),
+                    esc_html__('Not Found', 'rrze-ac'),
                 [
                     'response' => '404',
                     'back_link' => false
@@ -367,11 +366,12 @@ class Files
         if (!Access::try($attachmentId)) {
             $options = Options::getOptions();
             wp_die(
-                Access::permissionMessage($attachmentId, $options),
-                __('Login is required', 'rrze-ac'),
+                wp_kses(Access::permissionMessage($attachmentId, $options), Access::allowedErrorHtml()),
+                esc_html__('Login is required', 'rrze-ac'),
                 [
                     'response' => '403',
-                    'back_link' => false
+                    'back_link' => false,
+                    'rrze_ac_permission_error' => true
                 ]
             );
         }

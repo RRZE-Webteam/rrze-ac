@@ -1,5 +1,5 @@
 /**
  * Plugin dependencies
  */
-import "./blockeditor.js";
-import "./blockeditor.scss";
+import './blockeditor.js';
+import './blockeditor.scss';

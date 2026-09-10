@@ -1,0 +1,84 @@
+#attachment-protection-metabox.rrze-ac {
+    .inside {
+        position: static;
+    }
+}
+
+.rrze-ac {
+    #access-protection-toggle {
+        border: 0;
+        clip: rect(0 0 0 0);
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
+    }
+
+    div.access-permission-select {
+        margin: 0 0 3.5em !important;
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        -webkit-transition:
+            0.5s opacity,
+            0.5s 0.1s max-height;
+        transition:
+            0.5s opacity,
+            0.5s 0.1s max-height;
+    }
+
+    .access-protection-toggle {
+        bottom: 0;
+        left: 0;
+        padding: 1em 15px;
+        position: absolute;
+        right: 0;
+
+        .access-on {
+            text-align: center;
+            width: 100%;
+
+            &::after {
+                content: attr(data-access-content);
+            }
+        }
+
+        .access-off {
+            color: red;
+            display: none;
+
+            &::after {
+                content: attr(data-access-content);
+                speak: none;
+            }
+        }
+    }
+
+    #access-protection-toggle:checked ~ div.access-permission-select {
+        margin-bottom: 4.2em !important;
+        max-height: 100px;
+        opacity: 1;
+        -webkit-transition:
+            0.3s 0.1s opacity,
+            0.5s max-height ease-out;
+        transition:
+            0.3s 0.1s opacity,
+            0.5s max-height ease-out;
+    }
+
+    #access-protection-toggle:checked + .access-protection-toggle {
+        border-top: 1px solid #dfdfdf;
+        -webkit-box-shadow: inset 0 1px #fff;
+        box-shadow: inset 0 1px #fff;
+
+        .access-on {
+            display: none;
+        }
+
+        .access-off {
+            display: block;
+        }
+    }
+}

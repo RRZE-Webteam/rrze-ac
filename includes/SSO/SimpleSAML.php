@@ -41,9 +41,9 @@ class SimpleSAML
                     $tag = is_plugin_active_for_network(plugin()->getBaseName()) ? 'network_admin_notices' : 'admin_notices';
                     add_action($tag, function () use ($pluginName, $error) {
                         printf(
-                            '<div class="notice notice-error"><p>' .
+                            '<div class="rrze-ac notice notice-error"><p>' .
                                 /* translators: 1: The plugin name, 2: The error string. */
-                                __('Plugins: %1$s: %2$s', 'rrze-ac') .
+                                esc_html__('Plugins: %1$s: %2$s', 'rrze-ac') .
                                 '</p></div>',
                             esc_html($pluginName),
                             esc_html($error)

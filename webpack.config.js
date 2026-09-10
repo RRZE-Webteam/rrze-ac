@@ -1,5 +1,7 @@
 const defaults = require("@wordpress/scripts/config/webpack.config");
+const path = require("path");
 const webpack = require("webpack");
+const packageConfig = require("./package.json");
 
 /**
  * WP-Scripts Webpack config.
@@ -9,12 +11,16 @@ const webpack = require("webpack");
 module.exports = {
     ...defaults,
     entry: {
-        access: "./src/access/index.js",
-        attachment: "./src/attachment/index.js",
+        "rrze-ac-admin": path.resolve(
+            __dirname,
+            packageConfig.source.js,
+            "rrze-ac-admin.js"
+        ),
         blockeditor: "./src/blockeditor/index.js",
-        media: "./src/media/index.js",
-        page: "./src/page/index.js",
-        upload: "./src/upload/index.js",
+    },
+    output: {
+        ...defaults.output,
+        path: path.resolve(__dirname, packageConfig.target.js),
     },
     plugins: [
         ...defaults.plugins,

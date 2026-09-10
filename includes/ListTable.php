@@ -17,12 +17,12 @@ class ListTable extends \WP_List_Table
 
         $this->listData = permissions()->getThePermissions();
         foreach ($this->listData as $key => $data) {
-            $this->listData[$key]['default'] = ($data['permission_key'] == permissions()->getDefaultPermission()) ? 1 : 0;
+            $this->listData[$key]['default'] = !empty($data['core']) ? 1 : 0;
         }
 
         parent::__construct([
-            'singular' => 'rrzeac',
-            'plural' => 'rrzeacs',
+            'singular' => 'rrze-ac-permission',
+            'plural' => 'rrze-ac-permissions',
             'ajax' => false
         ]);
     }
@@ -30,8 +30,8 @@ class ListTable extends \WP_List_Table
     public function single_row($item)
     {
         $class = $item['active'] ? 'active ' : 'inactive';
-        $class .= $item['default'] ? 'default-permission' : '';
-        echo $class ? '<tr class="' . trim($class) . '">' : '<tr>';
+        $class .= $item['default'] ? ' default-permission' : '';
+        echo $class ? '<tr class="' . esc_attr(trim($class)) . '">' : '<tr>';
         $this->single_row_columns($item);
         echo '</tr>';
     }
@@ -41,26 +41,71 @@ class ListTable extends \WP_List_Table
         switch ($column_name) {
             case 'permission_key':
             case 'select':
-                $item[$column_name] = !empty($item[$column_name]) ? $item[$column_name] : '';
+                $item[$column_name] = $this->permissionDisplayLabel($item, $column_name);
                 break;
-            case 'description':
-                $item[$column_name] = !empty($item[$column_name]) ? esc_html(wp_trim_words(sanitize_textarea_field($item[$column_name]))) : '';
+            case 'network_access':
+                $item[$column_name] = $this->networkAccessColumn($item);
                 break;
-            case 'domain':
-            case 'ip_address':
-                $item[$column_name] = !empty($item[$column_name]) ? implode('<br>', $item[$column_name]) : '';
+            case 'crawler':
+                $item[$column_name] = $this->crawlerColumn($item);
                 break;
             case 'logged_in':
-                $item[$column_name] = !empty($item[$column_name]) ? '<span class="dashicons dashicons-yes"></span>' : '';
+                $item[$column_name] = $this->checkmarkColumn(!empty($item[$column_name]));
+                break;
+            case 'password':
+                $item[$column_name] = $this->checkmarkColumn(!empty($item[$column_name]));
                 break;
             case 'sso_logged_in':
-                $item[$column_name] = !empty($item[$column_name]) ? '<span class="dashicons dashicons-yes"></span>' : '';
-                $item[$column_name] .= !empty($item['affiliation']) ? '<br>' . implode(' ', $item['affiliation']) : '';
-                $item[$column_name] .= !empty($item['entitlement']) ? '<br>' . implode(' ', $item['entitlement']) : '';
+                $item[$column_name] = $this->checkmarkColumn(!empty($item[$column_name]));
                 break;
         }
 
         return $item[$column_name];
+    }
+
+    private function checkmarkColumn($enabled)
+    {
+        if (!$enabled) {
+            return '';
+        }
+
+        return '<span class="dashicons dashicons-yes" aria-hidden="true"></span><span class="screen-reader-text">' . esc_html__('Yes', 'rrze-ac') . '</span>';
+    }
+
+    private function networkAccessColumn($item)
+    {
+        $values = [];
+
+        if (!empty($item['domain'])) {
+            $values = array_merge($values, (array) $item['domain']);
+        }
+
+        if (!empty($item['ip_address'])) {
+            $values = array_merge($values, (array) $item['ip_address']);
+        }
+
+        $values = array_filter(array_map('trim', $values));
+
+        if (empty($values)) {
+            return '';
+        }
+
+        return '<pre class="rrze-ac-network-access">' . esc_html(implode(PHP_EOL, $values)) . '</pre>';
+    }
+
+    private function crawlerColumn($item)
+    {
+        $crawlers = [];
+
+        if (!empty($item['siteimprove'])) {
+            $crawlers[] = __('Siteimprove', 'rrze-ac');
+        }
+
+        if (empty($crawlers)) {
+            return '';
+        }
+
+        return esc_html(implode(', ', $crawlers));
     }
 
     public function column_permission_key($item)
@@ -69,136 +114,93 @@ class ListTable extends \WP_List_Table
         $actions = [];
         $format = '%1$s %2$s';
         if (!$item['core']) {
-            $actions['edit'] = '<a href="' . esc_url(Utils::actionUrl(['action' => 'edit', 'permission' => $item['permission_key']])) . '">' . esc_html(__("Edit", 'rrze-ac')) . '</a>';
-        }
-        if ($item['active']) {
-            $format = '<strong>%1$s</strong> %2$s';
-            $actions['deactivate'] = '<a href="' . esc_url(Utils::actionUrl(['action' => 'deactivate', 'permission' => $item['permission_key']])) . '">' . esc_html(__("Deactivate", 'rrze-ac')) . '</a>';
-        } else {
-            $actions['activate'] = '<a href="' . esc_url(Utils::actionUrl(array('action' => 'activate', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Activate", 'rrze-ac')) . '</a>';
-            if (empty(Post::countMetaKeys($item['permission_key']))) {
-                $actions['delete'] = '<a href="' . esc_url(Utils::actionUrl(array('action' => 'delete', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Delete", 'rrze-ac')) . '</a>';
+            $actions['edit'] = '<a href="' . esc_url(Utils::actionUrl(['tab' => 'permissions', 'action' => 'edit', 'permission' => $item['permission_key']])) . '">' . esc_html(__("Edit", 'rrze-ac')) . '</a>';
+
+            if ($item['active']) {
+                $format = '<strong>%1$s</strong> %2$s';
+                $actions['deactivate'] = '<a href="' . esc_url(Utils::actionUrl(['tab' => 'permissions', 'action' => 'deactivate', 'permission' => $item['permission_key']])) . '">' . esc_html(__("Deactivate", 'rrze-ac')) . '</a>';
+            } else {
+                $actions['activate'] = '<a href="' . esc_url(Utils::actionUrl(array('tab' => 'permissions', 'action' => 'activate', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Activate", 'rrze-ac')) . '</a>';
             }
         }
-        return sprintf($format, strtoupper($item['permission_key']), $this->row_actions($actions));
+
+        if ($this->permissionCanBeDeleted($item)) {
+            $actions['delete'] = '<a href="' . esc_url(Utils::actionUrl(array('tab' => 'permissions', 'action' => 'delete', 'permission' => $item['permission_key']))) . '">' . esc_html(__("Delete", 'rrze-ac')) . '</a>';
+        }
+
+        if ($item['active']) {
+            $format = '<strong>%1$s</strong> %2$s';
+        }
+
+        return sprintf($format, $this->permissionDisplayLabel($item, 'permission_key'), $this->row_actions($actions));
     }
 
-    public function column_cb($item)
+    private function permissionCanBeDeleted($item)
     {
-        return sprintf('<input type="checkbox" name="%1$s[]" value="%2$s">', $this->_args['singular'], $item['permission_key']);
+        return empty($item['core'])
+            && empty($item['default'])
+            && empty(Post::countMetaKeys($item['permission_key']));
+    }
+
+    private function permissionDisplayLabel($item, $columnName)
+    {
+        if (!empty($item['core']) && $columnName == 'permission_key') {
+            switch ($item['permission_key']) {
+                case 'public':
+                    return esc_html__('Public', 'rrze-ac');
+                case 'logged-in':
+                    return esc_html__('Logged-in', 'rrze-ac');
+                default:
+                    break;
+            }
+        }
+
+        if (!empty($item['core']) && $columnName == 'select') {
+            switch ($item['permission_key']) {
+                case 'public':
+                    return esc_html__('Publicly accessible', 'rrze-ac');
+                case 'logged-in':
+                    return esc_html__('Login required', 'rrze-ac');
+                default:
+                    break;
+            }
+        }
+
+        if ($columnName == 'permission_key') {
+            return esc_html(strtoupper($item['permission_key']));
+        }
+
+        return !empty($item[$columnName]) ? esc_html($item[$columnName]) : '';
     }
 
     public function get_columns()
     {
         $columns = array(
-            'cb' => '<input type="checkbox">', // Render a checkbox instead of text
             'permission_key' => __("Permission", 'rrze-ac'),
             'select' => __("Short Description", 'rrze-ac'),
-            'description' => __("Description", 'rrze-ac'),
-            'logged_in' => __("Logged-in", 'rrze-ac'),
-            'sso_logged_in' => __('SSO', 'rrze-ac'),
-            'domain' => __("Allow domain", 'rrze-ac'),
-            'ip_address' => __("Allow IP address", 'rrze-ac')
+            'password' => __("Password", 'rrze-ac')
         );
+
+        if (permissions()->ssoPluginIsAvailableAndActive()) {
+            $columns['sso_logged_in'] = __('SSO', 'rrze-ac');
+        } else {
+            $columns['logged_in'] = __("Login", 'rrze-ac');
+        }
+
+        $columns['crawler'] = __("Crawler", 'rrze-ac');
+        $columns['network_access'] = __("Network Access", 'rrze-ac');
+
         return $columns;
     }
 
     public function get_sortable_columns()
     {
-        $sortableColumns = [
-            'permission_key' => ['permission_key', false],
-            'select' => ['select', false],
-            'logged_in' => ['logged_in', false],
-            'sso_logged_in' => ['sso_logged_in', false]
-        ];
-        return $sortableColumns;
-    }
-
-    public function get_bulk_actions()
-    {
-        $actions = [
-            'activate' => __("Activate", 'rrze-ac'),
-            'deactivate' => __("Deactivate", 'rrze-ac'),
-            'delete' => __("Delete", 'rrze-ac')
-        ];
-        return $actions;
-    }
-
-    public function process_bulk_action()
-    {
-        $permissionKeys = $this->main->settings->requestVar($this->_args['singular']);
-
-        if (!empty($permissionKeys) && is_array($permissionKeys)) {
-            switch ($this->current_action()) {
-                case 'activate':
-                    $this->process_bulk_activate($permissionKeys);
-                    break;
-                case 'deactivate':
-                    $this->process_bulk_activate($permissionKeys, 0);
-                    break;
-                case 'delete':
-                    $this->process_bulk_delete($permissionKeys);
-                    break;
-            }
-        }
-    }
-
-    private function process_bulk_delete($permissionKeys)
-    {
-        foreach ($permissionKeys as $value) {
-            $permission = permissions()->getPermission($value);
-            $this->main->settings->action_delete($permission);
-        }
-        wp_redirect(Utils::actionUrl());
-        exit();
-    }
-
-    private function process_bulk_activate($permissionKeys, $activate = 1)
-    {
-        foreach ($permissionKeys as $value) {
-            $permission = permissions()->getPermission($value);
-            $this->main->settings->action_activate($permission, $activate);
-        }
-        wp_redirect(Utils::actionUrl());
-        exit();
+        return [];
     }
 
     public function prepare_items()
     {
         $this->_column_headers = $this->get_column_info();
-
-        if (isset($_GET['s']) && mb_strlen(trim($_GET['s'])) > 0) {
-            $search = trim($_GET['s']);
-            foreach ($this->listData as $key => $data) {
-                $permissionKey = mb_stripos($data['permission_key'], $search) === false ? true : false;
-                $select = mb_stripos($data['select'], $search) === false ? true : false;
-                $description = mb_stripos($data['description'], $search) === false ? true : false;
-
-                $domain = !empty($data['domain']) ? $data['domain'] : [];
-                $dom = true;
-                foreach ($domain as $value) {
-                    if (isset($value) && mb_stripos($value, $search) !== false) {
-                        $dom = false;
-                        break;
-                    }
-                }
-
-                $ipAddress = !empty($data['ip_address']) ? $data['ip_address'] : [];
-                $ip = true;
-                foreach ($ipAddress as $value) {
-                    if (isset($value) && mb_stripos($value, $search) !== false) {
-                        $ip = false;
-                        break;
-                    }
-                }
-
-                if ($permissionKey && $select && $description && $ip && $dom) {
-                    unset($this->listData[$key]);
-                }
-            }
-        }
-
-        $this->process_bulk_action();
 
         $perPage = $this->get_items_per_page('rrzeacs_per_page', 20);
         $currentPage = $this->get_pagenum();
