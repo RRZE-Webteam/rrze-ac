@@ -594,8 +594,15 @@ class Permissions
             return false;
         }
 
+        $hostname = strtolower(rtrim($hostname, '.'));
+
         foreach ($allowedDomains as $domain) {
-            if (strrpos($domain, $hostname) !== false) {
+            $domain = strtolower(rtrim(trim((string) $domain), '.'));
+
+            if (
+                $domain !== ''
+                && ($hostname === $domain || str_ends_with($hostname, '.' . $domain))
+            ) {
                 return true;
             }
         }
