@@ -128,11 +128,12 @@ class Permissions
     {
         $route = $request->get_route();
 
-        if (!preg_match('#^/wp/v2/(pages|media)/([1-9][0-9]*)$#', $route, $matches)) {
+        // Match the same case variants and leading-zero IDs as WordPress Core.
+        if (!preg_match('#^/wp/v2/(pages|media)/([0-9]+)$#i', $route, $matches)) {
             return [];
         }
 
-        $postType = $matches[1] === 'pages' ? 'page' : 'attachment';
+        $postType = strtolower($matches[1]) === 'pages' ? 'page' : 'attachment';
         $postId = absint($matches[2]);
 
         if (!$postId) {
