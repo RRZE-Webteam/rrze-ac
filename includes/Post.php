@@ -386,6 +386,17 @@ class Post
 
         if (!empty($postNotIn)) {
             $args['post__not_in'] = array_unique(array_merge($args['post__not_in'] ?? [], $postNotIn));
+
+            // WP_Query prioritizes post__in over post__not_in. Apply exclusions
+            // to explicit REST include selections before the query is executed.
+            if (!empty($args['post__in'])) {
+                $included = array_diff(
+                    array_map('absint', $args['post__in']),
+                    array_map('absint', $args['post__not_in'])
+                );
+                // An empty post__in would remove the inclusion restriction.
+                $args['post__in'] = $included ? array_values($included) : [0];
+            }
         }
 
         return $args;
