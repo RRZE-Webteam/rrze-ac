@@ -49,7 +49,7 @@ class Access
         $ssoLoggedIn = false;
         if ($permission == 'logged-in') {
             if ($ssoPluginIsAvailableAndActive) {
-                if (!permissions()->checkSSOLoggedIn()) {
+                if (!permissions()->checkSSOLoggedIn(true)) {
                     permissions()->set_permission_status(permissions()->user_isnt_sso_logged_in);
                 } else {
                     $ssoLoggedIn = true;
@@ -105,7 +105,10 @@ class Access
 
         // Check if permission is set to be sso logged in.
         if (!$allowed && !empty($permissions[$permission]['sso_logged_in'])) {
-            if (!permissions()->checkSSOLoggedIn()) {
+            // A password is an alternative, interactive access method. Do not
+            // redirect to SSO before the protected-page template can offer it.
+            $startAutomaticSsoAuthentication = empty($permissions[$permission]['password']);
+            if (!permissions()->checkSSOLoggedIn($startAutomaticSsoAuthentication)) {
                 permissions()->set_permission_status(permissions()->user_isnt_sso_logged_in);
             } else {
                 $ssoLoggedIn = true;

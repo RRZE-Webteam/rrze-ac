@@ -128,11 +128,11 @@ class Permissions
     {
         $route = $request->get_route();
 
-        if (!preg_match('#^/wp/v2/(pages|media)/([1-9][0-9]*)$#', $route, $matches)) {
+        if (!preg_match('#^/wp/v2/(pages|media)/(\d+)/?$#i', $route, $matches)) {
             return [];
         }
 
-        $postType = $matches[1] === 'pages' ? 'page' : 'attachment';
+        $postType = strtolower($matches[1]) === 'pages' ? 'page' : 'attachment';
         $postId = absint($matches[2]);
 
         if (!$postId) {
@@ -529,7 +529,7 @@ class Permissions
             return false;
         }
 
-        $remoteAddr = $this->getRemoteIpAddress($ipAddress);
+        $remoteAddr = $this->getRemoteIpAddress();
 
         if (!$remoteAddr) {
             $this->logInfo([
@@ -554,9 +554,9 @@ class Permissions
         return false;
     }
 
-    public function getRemoteIpAddress($ipAddress = [])
+    public function getRemoteIpAddress()
     {
-        $remoteAddress = new RemoteAddress($ipAddress);
+        $remoteAddress = new RemoteAddress();
         return $remoteAddress->getIpAddress();
     }
 
@@ -609,10 +609,16 @@ class Permissions
     }
 
     /**
-     * Check if user is SSO logged in
-     * @return boolean
+     * Check if user is SSO logged in.
+     *
+     * The authentication flow is intentionally optional. Callers that offer
+     * another interactive access method, such as a password, must be able to
+     * render that method before starting an SSO redirect.
+     *
+     * @param bool $startAutomaticAuthentication Whether to start the configured automatic SSO flow.
+     * @return bool
      */
-    public function checkSSOLoggedIn()
+    public function checkSSOLoggedIn($startAutomaticAuthentication = false)
     {
         if (!$this->simplesamlAuth()) {
             return false;
@@ -620,7 +626,7 @@ class Permissions
 
         if (!$this->simplesamlAuth->isAuthenticated()) {
             \SimpleSAML\Session::getSessionFromRequest()->cleanup();
-            if ($this->options['automatic_sso_authentication']) {
+            if ($startAutomaticAuthentication && !empty($this->options['automatic_sso_authentication'])) {
                 $this->simplesamlAuth->requireAuth();
                 \SimpleSAML\Session::getSessionFromRequest()->cleanup();
             }

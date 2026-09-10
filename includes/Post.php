@@ -384,10 +384,27 @@ class Post
             }
         }
 
-        if (!empty($postNotIn)) {
-            $args['post__not_in'] = array_unique(array_merge($args['post__not_in'] ?? [], $postNotIn));
+        return self::applyRestAccessExclusions($args, $postNotIn);
+    }
+
+    private static function applyRestAccessExclusions($args, $postNotIn)
+    {
+        if (empty($postNotIn)) {
+            return $args;
         }
 
+        $postNotIn = array_unique(array_map('absint', $postNotIn));
+
+        if (!empty($args['post__in'])) {
+            $postIn = array_unique(array_map('absint', (array) $args['post__in']));
+            $postIn = array_values(array_diff($postIn, $postNotIn));
+
+            // WordPress treats an empty post__in array as unrestricted.
+            $args['post__in'] = empty($postIn) ? [0] : $postIn;
+            return $args;
+        }
+
+        $args['post__not_in'] = array_unique(array_merge($args['post__not_in'] ?? [], $postNotIn));
         return $args;
     }
 

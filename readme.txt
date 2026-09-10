@@ -1,5 +1,5 @@
 === Plugin Name: RRZE Access Control ===
-Version: 3.1.11
+Version: 3.2.1
 Plugin URI: https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
 GitHub Issue URL: https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac/issues
 Author: RRZE Webteam
