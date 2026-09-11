@@ -152,13 +152,24 @@ class Access
         $allowed = apply_filters('rrze_ac_access_allowed', $allowed, $postId, $permission, $permissions[$permission]);
 
         if (!$allowed) {
-            permissions()->logInfo([
+            $context = [
                 'plugin' => 'rrze-ac',
                 'method' => __METHOD__,
                 'postID' => $postId,
                 'permission' => $permission,
+                'ip' => permissions()->getRemoteIpAddress(),
                 'message' => 'Access denied.'
-            ]);
+            ];
+            $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
+            if (is_string($userAgent) && $userAgent !== '') {
+                $userAgent = substr(sanitize_text_field(wp_unslash($userAgent)), 0, 512);
+                if ($userAgent !== '') {
+                    $context['user_agent'] = $userAgent;
+                }
+            }
+
+            permissions()->logInfo($context);
         }
 
         return $allowed;
