@@ -7,7 +7,7 @@ defined('ABSPATH') || exit;
 class Config
 {
     private static array $config = [
-        'version' => '3.3.0',
+        'version' => '3.3.1',
         'option_name' => 'rrze_ac',
         'enabled_option_name' => 'rrze_ac_enabled',
         'access_permission_meta_key' => '_access_permission',
