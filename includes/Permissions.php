@@ -633,7 +633,13 @@ class Permissions
 
         if (!$this->simplesamlAuth->isAuthenticated()) {
             \SimpleSAML\Session::getSessionFromRequest()->cleanup();
-            if ($startAutomaticAuthentication && !empty($this->options['automatic_sso_authentication'])) {
+            // REST checks must deny access without starting an interactive login,
+            // including internal requests dispatched through rest_do_request().
+            if (
+                $startAutomaticAuthentication
+                && !empty($this->options['automatic_sso_authentication'])
+                && !wp_is_rest_endpoint()
+            ) {
                 $this->simplesamlAuth->requireAuth();
                 \SimpleSAML\Session::getSessionFromRequest()->cleanup();
             }
