@@ -3,7 +3,7 @@
 /*
 Plugin Name:        RRZE Access Control
 Plugin URI:         https://gitlab.rrze.fau.de/rrze-webteam/rrze-ac
-Version:            3.3.0
+Version:            3.3.1
 Description:        Allows protection of files/documents through user and network related functions.
 Author:             RRZE Webteam
 Author URI:         https://www.wp.rrze.fau.de/
@@ -41,8 +41,8 @@ spl_autoload_register(function ($class) {
     }
 });
 
-// Load the plugin's text domain for localization.
-add_action('init', fn() => load_plugin_textdomain('rrze-ac', false, dirname(plugin_basename(__FILE__)) . '/languages'));
+// Load translations before the plugin initializes translated default values.
+add_action('init', __NAMESPACE__ . '\loadTextdomain', 1);
 
 
 // Register activation hook for the plugin
@@ -52,12 +52,9 @@ register_activation_hook(__FILE__, __NAMESPACE__ . '\activation');
 register_deactivation_hook(__FILE__, __NAMESPACE__ . '\deactivation');
 
 /**
- * Add an action hook for the 'plugins_loaded' hook.
- *
- * This code hooks into the 'plugins_loaded' action hook to execute a callback function when
- * WordPress has fully loaded all active plugins and the theme's functions.php file.
+ * Initialize the plugin after WordPress has initialized translations.
  */
-add_action('plugins_loaded', __NAMESPACE__ . '\loaded');
+add_action('init', __NAMESPACE__ . '\loaded', 10);
 
 /**
  * Activation callback function.
@@ -73,6 +70,16 @@ function activation()
 function deactivation()
 {
     // Nothing to do here.
+}
+
+/**
+ * Load the plugin text domain.
+ *
+ * @return void
+ */
+function loadTextdomain()
+{
+    load_plugin_textdomain('rrze-ac', false, dirname(plugin_basename(__FILE__)) . '/languages');
 }
 
 /**

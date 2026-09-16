@@ -1,7 +1,7 @@
 {
   "name": "rrze-ac",
   "title": "RRZE Access Control",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "description": "Allows protection of files/documents through user and network related functions.",
   "main": "rrze-ac.php",
   "textdomain": "rrze-ac",
