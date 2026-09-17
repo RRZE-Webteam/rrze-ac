@@ -6,6 +6,26 @@ $siteTitle = get_bloginfo('name');
 $siteLogo = get_custom_logo();
 $termsMenu = wp_get_nav_menu_object('rrze-tos-menu');
 $termsMenuMarkup = '';
+$context = isset($args['rrze_ac_log_context']) && is_array($args['rrze_ac_log_context'])
+    ? $args['rrze_ac_log_context']
+    : [];
+$context['ip'] = \RRZE\AccessControl\permissions()->getRemoteIpAddress();
+
+$userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+if (is_string($userAgent) && $userAgent !== '') {
+    $userAgent = substr(sanitize_text_field(wp_unslash($userAgent)), 0, 512);
+    if ($userAgent !== '') {
+        $context['user_agent'] = $userAgent;
+    }
+}
+
+if (\RRZE\AccessControl\permissions()->infoLoggingEnabled()) {
+    do_action(
+        'rrze.log.info',
+        'RRZE-AC: Zugriff verweigert',
+        $context
+    );
+}
 
 if ($termsMenu) {
     $termsMenuMarkup = wp_nav_menu([

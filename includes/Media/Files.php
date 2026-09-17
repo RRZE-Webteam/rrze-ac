@@ -13,7 +13,7 @@ class Files
     {
         add_filter('upload_dir', [__CLASS__, 'changeUploadDirectory'], 999);
 
-        add_action('init', [__CLASS__, 'requestFile'], 0);
+        add_action('init', [__CLASS__, 'requestFile'], 5);
     }
 
     public static function isAttachmentProtected($attachmentId)
@@ -365,13 +365,21 @@ class Files
 
         if (!Access::try($attachmentId)) {
             $options = Options::getOptions();
-            wp_die(
+            $permission = permissions()->getThePermission($attachmentId);
+            Access::permissionDenied(
                 wp_kses(Access::permissionMessage($attachmentId, $options), Access::allowedErrorHtml()),
                 esc_html__('Login is required', 'rrze-ac'),
                 [
                     'response' => '403',
                     'back_link' => false,
-                    'rrze_ac_permission_error' => true
+                    'rrze_ac_permission_error' => true,
+                    'rrze_ac_log_context' => [
+                        'resource_type' => 'attachment',
+                        'attachment_id' => absint($attachmentId),
+                        'requested_file' => ltrim($relFile, '/'),
+                        'file_url' => wp_get_attachment_url($attachmentId),
+                        'permission' => $permission
+                    ]
                 ]
             );
         }

@@ -96,10 +96,16 @@ class ListTable extends \WP_List_Table
     private function crawlerColumn($item)
     {
         $crawlers = [];
+        $availableCrawlers = permissions()->getCrawlers();
 
-        if (!empty($item['siteimprove'])) {
-            $crawlers[] = __('Siteimprove', 'rrze-ac');
+        foreach ((array) ($item['crawlers'] ?? []) as $crawlerKey) {
+            $crawler = $availableCrawlers[sanitize_key($crawlerKey)] ?? [];
+            $crawlers[] = !empty($crawler['title'])
+                ? $crawler['title']
+                : $crawlerKey;
         }
+
+        $crawlers = array_filter(array_unique($crawlers));
 
         if (empty($crawlers)) {
             return '';

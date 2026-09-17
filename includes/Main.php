@@ -4,9 +4,6 @@ namespace RRZE\AccessControl;
 
 defined('ABSPATH') || exit;
 
-use RRZE\AccessControl\Media\Files;
-use RRZE\AccessControl\Media\Rewrite;
-
 class Main
 {
     public $options;
@@ -26,14 +23,6 @@ class Main
 
     public function loaded()
     {
-        Rewrite::init();
-
-        Files::init();
-
-        Post::init();
-
-        Attachment::init();
-
         permissions()->loaded();
 
         add_filter('plugin_action_links_' . plugin()->getBaseName(), function ($links) {
@@ -50,7 +39,6 @@ class Main
 
         add_filter('body_class', [$this, 'bodyClasses']);
 
-        add_filter('wp_die_handler', [Access::class, 'filterDieHandler']);
     }
 
     public function adminEnqueueScripts()
@@ -95,13 +83,20 @@ class Main
         if (is_page() || is_attachment()) {
             global $post;
             if (!Access::try($post->ID)) {
-                wp_die(
+                $permission = permissions()->getThePermission($post->ID);
+                Access::permissionDenied(
                     wp_kses(Access::permissionMessage($post->ID, $this->options), Access::allowedErrorHtml()),
                     esc_html__('Login is required', 'rrze-ac'),
                     [
                         'response' => '403',
                         'back_link' => false,
-                        'rrze_ac_permission_error' => true
+                        'rrze_ac_permission_error' => true,
+                        'rrze_ac_log_context' => [
+                            'resource_type' => get_post_type($post->ID),
+                            'post_id' => absint($post->ID),
+                            'permalink' => get_permalink($post->ID),
+                            'permission' => $permission
+                        ]
                     ]
                 );
             }

@@ -25,6 +25,12 @@ class Options
                 unset($options['permissions'][$key]);
                 continue;
             }
+
+            // Keep existing Siteimprove permissions working until they are saved again.
+            if (!empty($permission['siteimprove']) && empty($permission['crawlers'])) {
+                $permission['crawlers'] = ['siteimprove'];
+            }
+
             $options['permissions'][$key] = self::combineAtts($defaultPermission, $permission);
         }
 

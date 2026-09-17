@@ -44,6 +44,8 @@ spl_autoload_register(function ($class) {
 // Load translations before the plugin initializes translated default values.
 add_action('init', __NAMESPACE__ . '\loadTextdomain', 1);
 
+// Register callbacks that must be available before WordPress runs init.
+add_action('plugins_loaded', __NAMESPACE__ . '\registerEarlyHooks', 1);
 
 // Register activation hook for the plugin
 register_activation_hook(__FILE__, __NAMESPACE__ . '\activation');
@@ -80,6 +82,23 @@ function deactivation()
 function loadTextdomain()
 {
     load_plugin_textdomain('rrze-ac', false, dirname(plugin_basename(__FILE__)) . '/languages');
+}
+
+/**
+ * Register hooks that need to run during init.
+ *
+ * @return void
+ */
+function registerEarlyHooks()
+{
+    plugin()->loaded();
+
+    add_filter('wp_die_handler', [Access::class, 'filterDieHandler'], PHP_INT_MAX);
+
+    Media\Rewrite::init();
+    Media\Files::init();
+    Post::init();
+    Attachment::init();
 }
 
 /**
@@ -173,9 +192,6 @@ function systemRequirements(): string
 function loaded()
 {
     Media\Rewrite::maybeHandleRewriteCheck();
-
-    // Trigger the 'loaded' method of the main plugin instance.
-    plugin()->loaded();
 
     // Check system requirements and store any error messages.
     if (systemRequirements()) {

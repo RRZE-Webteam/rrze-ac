@@ -43,10 +43,35 @@ namespace {
     foreach (['Config', 'Permissions', 'Access', 'Post'] as $class) {
         require dirname(__DIR__) . '/includes/' . $class . '.php';
     }
-    function __($text, $domain = '') { return $text; }
-    function is_user_logged_in() { return false; }
-    function is_super_admin() { return false; }
-    function get_post_type($id) { return (int) $id === 20 ? 'attachment' : 'page'; }
+    function __($text, $domain = '')
+    {
+        return $text;
+    }
+
+    function is_user_logged_in()
+    {
+        return false;
+    }
+
+    function is_super_admin()
+    {
+        return false;
+    }
+
+    function get_post_type($id)
+    {
+        return (int) $id === 20 ? 'attachment' : 'page';
+    }
+
+    function get_post_status($id)
+    {
+        return (int) $id === 20 ? 'inherit' : 'publish';
+    }
+
+    function wp_get_attachment_url($id)
+    {
+        return 'https://example.test/media/' . (int) $id;
+    }
     add_filter('pre_option_permalink_structure', static fn() => '/%postname%/');
 
     class SamlFixture
@@ -137,6 +162,12 @@ namespace {
         expect(!$GLOBALS['wp_rest_server']->is_dispatching(), 'REST dispatch state leaked');
         return $response;
     }
+
+    $passwordCheck = new ReflectionMethod(\RRZE\AccessControl\Permissions::class, 'checkPassword');
+    expect(
+        $passwordCheck->invoke($permissions, 20, 'test-password') === false,
+        'Attachment password restriction was bypassed'
+    );
 
     foreach (['GET', 'HEAD'] as $method) {
         $response = request('/wp/v2/pages', $method);
