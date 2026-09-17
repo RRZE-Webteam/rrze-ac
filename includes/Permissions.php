@@ -7,7 +7,6 @@ defined('ABSPATH') || exit;
 use RRZE\AccessControl\Media\Files;
 use RRZE\AccessControl\Network\{IP, RemoteAddress};
 use RRZE\AccessControl\SSO\SimpleSAML;
-use RRZE\AccessControl\Crawler\Siteimprove;
 
 class Permissions
 {
@@ -176,7 +175,7 @@ class Permissions
                     'domain' => $value['domain'],
                     'ip_address' => $value['ip_address'],
                     'password' => $value['password'],
-                    'siteimprove' => $value['siteimprove'],
+                    'crawlers' => $value['crawlers'],
                     'core' => $value['core'],
                     'active' => $value['active']
                 ];
@@ -467,7 +466,7 @@ class Permissions
      */
     public function checkPassword($postId, $allowedPassword = '')
     {
-        if ('publish' != get_post_status($postId) || $allowedPassword === '') {
+        if ($allowedPassword === '') {
             return true;
         }
         $cookieName = Config::get('password_cookie_name_prefix') . $postId;
@@ -751,22 +750,102 @@ class Permissions
     }
 
     /**
-     * Check Siteimprove
-     * @return boolean
+     * Return the crawler directory supplied by rrze-settings.
+     *
+     * @return array
      */
-    public function checkSiteimprove()
+    public function getCrawlers(): array
     {
-        $ipAddresses = Siteimprove::getIpAddresses();
-        if (!empty($ipAddresses)) {
-            if (!permissions()->checkIpAddressRange($ipAddresses)) {
-                $this->logInfo([
-                    'plugin' => 'rrze-ac',
-                    'method' => __METHOD__,
-                    'message' => 'Crawler IP address is not in range.'
-                ]);
+        $crawlers = apply_filters('rrze_settings_crawlers', []);
+
+        if (!is_array($crawlers)) {
+            return [];
+        }
+
+        $normalizedCrawlers = [];
+        foreach ($crawlers as $key => $crawler) {
+            $key = sanitize_key($key);
+            $crawler = is_array($crawler) ? $crawler : [];
+
+            if ($key === '' || empty($crawler['title'])) {
+                continue;
+            }
+
+            $normalizedCrawlers[$key] = $crawler;
+        }
+
+        return $normalizedCrawlers;
+    }
+
+    /**
+     * Check whether the current request matches a configured crawler.
+     *
+     * @param string $crawlerKey
+     * @return bool
+     */
+    public function checkCrawler(string $crawlerKey): bool
+    {
+        $crawlers = $this->getCrawlers();
+        $crawlerKey = sanitize_key($crawlerKey);
+        $crawler = $crawlers[$crawlerKey] ?? [];
+        $userAgent = isset($crawler['user_agent']) ? trim((string) $crawler['user_agent']) : '';
+        $ipAddresses = !empty($crawler['ip_addresses']) && is_array($crawler['ip_addresses'])
+            ? $crawler['ip_addresses']
+            : [];
+
+        if (empty($crawler) || ($userAgent === '' && empty($ipAddresses))) {
+            return false;
+        }
+
+        if ($userAgent !== '') {
+            $requestUserAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+            $requestUserAgent = is_string($requestUserAgent)
+                ? sanitize_text_field(wp_unslash($requestUserAgent))
+                : '';
+
+            if (!$this->matchesCrawlerUserAgent($userAgent, $requestUserAgent)) {
                 return false;
             }
         }
+
+        if (!empty($ipAddresses) && !$this->checkIpAddressRange($ipAddresses)) {
+            return false;
+        }
+
         return true;
+    }
+
+    /**
+     * Match a crawler user agent, allowing a changed version in NAME/VERSION form.
+     *
+     * For NAME/VERSION (PREFIX), the name and first parenthesized prefix must
+     * match. Further user-agent data is intentionally ignored.
+     *
+     * @param string $configuredUserAgent
+     * @param string $requestUserAgent
+     * @return bool
+     */
+    private function matchesCrawlerUserAgent(string $configuredUserAgent, string $requestUserAgent): bool
+    {
+        if ($requestUserAgent === '') {
+            return false;
+        }
+
+        if (preg_match('/^([a-z0-9][a-z0-9._-]*)\/[^\s(]+\s*\(([^)]*)\)/i', $configuredUserAgent, $matches)) {
+            $pattern = '/^' . preg_quote($matches[1], '/')
+                . '\/[^\s(]+\s*\('
+                . preg_quote($matches[2], '/')
+                . '\)/i';
+
+            return preg_match($pattern, $requestUserAgent) === 1;
+        }
+
+        if (preg_match('/^([a-z0-9][a-z0-9._-]*)\/[^\s(]+(?:\s|\(|$)/i', $configuredUserAgent, $matches)) {
+            $pattern = '/^' . preg_quote($matches[1], '/') . '\/[^\s(]+(?:\s|\(|$)/i';
+
+            return preg_match($pattern, $requestUserAgent) === 1;
+        }
+
+        return stripos($requestUserAgent, $configuredUserAgent) !== false;
     }
 }

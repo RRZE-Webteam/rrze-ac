@@ -6,6 +6,8 @@ defined('ABSPATH') || exit;
 
 class Access
 {
+    private static bool $permissionErrorActive = false;
+
     /**
      * Try To Access
      * @param int $postId The post ID.
@@ -87,10 +89,13 @@ class Access
             }
         }
 
-        // Check if permission is set to siteimprove (crawler).
-        if (!$allowed && !empty($permissions[$permission]['siteimprove'])) {
-            if (permissions()->checkSiteimprove()) {
-                $allowed = true;
+        // Check if permission allows one of the configured crawlers.
+        if (!$allowed && !empty($permissions[$permission]['crawlers'])) {
+            foreach ((array) $permissions[$permission]['crawlers'] as $crawlerKey) {
+                if (permissions()->checkCrawler($crawlerKey)) {
+                    $allowed = true;
+                    break;
+                }
             }
         }
 
@@ -160,6 +165,15 @@ class Access
                 'ip' => permissions()->getRemoteIpAddress(),
                 'message' => 'Access denied.'
             ];
+
+            if (get_post_type($postId) === 'attachment') {
+                $fileUrl = wp_get_attachment_url($postId);
+
+                if ($fileUrl) {
+                    $context['file_url'] = $fileUrl;
+                }
+            }
+
             $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 
             if (is_string($userAgent) && $userAgent !== '') {
@@ -234,7 +248,30 @@ class Access
      */
     public static function filterDieHandler($handler)
     {
+        if (!self::$permissionErrorActive) {
+            return $handler;
+        }
+
         return [self::class, 'dieHandler'];
+    }
+
+    /**
+     * Render an access-denied response with the plugin-specific error template.
+     *
+     * @param string $message The error message.
+     * @param string $title The error title.
+     * @param array $args Arguments passed to wp_die().
+     * @return void
+     */
+    public static function permissionDenied($message, $title, $args = [])
+    {
+        self::$permissionErrorActive = true;
+
+        try {
+            wp_die($message, $title, $args);
+        } finally {
+            self::$permissionErrorActive = false;
+        }
     }
 
     /**

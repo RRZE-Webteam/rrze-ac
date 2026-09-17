@@ -333,7 +333,7 @@ class Settings
         $logged_in = !$ssoPluginIsAvailableAndActive && !empty($input['logged_in']) ? 1 : 0;
         $ssoLoggedIn = $ssoPluginIsAvailableAndActive && !empty($input['sso_logged_in']) ? 1 : 0;
 
-        $siteimprove = !empty($input['siteimprove']) ? 1 : 0;
+        $crawlers = $this->crawlerKeysFromInput($input);
 
         if ($this->settingsErrors()) {
             $this->addSettingsError('logged_in', $logged_in, '', false);
@@ -341,7 +341,7 @@ class Settings
             $this->addSettingsError('domain', $domain, '', false);
             $this->addSettingsError('ip_address', $ipAddress, '', false);
             $this->addSettingsError('password', $password, '', false);
-            $this->addSettingsError('siteimprove', $siteimprove, '', false);
+            $this->addSettingsError('crawlers', $crawlers, '', false);
             $this->addSettingsError('description', $description, '', false);
             return false;
         }
@@ -353,7 +353,7 @@ class Settings
             'domain' => $domain,
             'ip_address' => $ipAddress,
             'password' => $password,
-            'siteimprove' => $siteimprove,
+            'crawlers' => $crawlers,
             'select' => $select,
             'description' => $description,
             'core' => 0,
@@ -400,8 +400,8 @@ class Settings
         $logged_in = !$ssoPluginIsAvailableAndActive && !empty($input['logged_in']) ? 1 : 0;
         $ssoLoggedIn = $ssoPluginIsAvailableAndActive ? (!empty($input['sso_logged_in']) ? 1 : 0) : $permission['sso_logged_in'];
 
-        $siteimprove = !empty($input['siteimprove']) ? 1 : 0;
-        $permission['siteimprove'] = $siteimprove;
+        $crawlers = $this->crawlerKeysFromInput($input);
+        $permission['crawlers'] = $crawlers;
 
         $affiliation = $permission['affiliation'];
         if ($ssoPluginIsAvailableAndActive) {
@@ -423,7 +423,7 @@ class Settings
             $this->addSettingsError('domain', $domain, '', false);
             $this->addSettingsError('ip_address', $ipAddress, '', false);
             $this->addSettingsError('password', $password, '', false);
-            $this->addSettingsError('siteimprove', $siteimprove, '', false);
+            $this->addSettingsError('crawlers', $crawlers, '', false);
             $this->addSettingsError('description', $description, '', false);
             return false;
         }
@@ -591,7 +591,7 @@ class Settings
         add_settings_field('password', __("Password", 'rrze-ac'), array($this, 'permission_password_field'), 'rrze-ac-new', 'rrze-ac-new-access-section');
 
         add_settings_section('rrze-ac-new-crawler-section', __("Crawler and Monitoring Systems", 'rrze-ac'), [$this, 'crawlerAndMonitoringSection'], 'rrze-ac-new');
-        add_settings_field('siteimprove', __("Siteimprove", 'rrze-ac'), array($this, 'permission_siteimprove_field'), 'rrze-ac-new', 'rrze-ac-new-crawler-section');
+        $this->addCrawlerSettingsFields('rrze-ac-new', 'rrze-ac-new-crawler-section');
 
         add_settings_section('rrze-ac-edit-section', false, '__return_false', 'rrze-ac-edit');
         add_settings_field('permission_key', __("Permission", 'rrze-ac'), array($this, 'permissionKeyField'), 'rrze-ac-edit', 'rrze-ac-edit-section');
@@ -613,7 +613,7 @@ class Settings
         add_settings_field('password', __("Password", 'rrze-ac'), array($this, 'permission_password_field'), 'rrze-ac-edit', 'rrze-ac-edit-access-section');
 
         add_settings_section('rrze-ac-edit-crawler-section', __("Crawler and Monitoring Systems", 'rrze-ac'), [$this, 'crawlerAndMonitoringSection'], 'rrze-ac-edit');
-        add_settings_field('siteimprove', __("Siteimprove", 'rrze-ac'), array($this, 'permission_siteimprove_field'), 'rrze-ac-edit', 'rrze-ac-edit-crawler-section');
+        $this->addCrawlerSettingsFields('rrze-ac-edit', 'rrze-ac-edit-crawler-section');
 
         add_settings_section('rrze-ac-settings-section', false, '__return_false', 'rrze-ac-settings');
         add_settings_field('default_permission', __("Standard Permission", 'rrze-ac'), array($this, 'default_permission_field'), 'rrze-ac-settings', 'rrze-ac-settings-section');
@@ -983,17 +983,90 @@ class Settings
     <?php
     }
 
-    public function permission_siteimprove_field()
+    private function crawlerKeysFromInput(array $input): array
+    {
+        $crawlerKeys = isset($input['crawlers']) && is_array($input['crawlers'])
+            ? $input['crawlers']
+            : [];
+        $availableCrawlerKeys = array_keys(permissions()->getCrawlers());
+        $crawlerKeys = array_map('sanitize_key', $crawlerKeys);
+        $crawlerKeys = array_intersect($crawlerKeys, $availableCrawlerKeys);
+
+        return array_values(array_unique($crawlerKeys));
+    }
+
+    private function addCrawlerSettingsFields(string $page, string $section): void
+    {
+        foreach (permissions()->getCrawlers() as $crawlerKey => $crawler) {
+            add_settings_field(
+                'crawler-' . $crawlerKey,
+                $crawler['title'],
+                [$this, 'permissionCrawlerField'],
+                $page,
+                $section,
+                [
+                    'crawler_key' => $crawlerKey,
+                    'crawler' => $crawler
+                ]
+            );
+        }
+    }
+
+    public function permissionCrawlerField(array $args)
     {
         $settingsErrors = $this->settingsErrors();
         $permissionKey = $this->requestVar('permission');
         $permission = permissions()->getPermission($permissionKey);
-        $checked = !empty($permission['siteimprove']) ? true : false;
-        $checked = !empty($settingsErrors['siteimprove']['value']) ? true : $checked; ?>
-        <label for="permission_siteimprove">
-            <input id="permission_siteimprove" type="checkbox" <?php checked($checked); ?> name="<?php echo esc_attr(sprintf('%s[siteimprove]', $this->optionName)); ?>" value="1"> <?php esc_html_e("Allow Siteimprove crawler", 'rrze-ac'); ?>
+        $crawlerKey = $args['crawler_key'];
+        $crawler = $args['crawler'];
+        $selectedCrawlers = !empty($permission['crawlers']) ? (array) $permission['crawlers'] : [];
+
+        if (isset($settingsErrors['crawlers']['value'])) {
+            $selectedCrawlers = (array) $settingsErrors['crawlers']['value'];
+        }
+
+        $inputId = 'permission-crawler-' . $crawlerKey;
+        $details = [];
+        $contacts = [];
+
+        if (!empty($crawler['user_agent'])) {
+            $details[] = esc_html__('UserAgent:', 'rrze-ac') . ' <code>' . esc_html($crawler['user_agent']) . '</code>';
+        }
+
+        if (!empty($crawler['contact_email'])) {
+            $contacts[] = '<a href="mailto:' . esc_attr($crawler['contact_email']) . '">' . esc_html($crawler['contact_email']) . '</a>';
+        }
+
+        if (!empty($crawler['contact_url'])) {
+            $contacts[] = '<a href="' . esc_url($crawler['contact_url']) . '">' . esc_html($crawler['contact_url']) . '</a>';
+        }
+
+        if (!empty($contacts)) {
+            $details[] = esc_html__('Contact:', 'rrze-ac') . ' ' . implode(', ', $contacts);
+        }
+        ?>
+        <label for="<?php echo esc_attr($inputId); ?>">
+            <input id="<?php echo esc_attr($inputId); ?>" type="checkbox" name="<?php echo esc_attr(sprintf('%s[crawlers][]', $this->optionName)); ?>" value="<?php echo esc_attr($crawlerKey); ?>" <?php checked(in_array($crawlerKey, $selectedCrawlers, true)); ?>>
+            <?php
+            printf(
+                esc_html__('Grant access to %s.', 'rrze-ac'),
+                esc_html($crawler['title'])
+            );
+            ?>
         </label>
         <?php
+
+        if (!empty($details)) {
+            echo '<br>(' . esc_html__('Crawler details:', 'rrze-ac') . ' ' . wp_kses(
+                implode(', ', $details),
+                [
+                    'a' => [
+                        'href' => []
+                    ],
+                    'code' => []
+                ]
+            ) . ')';
+        }
     }
 
     public function adminActions()

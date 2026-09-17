@@ -58,6 +58,19 @@ msgstr "Passwort senden"
 msgid "Contact:"
 msgstr "Kontakt:"
 
+#: includes/Settings.php
+msgid "Crawler details:"
+msgstr "Crawler-Details:"
+
+#: includes/Settings.php
+#, php-format
+msgid "Grant access to %s."
+msgstr "Zugriff für %s gewähren."
+
+#: includes/Settings.php
+msgid "UserAgent:"
+msgstr "User-Agent:"
+
 #: includes/Attachment.php:26 includes/Attachment.php:129
 #: includes/Attachment.php:176 includes/Attachment.php:337
 #: includes/Post.php:180 includes/Post.php:296 includes/Settings.php:41

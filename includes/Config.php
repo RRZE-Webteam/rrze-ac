@@ -7,7 +7,7 @@ defined('ABSPATH') || exit;
 class Config
 {
     private static array $config = [
-        'version' => '3.3.1',
+        'version' => '3.3.2',
         'option_name' => 'rrze_ac',
         'enabled_option_name' => 'rrze_ac_enabled',
         'access_permission_meta_key' => '_access_permission',
@@ -37,7 +37,9 @@ class Config
 
     public static function get($key = '')
     {
-        self::loadDynamicDefaults();
+        if ($key === '' || $key === 'default_options' || $key === 'default_permission') {
+            self::loadDynamicDefaults();
+        }
 
         if (empty($key)) {
             return self::$config;
@@ -72,7 +74,7 @@ class Config
                     'domain'         => '',
                     'ip_address'     => '',
                     'password'       => '',
-                    'siteimprove'    => 0,
+                    'crawlers'       => [],
                     'core'           => 1,
                     'active'         => 1
                 ],
@@ -87,7 +89,7 @@ class Config
                     'domain'         => '',
                     'ip_address'     => '',
                     'password'       => '',
-                    'siteimprove'    => 0,
+                    'crawlers'       => [],
                     'core'           => 1,
                     'active'         => 1
                 ]
@@ -128,7 +130,7 @@ class Config
             'domain'         => '',
             'ip_address'     => '',
             'password'       => '',
-            'siteimprove'    => 0,
+            'crawlers'       => [],
             'core'           => 0,
             'active'         => 0
         ];
